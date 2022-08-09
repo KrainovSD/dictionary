@@ -1,0 +1,50 @@
+@keyframes clickButtonHeader {
+    0% {
+        transform: scale(1, 1);
+    }
+
+    50% {
+        transform: scale(0.8, 0.8);
+    }
+
+    100% {
+        transform: scale(1, 1);
+    }
+}
+
+
+
+@keyframes appearBackDrop {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+
+}
+
+@keyframes dissappearBackDrop {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(180deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

@@ -1,0 +1,39 @@
+@import '_custom';
+@import '_fonts';
+@import '_animations';
+
+@import '_main';
+@import '_sign';
+@import '_home';
+
+
+
+a {
+    color: inherit // dispables style router-link
+}
+
+body {
+    overflow-x: hidden;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+    transition: background-color 0s ease-in-out 5000s;
+}
+
+// disables auto-complete style in browser
+
+ul {
+    margin-left: rem(15);
+}
+
+
+
+// outline-offset
