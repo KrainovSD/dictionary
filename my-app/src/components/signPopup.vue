@@ -16,11 +16,6 @@
         <p class="sign__description" v-if="signType === 'signIn'">
           Вход использует ваш Nickname и пароль
         </p>
-        <input-sign typeField="nickName" :errors="errors"></input-sign>
-        <input-sign typeField="userName" :errors="errors"></input-sign>
-        <input-sign typeField="email" :errors="errors"></input-sign>
-        <input-sign typeField="password" :errors="errors"></input-sign>
-        <input-sign typeField="repeatPassword" :errors="errors"></input-sign>
         <div
           class="sign__inputContainer"
           :class="errors.nickName ? '_error' : ''"
@@ -250,9 +245,7 @@
 </template>
 
 <script>
-import inputSign from "../components/inputSign.vue";
 export default {
-  components: { inputSign },
   props: {
     signType: String,
   },

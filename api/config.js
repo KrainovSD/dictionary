@@ -2,12 +2,14 @@ module.exports = {
     server: {
         port: 3000,
         host: 'localhost',
-        lifeTimeRefreshToken: '1m', // use only d - days, m - months, y - years
+        liveTimeRefreshToken: '1m', // use only m - minutes, h - hours, d - days;
         dbHost: 'localhost:27017',
         dbName: 'dictionary',
+        postLog: 'krainovsddictionary@gmail.com',
+        postPass: 'bccsxetozucoyfhp'
     },
     common: {
-        lifeTimeAccessToken: '2m', // use only m - minutes, h - hours, d - days;
+        liveTimeAccessToken: '2m', // use only m - minutes, h - hours, d - days;
         
     }
 }

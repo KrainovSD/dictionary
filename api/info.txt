@@ -1,1 +1,1 @@
-{"secretTokenKey" : "dsdsdsdsdsqd"}
+{"secretAccessToken" : "dgjwqmvmazpoqe$%", "secretRefreshToken" : "ag@gfds$gsdmsqr", "secretPassword": "dngjfewitjvm@"}

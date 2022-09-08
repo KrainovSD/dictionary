@@ -5,9 +5,15 @@
     @close="this.signVisiable = false"
     @sign="sign"
   />
+
   <div class="header">
     <div class="headerContainer">
-      <img src="image/KrainovLogo.png" alt="" class="header__logo" />
+      <img
+        src="image/KrainovLogo.png"
+        alt=""
+        class="header__logo"
+        @click="testToken"
+      />
       <div class="header__titles">
         <router-link :to="{ name: 'home' }" class="header__title">
           Главная</router-link
@@ -25,7 +31,7 @@
           >Контакты</router-link
         >
       </div>
-      <div class="header__authPanel" v-if="a == 0">
+      <div class="header__authPanel" v-if="auth == false">
         <button class="header__signIn" ref="signIn" @click="openSignIn">
           Войти
         </button>
@@ -33,10 +39,31 @@
           Регистрация
         </button>
       </div>
-      <div class="header__userMenu" v-if="a == 1">
-        <img src="" alt="" class="header__avatar" />
-        <p class="header__nickName">KrainovSD</p>
-        <img src="" alt="" class="header_arrow" />
+      <div class="header__userMenu" v-if="auth == true">
+        <div
+          class="header__activeUserMenu"
+          @click="
+            if (userMenuVisiable == true) userMenuVisiable = false;
+            else userMenuVisiable = true;
+          "
+        >
+          <img src="image/avatar.png" alt="" class="header__avatar" />
+          <p class="header__nickName">{{ userInfo.nickName }}</p>
+          <img src="image/arrow-down.png" alt="" class="header__arrow" />
+        </div>
+        <div
+          class="header__userSettings"
+          :class="userMenuVisiable == true ? '_active' : ''"
+        >
+          <div class="header__settingsItem">
+            <img src="image/cog.png" alt="" class="header__settingsIcon" />
+            <p class="header__settingsTittle">Настройки</p>
+          </div>
+          <div class="header__settingsItem" @click="logOut">
+            <img src="image/exit.png" alt="" class="header__settingsIcon" />
+            <p class="header__settingsTittle">Выход</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -47,14 +74,29 @@
 
 <script>
 import signPopup from "../components/signPopup.vue";
+//import signTest from "../components/signTest.vue";
 export default {
-  components: { signPopup },
+  components: {
+    signPopup,
+    //signTest,
+  },
   data() {
     return {
       signVisiable: false,
       signType: "",
-      a: 0,
+      userMenuVisiable: false,
     };
+  },
+  mounted() {},
+  computed: {
+    auth() {
+      let auth = this.$store.getters.getAuth;
+      return auth;
+    },
+    userInfo() {
+      let userInfo = this.$store.getters.getInfo;
+      return userInfo;
+    },
   },
   methods: {
     openSignIn() {
@@ -79,27 +121,49 @@ export default {
     },
     sign(data) {
       console.log(data, this.signType);
+      if (this.signType == "signUp") {
+        this.$api.auth
+          .signUp(data)
+          .then((data) => {
+            console.log(data);
+          })
+          .catch((err) => console.log(err));
+      } else if (this.signType == "signIn") {
+        this.$api.auth
+          .signIn(data)
+          .then((req) => {
+            console.log(req);
+            switch (req.data.type) {
+              case 1: {
+                //let message = req.data.message;
+                break;
+              }
+              default:
+                break;
+            }
+          })
+          .catch((err) => console.log(err));
+      }
     },
-    test() {
-      console.log(this.$router);
-      this.$router.push({ name: "home" });
-    },
-
-    get() {
-      this.$api.testConnection
-        .testGet()
-        .then((data) => {
-          console.log(data.data);
-        })
-        .catch((err) => console.log(err));
-    },
-    post() {
-      this.$api.testConnection
-        .testPost({ loh: "loh" })
+    logOut() {
+      this.$api.auth
+        .signOut()
         .then((data) => {
           console.log(data);
         })
         .catch((err) => console.log(err));
+    },
+    testToken() {
+      this.$api.auth
+        .getNewTokenTest()
+        .then((data) => {
+          console.log(data);
+          let request = data.data;
+          console.log(request);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
   },
 };

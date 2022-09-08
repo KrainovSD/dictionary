@@ -1,5 +1,5 @@
 <template>
-  <div class="sign__inputContainer" :class="errors[typeFiled] ? '_error' : ''">
+  <div class="sign__inputContainer" :class="errors[typeField] ? '_error' : ''">
     <div class="sign__iconInputContainer">
       <img :src="srcIcon" alt="" class="sign__inputIcon" />
     </div>
@@ -9,7 +9,8 @@
       class="sign__input"
       :placeholder="typeField"
       :name="typeField"
-      v-model="password"
+      v-model="value"
+      @input="$emit('value', value)"
       autocomplete="off"
       v-if="!(typeField == 'password' || typeField == 'repeatPassword')"
     />
@@ -19,7 +20,8 @@
       :placeholder="typeField"
       ref="password"
       :name="typeField"
-      v-model="password"
+      v-model="value"
+      @input="$emit('value', value)"
       autocomplete="off"
       v-if="typeField == 'password'"
     />
@@ -29,7 +31,8 @@
       :placeholder="typeField"
       ref="repeatPassword"
       :name="typeField"
-      v-model="password"
+      v-model="value"
+      @input="$emit('value', value)"
       autocomplete="off"
       v-if="typeField == 'repeatPassword'"
     />
@@ -57,18 +60,23 @@
     <div
       class="sign__tooltip"
       v-if="
-        (errors[typeField] &&
-          currentFocusInput == typeField &&
-          signType == 'signIn') ||
+        (currentFocusInput == typeField &&
+          signType == 'signIn' &&
+          errors[typeField]) ||
         (currentFocusInput != 'password' &&
           currentFocusInput == typeField &&
           errors[typeField])
       "
       :tooltip="errors[typeField]"
     ></div>
+
     <div
       class="sign__tooltipPassword"
-      v-if="currentFocusInput == 'password' && signType == 'signUp'"
+      v-if="
+        currentFocusInput == 'password' &&
+        signType == 'signUp' &&
+        typeField == 'password'
+      "
     >
       <p>Надежный пароль должен содержать:</p>
       <br />
@@ -123,12 +131,17 @@ export default {
   props: {
     typeField: String,
     errors: Object,
+    currentFocusInput: String,
+    signType: String,
+    advicesPassword: Object,
   },
+
   data() {
     return {
-      password: "",
+      value: "",
     };
   },
+
   computed: {
     srcIcon() {
       let src = "";
@@ -159,6 +172,37 @@ export default {
         type = "password";
       }
       return type;
+    },
+    difficultyPassword() {
+      let difficulty = 0;
+      Object.values(this.advicesPassword).forEach((value) => {
+        if (value) difficulty += 1;
+      });
+      return difficulty;
+    },
+    barOfDifficultyPassword() {
+      let style = "";
+      switch (this.difficultyPassword) {
+        case 1:
+          style = "_veryEasy";
+          break;
+        case 2:
+          style = "_easy";
+          break;
+        case 3:
+          style = "_medium";
+          break;
+        case 4:
+          style = "_high";
+          break;
+        case 5:
+          style = "_veryHigh";
+          break;
+        default:
+          style = "";
+          break;
+      }
+      return style;
     },
   },
   methods: {
@@ -192,6 +236,7 @@ export default {
       }
     },
   },
+  watch: {},
 };
 </script>
 

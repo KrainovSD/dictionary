@@ -394,6 +394,70 @@ body {
 
 .header__userMenu {
   margin: auto 0px auto auto;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  position: relative;
+}
+
+.header__activeUserMenu {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  cursor: pointer;
+}
+
+.header__avatar {
+  width: 28%;
+}
+
+.header__nickName {
+  margin: auto 0 auto 0.57143rem;
+}
+
+.header__arrow {
+  width: 0.78571rem;
+  height: 0.78571rem;
+  margin: auto auto auto 0.35714rem;
+}
+
+.header__userSettings {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 5px;
+  padding: 1.42857rem 0 0.35714rem 1.42857rem;
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+  -webkit-transform: scaleY(0);
+          transform: scaleY(0);
+}
+
+.header__userSettings._active {
+  -webkit-transform: scaleY(100%);
+          transform: scaleY(100%);
+  top: 100%;
+}
+
+.header__settingsItem {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  cursor: pointer;
+  margin-bottom: 0.85714rem;
+}
+
+.header__settingsIcon {
+  width: 1rem;
+  height: 1rem;
+  margin: auto 0;
+}
+
+.header__settingsTittle {
+  margin: auto 0 auto 0.71429rem;
 }
 
 .modal__backDrop {

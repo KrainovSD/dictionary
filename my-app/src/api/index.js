@@ -1,8 +1,9 @@
+import instanceToken from "./instanceToken";
 import instance from "./instance";
-import testConnections from "./testConnection";
 import authorization from "./authorization";
+console.log(instanceToken);
+
 
 export default {
-    testConnection: testConnections(instance),
     auth: authorization(instance),
 }
