@@ -8,6 +8,8 @@ const store = createStore({
             nickName: '',
             userName: '',
             role: 'guest',
+            dataRegistration: '',
+            avatar: '',
             accessToken: '',
             timeExistToken: '',
         }
@@ -19,6 +21,8 @@ const store = createStore({
                 nickName: state.nickName,
                 userName: state.userName,
                 role: state.role,
+                dataRegistration: state.dataRegistration,
+                avatar: state.avatar,
                 accessToken: state.accessToken,
                 timeExistToken: state.timeExistToken,
             }
@@ -49,8 +53,21 @@ const store = createStore({
                 state.nickName = payload.nickName;
                 state.userName = payload.userName;
                 state.role = payload.role;
+                state.dataRegistration = payload.dataRegistration;
+                state.avatar = payload.avatar;
+                state.auth = true;
             }
-        }
+        },
+        resetAuth(state){
+            state.auth =  false;
+            state.nickName = '';
+            state.userName = '';
+            state.role = 'guest';
+            state.dataRegistration = '';
+            state.avatar = '';
+            state.accessToken = '';
+            state.timeExistToken = '';
+        },
     }
 
 })

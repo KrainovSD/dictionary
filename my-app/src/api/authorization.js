@@ -9,7 +9,7 @@ export default function(instance){
         signOut(){
             return instance.post('/logout');
         },
-        getNewTokenTest(){
+        checkAuth(){
             return instance.put('/token');
         },
 

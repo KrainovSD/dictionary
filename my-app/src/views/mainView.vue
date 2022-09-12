@@ -1,9 +1,27 @@
 <template>
-  <sign-popup
+  <sign-form
     v-if="signVisiable == true"
     :signType="signType"
-    @close="this.signVisiable = false"
+    :responseMessage="responseMessage"
+    @close="
+      this.signVisiable = false;
+      this.responseMessage = '';
+    "
     @sign="sign"
+    @switch="
+      this.responseMessage = '';
+      this.signType = 'signUp';
+    "
+  />
+  <info-popup
+    v-if="infoVisiable == true"
+    :infoTittle="infoTittle"
+    :infoHeader="infoHeader"
+    @close="
+      this.infoVisiable = false;
+      this.infoTittle = '';
+      this.infoHeader = '';
+    "
   />
 
   <div class="header">
@@ -73,11 +91,13 @@
 </template>
 
 <script>
-import signPopup from "../components/signPopup.vue";
+import signForm from "../components/signForm.vue";
+import infoPopup from "../components/infoPopup";
 //import signTest from "../components/signTest.vue";
 export default {
   components: {
-    signPopup,
+    infoPopup,
+    signForm,
     //signTest,
   },
   data() {
@@ -85,9 +105,15 @@ export default {
       signVisiable: false,
       signType: "",
       userMenuVisiable: false,
+      infoVisiable: false,
+      infoTittle: "",
+      infoHeader: "",
+      responseMessage: "",
     };
   },
-  mounted() {},
+  mounted() {
+    this.checkAuth();
+  },
   computed: {
     auth() {
       let auth = this.$store.getters.getAuth;
@@ -99,6 +125,27 @@ export default {
     },
   },
   methods: {
+    checkAuth() {
+      this.$api.auth
+        .checkAuth()
+        .then((res) => {
+          console.log(res);
+          switch (res.data.type) {
+            case 1: {
+              let user = res.data.userInfo;
+              this.$store.commit("setUserInfo", user);
+              break;
+            }
+            default: {
+              this.$store.commit("resetAuth");
+              break;
+            }
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
     openSignIn() {
       if (!this.$refs.signIn.classList.contains("header__signIn_active")) {
         this.$refs.signIn.classList.toggle("header__signIn_active");
@@ -124,45 +171,58 @@ export default {
       if (this.signType == "signUp") {
         this.$api.auth
           .signUp(data)
-          .then((data) => {
-            console.log(data);
+          .then((res) => {
+            console.log(res);
+            switch (res.data.type) {
+              case 1: {
+                // Информационное окно
+                this.infoHeader = "Регистрация";
+                this.infoTittle = res.data.message;
+                this.infoVisiable = true;
+                this.signVisiable = false;
+                break;
+              }
+              default: {
+                this.responseMessage = res.data.message;
+                break;
+              }
+            }
           })
           .catch((err) => console.log(err));
       } else if (this.signType == "signIn") {
         this.$api.auth
           .signIn(data)
-          .then((req) => {
-            console.log(req);
-            switch (req.data.type) {
+          .then((res) => {
+            console.log(res);
+            switch (res.data.type) {
               case 1: {
-                //let message = req.data.message;
+                let user = res.data.userInfo;
+                this.$store.commit("setUserInfo", user);
+                this.signVisiable = false;
                 break;
               }
-              default:
+              default: {
+                this.responseMessage = res.data.message;
                 break;
+              }
             }
           })
-          .catch((err) => console.log(err));
+          .catch((err) => {
+            console.log(err);
+            this.responseMessage = "Сервер не отвечает";
+          });
       }
     },
     logOut() {
       this.$api.auth
         .signOut()
-        .then((data) => {
-          console.log(data);
-        })
-        .catch((err) => console.log(err));
-    },
-    testToken() {
-      this.$api.auth
-        .getNewTokenTest()
-        .then((data) => {
-          console.log(data);
-          let request = data.data;
-          console.log(request);
+        .then((res) => {
+          console.log(res);
+          this.checkAuth();
         })
         .catch((err) => {
           console.log(err);
+          this.checkAuth();
         });
     },
   },

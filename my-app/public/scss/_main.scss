@@ -189,6 +189,11 @@
         display: inline-flex;
         cursor: pointer;
         margin-bottom: rem(12);
+        transition: all 0.3s ease;
+
+        &:hover {
+            transform: scale(110%);
+        }
 
     }
 

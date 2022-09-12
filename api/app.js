@@ -41,6 +41,11 @@ app.use((request, response, next) => {
 });
 const routes = require('./routes/index.js');
 app.use('/', routes.auth);
+process.on('uncaughtException', (err) => {
+    res.status(500);
+    res.json({type: 500, message: err});
+    console.log(err);//
+}) // some logging mechanisam // .... process.exit(1); // terminates process });
 
 /*const cors = require('cors');
 app.use(cors({credentials: true, origin: 'http://127.0.0.1:8080/'}))*/

@@ -16,14 +16,26 @@ instance.interceptors.request.use(async function(request){
             request.headers.Authorization = `Bearer ${accessToken}`;
             return request;
         }
-        accessToken = await refreshToken();
-        request.headers.Authorization = `Bearer ${accessToken}`;
-        return request;
+        accessToken = refreshToken();
+        accessToken
+        .then( accessToken => {
+            request.headers.Authorization = `Bearer ${accessToken}`;
+            return request;})
+        .catch( err => {
+            console.log(err)
+            store.commit("resetAuth");
+        });
+        
     }
-    let accessToken = await refreshToken();
-    console.log(accessToken)
-    request.headers.Authorization = `Bearer ${accessToken}`;
-    return request;
+        let accessToken = refreshToken();
+        accessToken
+        .then( accessToken => {
+            request.headers.Authorization = `Bearer ${accessToken}`;
+            return request;})
+        .catch( err => {
+                console.log(err)
+                store.commit("resetAuth");
+            });
 })
 
 export default instance;
@@ -53,9 +65,9 @@ function findTimeExistToken(option){
 function refreshToken(){
     return new Promise((resolve, reject)=>{
         axios.put(`${config.UI.host}/token`).then( res => {
-            switch (res.status){
-                case 200: {
-                    let accessToken = res.data;
+            switch (res.data.type){
+                case 1: {
+                    let accessToken = res.data.token;
                     let timeExist = findTimeExistToken(config.common.lifeTimeAccessToken);
                     let tokenInfo = {accessToken: accessToken, timeExist: timeExist};
                     store.commit("setAccessToken", tokenInfo);
@@ -64,13 +76,11 @@ function refreshToken(){
                     resolve(accessToken);
                     break;
                 }  
-                case 203: {
-                    let accessToken = res.data;
-                    resolve(accessToken);
+                case 2: {
+                    reject('Need auth');
                     break;
                 }       
                 default:
-                    console.log('something wrong');
                     break
             }//
             

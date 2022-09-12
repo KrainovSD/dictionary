@@ -208,6 +208,7 @@
             :tooltip="errors.repeatPassword"
           ></div>
         </div>
+        <p class="sign__infoMessage">{{ responseMessage }}</p>
 
         <button
           class="sign__logInButton"
@@ -230,7 +231,7 @@
             Забыли <br />
             пароль?
           </p>
-          <div class="sign__signInButton">
+          <div class="sign__signInButton" @click="switchTypeSign">
             <p class="sign__signInButtonTitle">Регистрация</p>
             <img
               src="image/add-friend.png"
@@ -248,6 +249,7 @@
 export default {
   props: {
     signType: String,
+    responseMessage: String,
   },
   data() {
     return {
@@ -326,6 +328,15 @@ export default {
         setTimeout(() => {
           this.$refs.backDrop.classList.toggle("close");
           this.$emit("close");
+        }, 300);
+      }
+    },
+    switchTypeSign() {
+      if (!this.$refs.backDrop.classList.contains("close")) {
+        this.$refs.backDrop.classList.toggle("close");
+        setTimeout(() => {
+          this.$refs.backDrop.classList.toggle("close");
+          this.$emit("switch");
         }, 300);
       }
     },
