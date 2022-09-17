@@ -33,63 +33,32 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+const auth = require('../factories/authFactories');
+
+
+router.put('/token', (req, res) => {
+    let refreshToken = req.cookies?.refreshToken;
+    auth.tokenVerify(refreshToken)
+    .then( result => {
+        console.log(result); /**/
+        res.status(200);
+        res.json(result);
+    })
+    .catch( err => {
+        console.log(err); /**/
+        if (err.type == 500){ 
+            res.status(500);
+            res.json(err);
+        }
+        else{
+            res.json(err);
+        };
+    });
+});
 
 
 
 
-router.put('/token', (req, res)=>{
-    let refreshToken = req.cookies?.refreshToken; //
-    if (typeof refreshToken == 'string'){
-        jwt.verify(refreshToken, secretRefreshToken, (err, token) => {
-            if (err) {
-                if (/jwt expired/.test(err)) {
-                    return res.json({type: 2, message: 'Need authorization'})
-                }
-                else { 
-                    console.log(err);//
-                    res.status(500);
-                    return res.json({type: 500, message: err});
-                }
-                
-            }
-            
-            console.log(token);
-            User.find({token: refreshToken}, (err, docs) =>{
-                if (err) {
-                    res.status(500);
-                    res.json({type: 500, message: err});
-                    console.log(err);//
-                }
-                else if (typeof docs !== 'undefined' && docs.length > 0){
-                    console.log(docs);
-                    if (token.nickName == docs[0].nickName){
-                        const accessToken = jwt.sign({ userId: docs[0]._id, username: docs[0].userName, role: docs[0].role, access: 'true'}, secretAccessToken, { expiresIn: `${config.common.liveTimeAccessToken}` });
-                        let userInfo = {
-                            nickName : docs[0].nickName,
-                            userName: docs[0].userName,
-                            role: docs[0].role,
-                            dataRegistration: docs[0].dataRegistration,
-                            avatar: docs[0].avatar,
-                        }
-                        res.status(200);
-                        res.json({type: 1, token: accessToken, userInfo: userInfo});
-                        //res.json(accessToken,);
-                    } 
-                }
-                else {
-                    res.json({type: 2, message: 'Need authorization'})
-                }
-                
-            })
- 
-        })
-    }
-    else {
-        res.json({type: 2, message: 'Need authorization'})
-    }
-    
-    
-})
 router.post('/login', (req, res)=>{
     let {nickName, password} = req.body; //validate
     User.find({nickName: nickName}, (err, docs) => {
