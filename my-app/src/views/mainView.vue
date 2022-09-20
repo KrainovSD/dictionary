@@ -188,7 +188,10 @@ export default {
               }
             }
           })
-          .catch((err) => console.log(err));
+          .catch((err) => {
+            console.log(err);
+            this.responseMessage = "Сервер не отвечает";
+          });
       } else if (this.signType == "signIn") {
         this.$api.auth
           .signIn(data)

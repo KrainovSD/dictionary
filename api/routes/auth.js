@@ -1,4 +1,4 @@
-const config = require('../config.js');
+/*const config = require('../config.js');
 const express = require('express');
 const router = express.Router();
 const app = require('../app');
@@ -6,7 +6,7 @@ const path = require('path');
 const url = require('url'); // req.url 
 
 require('mongoose');
-const User = require('../schemas/user');
+const User = require('../models/Users');
 
 const crypto = require('node:crypto'); 
 const iterations = 10000;
@@ -34,6 +34,8 @@ const transporter = nodemailer.createTransport({
 });
 
 const auth = require('../factories/authFactories');
+const { UserController } = require('../controllers/index.js');*/
+
 
 
 router.put('/token', (req, res) => {
@@ -59,6 +61,25 @@ router.put('/token', (req, res) => {
 
 
 
+router.post('/login', (req, res) => {
+    let {nickName, password} = req.body;
+    auth.loginVerify(nickName, password)
+    .then( result => {
+
+    })
+    .catch( err => {
+        console.log(err); /**/
+        if (err.type == 500){ 
+            res.status(500);
+            res.json(err);
+        }
+        else{
+            res.json(err);
+        };
+    })
+})
+
+
 router.post('/login', (req, res)=>{
     let {nickName, password} = req.body; //validate
     User.find({nickName: nickName}, (err, docs) => {
@@ -69,7 +90,7 @@ router.post('/login', (req, res)=>{
         }
         console.log(docs);
         if (docs.length == 0) {
-            res.json({type: 4, message: 'Account is not exist'});  
+            res.json({type: 2, message: 'Account is not exist'});  
         }
         else {
             docs = docs[0];
@@ -86,7 +107,7 @@ router.post('/login', (req, res)=>{
                 res.json({type: 2, message: 'Password is not correct'});  
             }
             else if (docs.confirmed == false) {
-                res.json({type: 3, message: 'Account is not confirmed. Please, check your email and follow instruction'});
+                res.json({type: 2, message: 'Account is not confirmed. Please, check your email and follow instruction'});
             }
             else {
                 const refreshToken = jwt.sign({ nickName: docs.nickName, username: docs.userName, role: docs.role}, secretRefreshToken, {expiresIn: `${config.server.liveTimeRefreshToken}`});
@@ -172,7 +193,7 @@ router.post('/logout', (req, res) => {
 router.get('/confirm', (req,res)=>{
     let id = req.query.id;
     User.updateOne(
-        {_id: id}, 
+        {_id: id,}, 
         {confirmed: true}, 
         {upsert: false, // Если не будет найдена запись, проигнорирует обновление, если true добавит запись новую запись со значением
         useFindAndModify: true}, // ???Обновит документ и возвратит его
@@ -376,7 +397,6 @@ function validateForm(form) {
     });
     let info = '';
     if (errors.length > 0) {
-        
         Object.keys(errors).forEach( key => {
             info = `${errors[key]} /n`;
         })
