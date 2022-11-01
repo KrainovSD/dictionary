@@ -1,16 +1,16 @@
 export default function(instance){
     return{
-        signIn(data){ 
+        login(data){ 
             return instance.post('/login', data);
         },
-        signUp(data){
-            return instance.post('/signUp', data);
+        register(data){
+            return instance.post('/register', data);
         },
-        signOut(){
+        logout(){
             return instance.post('/logout');
         },
         checkAuth(){
-            return instance.put('/token');
+            return instance.put('/tokens');
         },
 
     }

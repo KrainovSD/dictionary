@@ -11,7 +11,6 @@ const store = createStore({
             dataRegistration: '',
             avatar: '',
             accessToken: '',
-            timeExistToken: '',
         }
     },
     getters: {
@@ -23,27 +22,22 @@ const store = createStore({
                 role: state.role,
                 dataRegistration: state.dataRegistration,
                 avatar: state.avatar,
-                accessToken: state.accessToken,
-                timeExistToken: state.timeExistToken,
             }
             return user;
         },
         getAccessToken(state){ 
-            let accessToken = state.accessToken;
-            let timeExistToken = state.timeExistToken;
-            if (accessToken == '' || timeExistToken == '') return false;
-            else return {accessToken: accessToken, timeExistToken: timeExistToken};
+            let token = state.accessToken !== ''? state.accessToken : false;
+            return token;
         },
         getAuth(state){
-            return state.auth
+            return state.auth;
         },
     },
     mutations: {
         setAccessToken(state, payload){
-            let {accessToken, timeExistToken} = payload;
-            if (typeof accessToken == 'string' && typeof timeExistToken == "string") {
-            state.accessToken = accessToken;
-            state.timeExistToken = timeExistToken; }
+            let accessToken = payload;
+            if (typeof accessToken == 'string') {
+            state.accessToken = accessToken;}
         },
         setAuth(state, payload) {
             if (typeof payload == 'boolean') state.auth = payload;
@@ -66,7 +60,6 @@ const store = createStore({
             state.dataRegistration = '';
             state.avatar = '';
             state.accessToken = '';
-            state.timeExistToken = '';
         },
     }
 

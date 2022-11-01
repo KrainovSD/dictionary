@@ -170,7 +170,7 @@ export default {
       console.log(data, this.signType);
       if (this.signType == "signUp") {
         this.$api.auth
-          .signUp(data)
+          .register(data)
           .then((res) => {
             console.log(res);
             switch (res.data.type) {
@@ -194,7 +194,7 @@ export default {
           });
       } else if (this.signType == "signIn") {
         this.$api.auth
-          .signIn(data)
+          .login(data)
           .then((res) => {
             console.log(res);
             switch (res.data.type) {
@@ -218,7 +218,7 @@ export default {
     },
     logOut() {
       this.$api.auth
-        .signOut()
+        .logout()
         .then((res) => {
           console.log(res);
           this.checkAuth();

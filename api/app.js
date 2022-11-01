@@ -1,73 +1,88 @@
-import config from "./config.js";
-import express from "express";
+import config from './config.js';
+import express from 'express';
 const app = express();
 app.use(express.json()); // req.body only for application/json
 //app.use(express.urlencoded({extended: true})); // req.body only for application/x-www-form-urlencoded
 import cookieParser from 'cookie-parser';
 app.use(cookieParser()); // req.cookies
 
-
 import mongoose from 'mongoose';
 mongoose
-    .connect(`mongodb://${config.server.dbHost}/${config.server.dbName}`)
-    .then( ()=> console.log('server has connected to MongoDB'))
-    .catch( (err)=> console.log(err));
+  .connect(`mongodb://${config.server.dbHost}/${config.server.dbName}`)
+  .then(() => console.log('server has connected to MongoDB'))
+  .catch((err) => {
+    console.log(err);
+    logger(err, 'BD connect');
+  });
+mongoose.connection.on('disconnected', (err) => {
+  logger(err, 'BD disconnected');
+});
 
-app.listen(config.server.port, config.server.host, (err)=>{ 
-    if (err) console.log(err);
-    console.log(`Server has started on port ${config.server.port} and host ${config.server.host}`)
+app.listen(config.server.port, config.server.host, (err) => {
+  if (err) {
+    console.log(err);
+    logger(err, 'start server');
+  }
+  console.log(
+    `Server has started on port ${config.server.port} and host ${config.server.host}`
+  );
 });
 /* ONLY FOR DEV!!!!!!!!!!! */
 app.use((request, response, next) => {
-    //res.set('Access-Control-Allow-Credentials', 'true') - разрешение на куки 
-    response.header({
-        'Access-Control-Allow-Origin': 'http://127.0.0.1:8080',
-        'Access-Control-Allow-Methods': 'DELETE,GET,POST,PUT',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-        'Access-Control-Allow-Credentials' : "true",
-        
-    });
-    next();
+  //res.set('Access-Control-Allow-Credentials', 'true') - разрешение на куки
+  response.header({
+    'Access-Control-Allow-Origin': 'http://127.0.0.1:8080',
+    'Access-Control-Allow-Methods': 'DELETE,GET,POST,PUT',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+  });
+  next();
 });
-
-
-
 
 /*const routes = require('./routes/index.js');
 app.use('/', routes.auth);*/
 
-import {UserController} from "./controllers/index.js";
-import {loginValidation, registerValidation} from './validations.js';
-import {handleValidationErrors, checkAuth, logger} from './untils/index.js';
-app.use(logger);
+import { UserController } from './controllers/index.js';
+import { loginValidation, registerValidation } from './validations.js';
+import {
+  handleValidationErrors,
+  checkAuth,
+  reqLogger,
+} from './untils/index.js';
+import logger from './logger.js';
+app.use(reqLogger);
 
-app.post('/register', registerValidation, handleValidationErrors, UserController.register);
+app.post(
+  '/register',
+  registerValidation,
+  handleValidationErrors,
+  UserController.register
+);
 app.get('/confirm', UserController.confirm);
-app.post('/login', loginValidation, handleValidationErrors, UserController.login);
+app.post(
+  '/login',
+  loginValidation,
+  handleValidationErrors,
+  UserController.login
+);
 app.post('/logout', UserController.logout);
 app.put('/tokens', UserController.updateAccessToken);
 
 app.post('/checkAuth', checkAuth, (req, res) => {
-    res.json(req.userId);
+  res.json(req.userId);
 });
 
-
-
 process.on('uncaughtException', (err) => {
-    console.log(err); 
-    res.status(500).json({message: err});
-    process.exit(1);
-    
-}) // some logging mechanisam // .... process.exit(1); // terminates process });
-
-
+  console.log(err);
+  logger(err, 'uncaughtException');
+  //res.status(500).json({message: err});
+  process.exit(1);
+}); // some logging mechanisam // .... process.exit(1); // terminates process });
 
 /*GET — получение ресурса
 POST — создание ресурса
 PUT — обновление ресурса
 DELETE — удаление ресурса */
-
-
 
 /*
 users: {
@@ -144,16 +159,4 @@ repeatWords: {
 }
 
 
-*/ 
-
-
-
-
-
-
-
-
-
-
-
-
+*/
