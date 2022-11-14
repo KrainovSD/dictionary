@@ -1,0 +1,36 @@
+@function rem($px) {
+    $result : $px / 14;
+    @return $result+rem;
+}
+
+.learnType {
+    width: 100%;
+
+    &__container {
+        max-width: rem(1000);
+        margin: 0px auto;
+        padding: rem(20) 0;
+        display: flex;
+    }
+
+    &__button {
+        font-size: 1.3vw;
+        padding: rem(10) rem(15);
+        background-color: #e7fcf5;
+        margin: auto;
+        border: 1px solid #7dfad0;
+        font-family: Antique;
+    }
+}
+
+.learnPlace {
+    width: 100%;
+
+
+    &__container {
+        max-width: rem(1000);
+        margin: 0px auto;
+        padding: rem(20) 0;
+        display: flex;
+    }
+}

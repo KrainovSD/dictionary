@@ -6,6 +6,12 @@ app.use(express.json()); // req.body only for application/json
 import cookieParser from 'cookie-parser';
 app.use(cookieParser()); // req.cookies
 
+import mongoManager from 'mongodb-topology-manager';
+const server = new mongoManager.Server('mongod', {
+  dbpath: `mongodb://localhost:27017`,
+  port: 27017,
+});
+server.start();
 import mongoose from 'mongoose';
 mongoose
   .connect(`mongodb://${config.server.dbHost}/${config.server.dbName}`)
@@ -14,9 +20,16 @@ mongoose
     console.log(err);
     logger(err, 'BD connect');
   });
-mongoose.connection.on('disconnected', (err) => {
-  logger(err, 'BD disconnected');
+mongoose.connection.on('disconnected', () => {
+  console.log('BD disconnected');
 });
+mongoose.connection.on('recconect', () => {
+  console.log('DB recconect');
+});
+mongoose.connection.on('close', () => {
+  console.log('DB close connect');
+});
+server.stop();
 
 app.listen(config.server.port, config.server.host, (err) => {
   if (err) {

@@ -1,8 +1,13 @@
 <template>
-  <div class="modal__backDrop" @click.self="closePopup" ref="backDrop">
+  <div
+    class="modal__backDrop"
+    @click.self="closePopup"
+    ref="backDrop"
+    style="z-index: 100"
+  >
     <div class="sign" :class="signType == 'signUp' ? 'signUp' : ''">
       <img
-        src="image/close.png"
+        src="@/assets/close.png"
         alt=""
         class="sign__closeButton"
         @click.stop="closePopup"
@@ -21,7 +26,7 @@
           :class="errors.nickName ? '_error' : ''"
         >
           <div class="sign__iconInputContainer">
-            <img src="image/user.png" alt="" class="sign__inputIcon" />
+            <img src="@/assets/user.png" alt="" class="sign__inputIcon" />
           </div>
           <input
             type="text"
@@ -44,7 +49,7 @@
           :class="errors.userName ? '_error' : ''"
         >
           <div class="sign__iconInputContainer">
-            <img src="image/userName.png" alt="" class="sign__inputIcon" />
+            <img src="@/assets/userName.png" alt="" class="sign__inputIcon" />
           </div>
 
           <input
@@ -68,7 +73,7 @@
           :class="errors.email ? '_error' : ''"
         >
           <div class="sign__iconInputContainer">
-            <img src="image/email.png" alt="" class="sign__inputIcon" />
+            <img src="@/assets/email.png" alt="" class="sign__inputIcon" />
           </div>
 
           <input
@@ -91,7 +96,7 @@
           :class="errors.password ? '_error' : ''"
         >
           <div class="sign__iconInputContainer">
-            <img src="image/house-key.png" alt="" class="sign__inputIcon" />
+            <img src="@/assets/house-key.png" alt="" class="sign__inputIcon" />
           </div>
 
           <input
@@ -105,7 +110,7 @@
           />
           <div class="sign__iconInputContainer">
             <img
-              src="image/eye-crossed.png"
+              :src="passwordIcon"
               alt=""
               class="sign__visiblePassword"
               ref="eyeIcon"
@@ -178,7 +183,7 @@
           :class="errors.repeatPassword ? '_error' : ''"
         >
           <div class="sign__iconInputContainer">
-            <img src="image/padlock.png" alt="" class="sign__inputIcon" />
+            <img src="@/assets/padlock.png" alt="" class="sign__inputIcon" />
           </div>
 
           <input
@@ -193,7 +198,7 @@
 
           <div class="sign__iconInputContainer">
             <img
-              src="image/eye-crossed.png"
+              :src="repeatPasswordIcon"
               alt=""
               class="sign__visiblePassword"
               ref="repeatEyeIcon"
@@ -234,7 +239,7 @@
           <div class="sign__signInButton" @click="switchTypeSign">
             <p class="sign__signInButtonTitle">Регистрация</p>
             <img
-              src="image/add-friend.png"
+              src="@/assets/add-friend.png"
               alt=""
               class="sign_signInButtonIcon"
             />
@@ -267,7 +272,8 @@ export default {
         specialSymbol: false,
         blackList: false,
       },
-      a: 0,
+      selectPasswordIcon: "eye-crossed.png",
+      selectRepeatPasswordIcon: "eye-crossed.png",
     };
   },
   mounted() {
@@ -320,6 +326,18 @@ export default {
       }
       return style;
     },
+    passwordIcon() {
+      if (!this.selectPasswordIcon != "") {
+        return;
+      }
+      return require(`../assets/${this.selectPasswordIcon}`);
+    },
+    repeatPasswordIcon() {
+      if (!this.selectRepeatPasswordIcon != "") {
+        return;
+      }
+      return require(`../assets/${this.selectRepeatPasswordIcon}`);
+    },
   },
   methods: {
     closePopup() {
@@ -349,9 +367,9 @@ export default {
           }, 300);
           setTimeout(() => {
             this.$refs[kindOfInput].type = "text";
-            let path = this.$refs[kindOfEye].src.split("/");
-            path[path.length - 1] = "eye.png";
-            this.$refs[kindOfEye].src = path.join("/");
+            if (kindOfEye == "eyeIcon") this.selectPasswordIcon = "eye.png";
+            else if (kindOfEye == "repeatEyeIcon")
+              this.selectRepeatPasswordIcon = "eye.png";
           }, 250);
         }
       } else if (this.$refs[kindOfInput].type === "text") {
@@ -362,9 +380,10 @@ export default {
           }, 300);
           setTimeout(() => {
             this.$refs[kindOfInput].type = "password";
-            let path = this.$refs[kindOfEye].src.split("/");
-            path[path.length - 1] = "eye-crossed.png";
-            this.$refs[kindOfEye].src = path.join("/");
+            if (kindOfEye == "eyeIcon")
+              this.selectPasswordIcon = "eye-crossed.png";
+            else if (kindOfEye == "repeatEyeIcon")
+              this.selectRepeatPasswordIcon = "eye-crossed.png";
           }, 250);
         }
       }
@@ -449,7 +468,7 @@ export default {
     },
     validateField(field, fieldData) {
       if (this.errors[field]) {
-        if (typeof field !== "string") {
+        if (typeof fieldData !== "string") {
           this.errors[field] = "Неверный тип данных!";
           return;
         }

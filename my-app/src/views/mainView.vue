@@ -27,7 +27,7 @@
   <div class="header">
     <div class="headerContainer">
       <img
-        src="image/KrainovLogo.png"
+        src="@/assets/KrainovLogo.png"
         alt=""
         class="header__logo"
         @click="testToken"

@@ -16,7 +16,7 @@
     <div class="homeFeature__container">
       <div class="homeFeature__homeFeatureContainer anim-item">
         <div class="homeFeature__imgContainer">
-          <img src="image/website1.png" alt="" class="homeFeature__img" />
+          <img src="@/assets/website1.png" alt="" class="homeFeature__img" />
           <p class="homeFeature__imgDescription">главная</p>
         </div>
         <p class="homeFeature__descriprion">
@@ -34,7 +34,7 @@
 
       <div class="homeFeature__homeFeatureContainer anim-item">
         <div class="homeFeature__imgContainer">
-          <img src="image/website1.png" alt="" class="homeFeature__img" />
+          <img src="@/assets/website1.png" alt="" class="homeFeature__img" />
           <p class="homeFeature__imgDescription">анализатор</p>
         </div>
         <p class="homeFeature__descriprion">
@@ -51,7 +51,7 @@
 
       <div class="homeFeature__homeFeatureContainer anim-item">
         <div class="homeFeature__imgContainer">
-          <img src="image/website1.png" alt="" class="homeFeature__img" />
+          <img src="@/assets/website1.png" alt="" class="homeFeature__img" />
           <p class="homeFeature__imgDescription">документация</p>
         </div>
         <p class="homeFeature__descriprion">

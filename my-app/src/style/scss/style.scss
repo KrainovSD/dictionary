@@ -3,14 +3,19 @@
 @import '_animations';
 
 @import '_main';
-@import '_sign';
+@import '_signForm';
 @import '_infoPopup';
 @import '_home';
+@import '_learn';
+@import '_newWord';
+@import '_wordPopup';
+@import '_categoryPopup';
+@import '_learnCard';
 
 
 
 a {
-    color: inherit // dispables style router-link
+    color: inherit // disables style router-link
 }
 
 body {

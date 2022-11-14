@@ -12,6 +12,7 @@
         z-index: 1;
         animation: appearBackDrop 0.4s ease;
         display: flex;
+        flex-direction: column;
 
         &.close {
             animation: dissappearBackDrop 0.4s ease;
@@ -54,6 +55,8 @@
     &__header {
         font-size: rem(35);
         margin: 0 auto;
+        display: block;
+        text-align: center;
 
     }
 
