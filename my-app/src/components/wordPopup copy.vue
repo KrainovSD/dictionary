@@ -16,13 +16,13 @@
         <p class="sign__description" v-else>
           Редактирование слова из выбранной категории
         </p>
-        <!-- WORD -->
+
         <div style="position: relative">
           <input
             type="text"
             class="wordPopup__input"
             :class="errors.word ? '_error' : ''"
-            placeholder="*Word"
+            placeholder="Word"
             name="word"
             v-model="word"
             autocomplete="off"
@@ -33,13 +33,13 @@
             :tooltip="errors.word"
           ></div>
         </div>
-        <!-- TRANSLATE -->
+
         <div style="position: relative">
           <input
             type="text"
             class="wordPopup__input"
             :class="errors.translate ? '_error' : ''"
-            placeholder="*Translate"
+            placeholder="Translate"
             name="translate"
             v-model="translate"
             autocomplete="off"
@@ -50,7 +50,7 @@
             :tooltip="errors.translate"
           ></div>
         </div>
-        <!-- TRANSCTIPTION -->
+
         <div style="position: relative">
           <div
             class="keyboard"
@@ -114,7 +114,7 @@
             type="text"
             class="wordPopup__input"
             :class="errors.transcription ? '_error' : ''"
-            placeholder="*Transcription"
+            placeholder="Transcription"
             name="transcription"
             @keypress.prevent=""
             @keyup="enterTranscription"
@@ -127,7 +127,7 @@
             :tooltip="errors.transcription"
           ></div>
         </div>
-        <!-- DESCRIPTION -->
+
         <div style="position: relative">
           <textarea
             type="text"
@@ -145,39 +145,71 @@
             :tooltip="errors.description"
           ></div>
         </div>
-        <!-- EXAMPLE -->
-        <div
-          style="position: relative"
-          v-for="(item, index) in example"
-          :key="index"
-        >
+
+        <div style="position: relative">
           <img
             src="@/assets/plus.png"
             alt=""
             class="wordPopup__addExample"
             @click="addExample"
-            v-if="exampleCount == index && exampleCount < 2"
+            v-if="exampleCount == 1"
           />
           <input
             type="text"
             class="wordPopup__input example"
-            :class="errors?.example?.[index] ? '_error' : ''"
+            :class="errors?.example?.one ? '_error' : ''"
             placeholder="Example"
-            :name="`example${index}`"
+            name="exampleOne"
             autocomplete="off"
-            v-model="example[index]"
-            v-if="exampleCount >= index"
-            :id="`example${index}`"
+            v-model="example[0]"
           />
           <div
             class="wordPopup__tooltip"
-            v-if="
-              errors?.example?.[index] && currentFocusInput == `example${index}`
-            "
-            :tooltip="errors?.example?.[index]"
+            v-if="errors?.example?.one && currentFocusInput == 'exampleOne'"
+            :tooltip="errors?.example?.one"
           ></div>
         </div>
-        <!-- CONFIRM BUTTON -->
+
+        <div style="position: relative" v-if="exampleCount >= 2">
+          <img
+            src="@/assets/plus.png"
+            alt=""
+            class="wordPopup__addExample"
+            @click="addExample"
+            v-if="exampleCount == 2"
+          />
+          <input
+            type="text"
+            class="wordPopup__input example exampleTwo"
+            :class="errors?.example?.two ? '_error' : ''"
+            placeholder="Example"
+            name="exampleTwo"
+            autocomplete="off"
+            v-model="example[1]"
+          />
+          <div
+            class="wordPopup__tooltip"
+            v-if="errors?.example?.two && currentFocusInput == 'exampleTwo'"
+            :tooltip="errors?.example?.two"
+          ></div>
+        </div>
+
+        <div style="position: relative" v-if="exampleCount >= 3">
+          <input
+            type="text"
+            class="wordPopup__input example exampleThree"
+            :class="errors?.example?.three ? '_error' : ''"
+            placeholder="Example"
+            name="exampleThree"
+            autocomplete="off"
+            v-model="example[2]"
+          />
+          <div
+            class="wordPopup__tooltip"
+            v-if="errors?.example?.three && currentFocusInput == 'exampleThree'"
+            :tooltip="errors?.example?.three"
+          ></div>
+        </div>
         <button
           class="wordPopup__confirmButton"
           ref="confirmButton"
@@ -215,7 +247,7 @@ export default {
       example: ["", "", ""],
       image: "",
       errors: {},
-      exampleCount: 0,
+      exampleCount: 1,
     };
   },
   mounted() {
@@ -305,10 +337,25 @@ export default {
     async addExample() {
       this.exampleCount += 1;
       await nextTick();
-      let id = `example${this.exampleCount}`;
-      let input = document.querySelector(`#${id}`);
-      input.addEventListener("focus", this.selectInput);
-      input.addEventListener("focusout", this.unSelectInput);
+      switch (this.exampleCount) {
+        case 2: {
+          let input = document.querySelector(".exampleTwo");
+
+          input.addEventListener("focus", this.selectInput);
+          input.addEventListener("focusout", this.unSelectInput);
+          break;
+        }
+        case 3: {
+          let input = document.querySelector(".exampleThree");
+
+          input.addEventListener("focus", this.selectInput);
+          input.addEventListener("focusout", this.unSelectInput);
+          break;
+        }
+        default: {
+          break;
+        }
+      }
     },
     validateForm(form) {
       this.errors = {};
@@ -380,30 +427,46 @@ export default {
             break;
           }
           case "example": {
-            this.errors[key] = {};
+            this.errors.example = {};
 
-            Object.keys(form[key]).forEach((keyExample) => {
-              if (!form[key][keyExample] == "string") {
-                this.errors[key][keyExample] = "Неверный тип данных!";
-                return;
-              }
-              if (
-                !/^[a-zA-Z  -.,!?]+$/.test(form[key][keyExample]) &&
-                form[key][keyExample] != ""
-              ) {
-                this.errors[key][keyExample] =
-                  "Пример использования слова или словочетания может состоять только из букв английского алфавита, пробела, дефиса и знаков препинания!";
-                return;
-              }
-              if (form[key][keyExample].length > 100) {
-                this.errors[key][keyExample] =
-                  "Длина примера использования слова или словосочетания не должна превышать более 100 символов!";
-                return;
-              }
-            });
-
-            if (Object.keys(this.errors[key]).length == 0)
-              delete this.errors[key];
+            if (form?.example) {
+              Object.keys(form.example).forEach((keyExample) => {
+                let index = "";
+                switch (keyExample) {
+                  case "0": {
+                    index = "one";
+                    break;
+                  }
+                  case "1": {
+                    index = "two";
+                    break;
+                  }
+                  case "2": {
+                    index = "three";
+                    break;
+                  }
+                }
+                if (!form.example[keyExample] == "string") {
+                  this.errors.example[index] = "Неверный тип данных!";
+                  return;
+                }
+                if (
+                  !/^[a-zA-Z  -.,!?]+$/.test(form.example[keyExample]) &&
+                  form.example[keyExample] != ""
+                ) {
+                  this.errors.example[index] =
+                    "Пример использования слова или словочетания может состоять только из букв английского алфавита, пробела, дефиса и знаков препинания!";
+                  return;
+                }
+                if (form.example[keyExample].length > 100) {
+                  this.errors.example[index] =
+                    "Длина примера использования слова или словосочетания не должна превышать более 100 символов!";
+                  return;
+                }
+              });
+            }
+            if (Object.keys(this.errors.example).length == 0)
+              delete this.errors.example;
             break;
           }
         }
@@ -478,22 +541,40 @@ export default {
             break;
           }
           case "example": {
-            this.errors[field] = {};
+            this.errors.example = {};
+            console.log(fieldData, field);
+
             Object.keys(fieldData).forEach((keyExample) => {
+              let index = "";
+              switch (keyExample) {
+                case "0": {
+                  index = "one";
+                  break;
+                }
+                case "1": {
+                  index = "two";
+                  break;
+                }
+                case "2": {
+                  index = "three";
+                  break;
+                }
+              }
+              console.log(keyExample, index, fieldData);
               if (!fieldData[keyExample] == "string") {
-                this.errors[field][keyExample] = "Неверный тип данных!";
+                this.errors.example[index] = "Неверный тип данных!";
                 return;
               }
               if (
                 !/^[a-zA-Z  -.,!?]+$/.test(fieldData[keyExample]) &&
                 fieldData[keyExample] != ""
               ) {
-                this.errors[field][keyExample] =
+                this.errors.example[index] =
                   "Пример использования слова или словочетания может состоять только из букв английского алфавита, пробела, дефиса и знаков препинания!";
                 return;
               }
               if (fieldData[keyExample].length > 100) {
-                this.errors[field][keyExample] =
+                this.errors.example[index] =
                   "Длина примера использования слова или словосочетания не должна превышать более 100 символов!";
                 return;
               }
@@ -527,7 +608,6 @@ export default {
         setTimeout(() => {
           this.$refs.confirmButton.classList.toggle("_active");
           this.$emit(type, form);
-          //this.closePopup();
         }, 300);
       } else {
         console.log(this.errors);

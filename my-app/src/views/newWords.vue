@@ -79,6 +79,21 @@
         >
           Добавить
         </button>
+        <div class="newWords__searchContainer _close" ref="search">
+          <img
+            src="@/assets/search.png"
+            alt=""
+            class="newWords__searchIcon"
+            @click="showSearch"
+          />
+          <input
+            type="text"
+            class="newWords__search"
+            placeholder="Search"
+            v-if="searching == true"
+            v-model="search"
+          />
+        </div>
         <button
           class="CRUDpanel__toolsButton update reverse"
           @click="openWordPopup('update')"
@@ -191,9 +206,22 @@ export default {
       learnCardVisible: false,
       wordPopupType: "",
       categoryPopupType: "",
+      searching: false,
+      search: "",
     };
   },
   methods: {
+    showSearch() {
+      let search = this.$refs.search;
+      if (!search.classList.contains("_close")) {
+        search.classList.toggle("_close");
+        this.searching = false;
+        this.search = "";
+        return;
+      }
+      search.classList.toggle("_close");
+      this.searching = true;
+    },
     openWordPopup(type) {
       this.wordPopupVisible = true;
       this.wordPopupType = type;
@@ -202,9 +230,13 @@ export default {
       this.categoryPopupVisible = true;
       this.categoryPopupType = type;
     },
-    addWord() {},
+    addWord(payload) {
+      console.log(payload);
+    },
     updateWord() {},
-    addCategory() {},
+    addCategory(payload) {
+      console.log(payload);
+    },
     updateCategory() {},
   },
 };

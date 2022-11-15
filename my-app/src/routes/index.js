@@ -3,6 +3,10 @@ import mainView from "../views/mainView";
 import homeView from "../views/homeView";
 import learnView from "../views/learnView";
 import newWords from "../views/newWords";
+import knownWords from "../views/knownWords";
+import repeatWords from "../views/repeatWords";
+import docsView from "../views/docsView";
+import contactView from "../views/contactView";
 
 const routes = [
   {
@@ -16,14 +20,14 @@ const routes = [
         name: "learn",
         component: learnView,
         children: [
-          { path: "known", name: "known", component: newWords },
+          { path: "known", name: "known", component: knownWords },
           { path: "newWords", name: "newWords", component: newWords },
-          { path: "repeat", name: "repeat", component: newWords },
+          { path: "repeat", name: "repeat", component: repeatWords },
         ],
       },
       { path: "/actual", name: "actual", component: homeView },
-      { path: "/docs", name: "documentation", component: homeView },
-      { path: "/contacts", name: "contacts", component: homeView },
+      { path: "/docs", name: "documentation", component: docsView },
+      { path: "/contacts", name: "contacts", component: contactView },
     ],
   },
 ];

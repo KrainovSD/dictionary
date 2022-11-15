@@ -1,5 +1,35 @@
 <template>
   <div class="modal__backDrop" ref="backDrop">
+    <div class="categoryIcon" ref="categoryIcon" v-if="addIconVisible == true">
+      <img
+        src="@/assets/close.png"
+        alt=""
+        class="sign__closeButton"
+        @click.stop="closeCategoryIcon"
+      />
+      <div class="categoryIcon__container">
+        <div class="categoryIcon__containerIcon">
+          <img
+            v-for="(item, index) in iconProd"
+            :key="index"
+            :src="require(`@/assets/category/${item}.png`)"
+            alt=""
+            :id="item"
+            class="categoryIcon__icon categIcon"
+            :class="currentSelectionIcon == item ? '_focus' : ''"
+          />
+        </div>
+        <button
+          class="wordPopup__confirmButton"
+          :style="currentSelectionIcon == '' ? 'disable: true' : ''"
+          ref="confirmIconButton"
+          @click="chooseIcon"
+          :disabled="isCurrentSelectionIconEmpty"
+        >
+          Выбрать иконку
+        </button>
+      </div>
+    </div>
     <div class="categoryPopup">
       <img
         src="@/assets/close.png"
@@ -36,9 +66,11 @@
           ></div>
         </div>
         <div class="categoryPopup__containerIcon">
-          <div class="categoryPopup__addIcon">Выбрать иконку</div>
+          <div class="categoryPopup__addIcon" @click="openCategoryIcon">
+            Выбрать иконку
+          </div>
           <p style="color: red" v-if="icon == ''">Выберите иконку!</p>
-          <p v-else>{{ icon }} pries.png</p>
+          <p v-else>{{ icon }}.png</p>
         </div>
         <div class="categoryPopup__containerHelper">
           <p>Регулярность повторения</p>
@@ -104,6 +136,7 @@
 </template>
 
 <script>
+import { nextTick } from "@vue/runtime-core";
 export default {
   props: {
     categoryPopupType: String,
@@ -116,6 +149,44 @@ export default {
       errors: {},
       tooltip: false,
       currentFocusInput: "",
+      addIconVisible: false,
+      currentSelectionIcon: "",
+      iconProd: [
+        "apple",
+        "bag",
+        "beers",
+        "belt",
+        "block",
+        "box",
+        "cap",
+        "car",
+        "cat",
+        "chrome",
+        "clock",
+        "cloud",
+        "coffee",
+        "crown",
+        "fist",
+        "flag",
+        "folder",
+        "heart",
+        "hole",
+        "home",
+        "key",
+        "location",
+        "mask",
+        "money",
+        "paw",
+        "plane",
+        "playpen",
+        "puzzle",
+        "shield",
+        "space",
+        "star",
+        "telephone",
+        "trophy",
+        "t-shirt",
+      ],
     };
   },
   mounted() {
@@ -144,6 +215,12 @@ export default {
     inputs.forEach((input) => {
       input.removeEventListener("keydown", this.enterNumber);
     });
+  },
+  computed: {
+    isCurrentSelectionIconEmpty() {
+      if (this.currentSelectionIcon == "") return true;
+      return false;
+    },
   },
   methods: {
     closePopup() {
@@ -177,6 +254,51 @@ export default {
         event.preventDefault();
       }
     },
+    async openCategoryIcon() {
+      this.addIconVisible = true;
+      if (this.icon != "") this.currentSelectionIcon = this.icon;
+      await nextTick();
+      let imgs = Array.from(document.querySelectorAll(".categIcon"));
+      imgs.forEach((img) => {
+        img.addEventListener("click", this.selectIcon);
+      });
+    },
+    closeCategoryIcon() {
+      let div = this.$refs.categoryIcon;
+      if (!div.classList.contains("close")) {
+        div.classList.toggle("close");
+      }
+      setTimeout(() => {
+        this.currentSelectionIcon = "";
+        this.addIconVisible = false;
+      }, 300);
+    },
+    selectIcon(event) {
+      let icon = event.target;
+      this.currentSelectionIcon = icon.id;
+      console.log(this.currentSelectionIcon);
+    },
+    chooseIcon() {
+      if (!this.$refs.confirmIconButton.classList.contains("_active")) {
+        this.$refs.confirmIconButton.classList.toggle("_active");
+      }
+
+      if (this.currentSelectionIcon != "") {
+        setTimeout(() => {
+          if (this.$refs.confirmIconButton.classList.contains("_active")) {
+            this.$refs.confirmIconButton.classList.toggle("_active");
+            this.icon = this.currentSelectionIcon;
+            this.closeCategoryIcon();
+          }
+        }, 300);
+      } else {
+        setTimeout(() => {
+          if (this.$refs.confirmIconButton.classList.contains("_active")) {
+            this.$refs.confirmIconButton.classList.toggle("_active");
+          }
+        }, 300);
+      }
+    },
     validateForm(form) {
       this.errors = {};
       Object.keys(form).forEach((key) => {
@@ -198,9 +320,9 @@ export default {
               this.errors[key] =
                 "Имя категории должно быть не длиннее 30-ти символов!";
             }
-            if (!/^[A-Za-zА-Яа-я -]+$/.test(form[key])) {
+            if (!/^[A-Za-zА-Яа-я0-9 -]+$/.test(form[key])) {
               this.errors[key] =
-                "Имя категории может состоять из букв русского и английского алфавита без использования специальных символов!";
+                "Имя категории может состоять из букв русского, английского алфавита и цифр без использования специальных символов!";
             }
             break;
           }
@@ -223,6 +345,8 @@ export default {
                 return;
               }
             });
+            if (Object.keys(this.errors[key]).length == 0)
+              delete this.errors[key];
             break;
           }
         }
@@ -249,9 +373,9 @@ export default {
                 "Имя категории должно быть не длиннее 30-ти символов!";
               return;
             }
-            if (!/^[A-Za-zА-Яа-я -]+$/.test(fieldData)) {
+            if (!/^[A-Za-zА-Яа-я0-9 -]+$/.test(fieldData)) {
               this.errors[field] =
-                "Имя категории может состоять из букв русского и английского алфавита без использования специальных символов!";
+                "Имя категории может состоять из букв русского, английского алфавита и цифр без использования специальных символов!";
               return;
             }
             break;
@@ -303,6 +427,7 @@ export default {
         setTimeout(() => {
           this.$refs.confirmButton.classList.toggle("_active");
           this.$emit(type, form);
+          // this.closePopup();
         }, 300);
       } else {
         console.log(this.errors);

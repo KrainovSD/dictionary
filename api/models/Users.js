@@ -43,6 +43,7 @@ export default mongoose.model('User', userSchema);
             lastReverseRepeat: string,
             dateOfKnown: string,
             wrongs: number,
+            countWordsAtOneTime: number,
         }
     },
     categoriesToLean: {
@@ -79,12 +80,11 @@ export default mongoose.model('User', userSchema);
             lastReverseRepeat: string,
             nextRepeat: string,
             nextReverseRepeat: string,
+            countWrongsToRepeat: number,
+            regularityToRepeat: [of number],
         }
     }
-    options: {
-        countWrongsToRepeat: number,
-        regularityToRepeat: [of number],
-    }
+    
 
 }
 */

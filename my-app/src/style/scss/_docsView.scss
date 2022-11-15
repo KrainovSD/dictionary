@@ -1,0 +1,68 @@
+@function rem($px) {
+    $result : $px / 14;
+    @return $result+rem;
+}
+
+.docs {
+    max-width: rem(1000);
+    margin: 0 auto;
+    display: flex;
+    font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+
+    &__link {
+        width: 30%;
+        height: 85vh;
+        overflow-y: scroll;
+        padding-top: rem(20);
+
+
+
+
+        & h2 {
+            font-weight: 600;
+            color: #273849;
+            font-size: 1.8vw;
+            margin-bottom: rem(15);
+            display: block;
+        }
+    }
+
+    &__header {
+        color: #304455;
+        font-weight: 600;
+        font-size: 1.4vw;
+        margin-top: rem(15);
+        margin-bottom: rem(-2);
+        cursor: pointer;
+        display: inline-block;
+        border-bottom: 2px solid whitesmoke;
+
+        &:hover {
+            border-bottom: 2px solid #42b983;
+        }
+
+        &._active {
+            color: #42b983;
+        }
+    }
+
+    &__chapter {
+        cursor: pointer;
+        margin: rem(15) 0 0 rem(15);
+        color: #304455;
+        font-weight: 600;
+        font-size: 1.2vw;
+        display: inline-block;
+
+        &._active {
+            color: #42b983;
+        }
+    }
+
+    &__content {
+        width: 70%;
+        height: 85vh;
+        overflow-y: scroll;
+        padding: rem(20) rem(40) rem(10) rem(10);
+    }
+}
