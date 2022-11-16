@@ -1845,18 +1845,214 @@ body {
   color: #304455;
   font-weight: 600;
   font-size: 1.2vw;
-  display: inline-block;
+  display: block;
+  transition: all 0.3 ease;
 }
 
 .docs__chapter._active {
   color: #42b983;
+  font-size: 1.22vw;
 }
 
 .docs__content {
   width: 70%;
   height: 85vh;
   overflow-y: scroll;
-  padding: 1.42857rem 2.85714rem 0.71429rem 0.71429rem;
+  padding: 1.42857rem 4.28571rem 0.71429rem 1.42857rem;
+}
+
+.docs__contentHeader {
+  font-weight: 600;
+  color: #273849;
+  font-size: 1.9vw;
+}
+
+.docs__contentChapter {
+  margin: 3.21429rem 0 1.42857rem;
+  padding-bottom: 1.42857rem;
+  border-bottom: 1px solid #ddd;
+  font-weight: 600;
+  color: #273849;
+  font-size: 1.5vw;
+}
+
+.docs__contentChapter::before {
+  content: "";
+  display: block;
+  margin-top: 3.21429rem;
+  height: 3.21429rem;
+  visibility: hidden;
+}
+
+.docs__contentText {
+  color: #304455;
+  word-spacing: 0.07143rem;
+  line-height: 1.6;
+  margin: 1.42857rem 0 1.42857rem;
+  padding-bottom: 1.42857rem;
+  text-align: justify;
+  letter-spacing: 0.07143rem;
+}
+
+.contact {
+  max-width: 71.42857rem;
+  margin: 0 auto;
+  padding: 2.14286rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.contact__info {
+  font-size: 1.4vw;
+  letter-spacing: 0.03571rem;
+  display: block;
+  text-align: center;
+}
+
+.mailer {
+  padding: 3.57143rem 0;
+}
+
+.mailer h1 {
+  font-size: 1.9vw;
+  font-weight: bold;
+  line-height: 1.5;
+}
+
+.mailer p {
+  letter-spacing: 0.07143rem;
+  line-height: 1.2;
+  padding-bottom: 0.71429rem;
+}
+
+.mailer span {
+  display: block;
+  padding: 0.71429rem 0;
+  text-align: center;
+}
+
+.mailer__container {
+  border: 1px solid black;
+  box-shadow: 0px 1px 8px 0px #000000;
+  padding: 0.35714rem;
+  display: flex;
+}
+
+.mailer__containerInput {
+  width: 40%;
+  margin: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mailer__containerTextarea {
+  width: 55%;
+}
+
+.mailer__confirm {
+  margin: 0.71429rem auto;
+  padding: 0.92857rem;
+  font-family: Dreamcast;
+  position: relative;
+  background-color: white;
+  border-radius: 0.21429rem;
+  box-shadow: 0px 0px 4px 0px #ffffff;
+  outline: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+  background-color: #ffffff;
+  font-size: 1.07143rem;
+}
+
+.mailer__confirm:hover {
+  transform: translateY(-0.28571rem);
+  box-shadow: 0px 0.57143rem 0.57143rem -0.42857rem #6092ff;
+  outline: 1px solid rgba(96, 146, 255, 0.5);
+}
+
+.mailer__confirm._active {
+  outline: 1px solid rgba(96, 146, 255, 0);
+  outline-offset: 1.07143rem;
+  transform: translateY(0);
+  box-shadow: 0px 0 0 0 #fff;
+}
+
+.mailer__input {
+  margin-top: 0.35714rem;
+  display: flex;
+  border-radius: 0.21429rem;
+  box-shadow: 0px 0px 4px 0px #ffffff;
+  background-color: white;
+  border: 1px solid white;
+  transition: all 0.3s ease;
+  position: relative;
+  font-size: 1.28571rem;
+  padding: 0.85714rem 0.71429rem;
+  width: 100%;
+}
+
+.mailer__input.textArea {
+  resize: none;
+  height: 15.35714rem;
+}
+
+.mailer__input._focus {
+  border-color: #66afe9;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
+}
+
+.mailer__input._error {
+  border-color: #e96666;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(233, 102, 102, 0.6);
+}
+
+.mailer__tooltip {
+  position: absolute;
+  display: inline-block;
+  left: 100%;
+  top: 50%;
+}
+
+.mailer__tooltip::after {
+  content: attr(tooltip);
+  position: absolute;
+  background: rgba(0, 0, 0, 0.7);
+  text-align: center;
+  color: white;
+  font-size: 1.2vw;
+  min-width: 250px;
+  border-radius: 5px;
+  pointer-events: none;
+  padding: 9px 9px;
+  z-index: 99;
+  left: 200%;
+  top: 50%;
+  margin-left: 8px;
+  transform: translateX(0%) translateY(-50%);
+}
+
+.mailer__tooltip::before {
+  content: "";
+  position: absolute;
+  border-width: 4px 6px 0 6px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.7) transparent transparent transparent;
+  z-index: 99;
+  left: 100%;
+  top: 50%;
+  margin-left: 1px;
+  transform: translatey(-50%) rotate(90deg);
+}
+
+.networks {
+  display: flex;
+  margin: 0 auto;
+}
+
+.networks__item {
+  width: 2.85714rem;
+  height: 2.85714rem;
+  margin-right: 0.71429rem;
+  cursor: pointer;
 }
 
 a {

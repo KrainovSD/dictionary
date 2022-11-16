@@ -134,10 +134,10 @@ export default {
     }
 
     function getCoords(elem) {
-      var box = elem.getBoundingClientRect();
+      let box = elem.getBoundingClientRect();
       return {
-        top: box.top + pageYOffset,
-        left: box.left + pageXOffset,
+        top: box.top + scrollY,
+        left: box.left + scrollX,
       };
     }
 

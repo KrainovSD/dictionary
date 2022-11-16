@@ -313,10 +313,6 @@ export default {
     validateForm(form) {
       this.errors = {};
       Object.keys(form).forEach((key) => {
-        if (typeof form[key] !== "string" && key != "example") {
-          this.errors[key] = "Неверный тип данных!";
-          return;
-        }
         if (
           form[key] == "" &&
           (key == "word" || key == "translate" || key == "transcription")
@@ -324,9 +320,17 @@ export default {
           this.errors[key] = "Поле обязательно для заполнения!";
           return;
         }
+        if (
+          typeof form[key] !== "string" &&
+          key != "example" &&
+          form[key] != ""
+        ) {
+          this.errors[key] = "Неверный тип данных!";
+          return;
+        }
         switch (key) {
           case "word": {
-            if (!/^[a-zA-Z -]+$/.test(form[key])) {
+            if (!/^[a-zA-Z\- ]+$/.test(form[key])) {
               this.errors[key] =
                 "Слово или словосочетание может состоять только из букв английского алфавита, пробела и дефиса!";
               break;
@@ -339,9 +343,9 @@ export default {
             break;
           }
           case "translate": {
-            if (!/^[а-яА-Я -]+$/.test(form[key])) {
+            if (!/^[а-яА-Я \-,]+$/.test(form[key])) {
               this.errors[key] =
-                "Слово или словосочетание может состоять только из букв русского алфавита, пробела и дефиса!";
+                "Слово или словосочетание может состоять только из букв русского алфавита, пробела, дефиса или запятой!";
               break;
             }
             if (form[key].length > 50) {
@@ -367,7 +371,10 @@ export default {
             break;
           }
           case "description": {
-            if (!/^[а-яА-Яa-zA-Z -.,!?]+$/.test(form[key]) && form[key] != "") {
+            if (
+              !/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(form[key]) &&
+              form[key] != ""
+            ) {
               this.errors[key] =
                 "Описание слова или словочетания может состоять только из букв русского и английского алфавита, пробела, дефиса и знаков препинания!";
               break;
@@ -388,7 +395,7 @@ export default {
                 return;
               }
               if (
-                !/^[a-zA-Z  -.,!?]+$/.test(form[key][keyExample]) &&
+                !/^[a-zA-Z  \-.,!?]+$/.test(form[key][keyExample]) &&
                 form[key][keyExample] != ""
               ) {
                 this.errors[key][keyExample] =
@@ -437,9 +444,9 @@ export default {
             break;
           }
           case "translate": {
-            if (!/^[а-яА-Я -]+$/.test(fieldData)) {
+            if (!/^[а-яА-Я \-,]+$/.test(fieldData)) {
               this.errors[field] =
-                "Слово или словосочетание может состоять только из букв русского алфавита, пробела и дефиса!";
+                "Слово или словосочетание может состоять только из букв русского алфавита, пробела, дефиса и запятой!";
               return;
             }
             if (fieldData.length > 50) {
@@ -465,7 +472,10 @@ export default {
             break;
           }
           case "description": {
-            if (!/^[а-яА-Яa-zA-Z -.,!?]+$/.test(fieldData) && fieldData != "") {
+            if (
+              !/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) &&
+              fieldData != ""
+            ) {
               this.errors[field] =
                 "Описание слова или словочетания может состоять только из букв русского и английского алфавита, пробела, дефиса и знаков препинания!";
               return;
@@ -485,7 +495,7 @@ export default {
                 return;
               }
               if (
-                !/^[a-zA-Z  -.,!?]+$/.test(fieldData[keyExample]) &&
+                !/^[a-zA-Z  \-.,!?]+$/.test(fieldData[keyExample]) &&
                 fieldData[keyExample] != ""
               ) {
                 this.errors[field][keyExample] =
