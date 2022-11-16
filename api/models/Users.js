@@ -30,6 +30,7 @@ export default mongoose.model('User', userSchema);
     token: { type: String, required: true },
     statistics: {
         lastLearning: string,
+        learnDate: [string],
         bestStreak: number,
     
     },
@@ -82,6 +83,14 @@ export default mongoose.model('User', userSchema);
             nextReverseRepeat: string,
             countWrongsToRepeat: number,
             regularityToRepeat: [of number],
+        }
+    }
+    revelance: {
+        word: {
+            dateOfCreation: string,
+            maxDateCheck: number,
+            maxCountCheck: number,
+            dateOfDetected: [string], 
         }
     }
     

@@ -21,6 +21,7 @@
         <p class="sign__description" v-if="signType === 'signIn'">
           Вход использует ваш Nickname и пароль
         </p>
+        <!-- NICKNAME -->
         <div
           class="sign__inputContainer"
           :class="errors.nickName ? '_error' : ''"
@@ -42,7 +43,7 @@
             :tooltip="errors.nickName"
           ></div>
         </div>
-
+        <!-- USERNAME -->
         <div
           class="sign__inputContainer"
           v-if="signType === 'signUp'"
@@ -66,7 +67,7 @@
             :tooltip="errors.userName"
           ></div>
         </div>
-
+        <!-- EMAIL -->
         <div
           class="sign__inputContainer"
           v-if="signType === 'signUp'"
@@ -90,7 +91,7 @@
             :tooltip="errors.email"
           ></div>
         </div>
-
+        <!-- PASSWORD -->
         <div
           class="sign__inputContainer"
           :class="errors.password ? '_error' : ''"
@@ -176,7 +177,7 @@
             <p style="color: rgb(253, 69, 69)">{{ errors.password }}</p>
           </div>
         </div>
-
+        <!-- REPEATPASSWORD -->
         <div
           class="sign__inputContainer"
           v-if="signType === 'signUp'"
@@ -213,6 +214,7 @@
             :tooltip="errors.repeatPassword"
           ></div>
         </div>
+        <!-- RESPONSE -->
         <p class="sign__infoMessage">{{ responseMessage }}</p>
 
         <button

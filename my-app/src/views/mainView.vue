@@ -23,6 +23,10 @@
       this.infoHeader = '';
     "
   />
+  <setting-popup
+    v-if="settingPopupVisible == true"
+    @close="settingPopupVisible = false"
+  />
 
   <div class="header">
     <div class="headerContainer">
@@ -65,20 +69,20 @@
             else userMenuVisiable = true;
           "
         >
-          <img src="image/avatar.png" alt="" class="header__avatar" />
-          <p class="header__nickName">{{ userInfo.nickName }}</p>
-          <img src="image/arrow-down.png" alt="" class="header__arrow" />
+          <img src="@/assets/avatar.png" alt="" class="header__avatar" />
+          <p class="header__nickName">{{ userInfo.nickName }} Krainov</p>
+          <img src="@/assets/arrow-down.png" alt="" class="header__arrow" />
         </div>
         <div
           class="header__userSettings"
           :class="userMenuVisiable == true ? '_active' : ''"
         >
-          <div class="header__settingsItem">
-            <img src="image/cog.png" alt="" class="header__settingsIcon" />
+          <div class="header__settingsItem" @click="settingPopupVisible = true">
+            <img src="@/assets/cog.png" alt="" class="header__settingsIcon" />
             <p class="header__settingsTittle">Настройки</p>
           </div>
           <div class="header__settingsItem" @click="logOut">
-            <img src="image/exit.png" alt="" class="header__settingsIcon" />
+            <img src="@/assets/exit.png" alt="" class="header__settingsIcon" />
             <p class="header__settingsTittle">Выход</p>
           </div>
         </div>
@@ -93,11 +97,13 @@
 <script>
 import signForm from "../components/signForm.vue";
 import infoPopup from "../components/infoPopup";
+import settingPopup from "../components/settingPopup.vue";
 //import signTest from "../components/signTest.vue";
 export default {
   components: {
     infoPopup,
     signForm,
+    settingPopup,
     //signTest,
   },
   data() {
@@ -109,6 +115,7 @@ export default {
       infoTittle: "",
       infoHeader: "",
       responseMessage: "",
+      settingPopupVisible: false,
     };
   },
   mounted() {
@@ -116,8 +123,8 @@ export default {
   },
   computed: {
     auth() {
-      let auth = this.$store.getters.getAuth;
-      return auth;
+      //let auth = this.$store.getters.getAuth;
+      return true;
     },
     userInfo() {
       let userInfo = this.$store.getters.getInfo;
@@ -146,6 +153,7 @@ export default {
           console.log(err);
         });
     },
+    openSettingPopup() {},
     openSignIn() {
       if (!this.$refs.signIn.classList.contains("header__signIn_active")) {
         this.$refs.signIn.classList.toggle("header__signIn_active");

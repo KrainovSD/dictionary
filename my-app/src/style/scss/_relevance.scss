@@ -2,3 +2,288 @@
     $result : $px / 14;
     @return $result+rem;
 }
+
+.relevance {
+    max-width: rem(1000);
+    padding: rem(40) 0 rem(20);
+
+    margin: rem(0) auto;
+
+    &__input {
+        display: flex;
+        border-radius: rem(3);
+        box-shadow: 0px 0px 4px 0px #ffffff;
+        background-color: white;
+        border: 1px solid white;
+        transition: all 0.3s ease;
+        position: relative;
+        font-size: rem(16);
+        padding: rem(12) rem(10);
+        width: 100%;
+        margin: 0 auto 0 0;
+
+        &.textArea {
+            resize: none;
+            height: rem(100);
+
+        }
+
+        &._focus {
+            border-color: #66afe9;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+        }
+
+        &._error {
+            border-color: #e96666;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(233, 102, 102, .6);
+        }
+
+    }
+
+
+    &__tooltip {
+        position: absolute;
+        display: inline-block;
+        left: 100%;
+        top: 50%;
+
+        &::after {
+            content: attr(tooltip);
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            text-align: center;
+            color: white;
+            font-size: 1.2vw;
+            min-width: 250px;
+            border-radius: 5px;
+            pointer-events: none;
+            padding: 9px 9px;
+            z-index: 99;
+            left: 200%;
+            top: 50%;
+            margin-left: 8px;
+            transform: translateX(0%) translateY(-50%);
+        }
+
+        &::before {
+            content: "";
+            position: absolute;
+            border-width: 4px 6px 0 6px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.7) transparent transparent transparent;
+            z-index: 99;
+            left: 100%;
+            top: 50%;
+            margin-left: 1px;
+            transform: translatey(-50%) rotate(90deg)
+        }
+    }
+
+    &__newInput {
+        width: 50%;
+        background-color: white;
+        margin: 0 0 0 auto;
+        box-shadow: 0px 1px 8px 0px #000000;
+        overflow-y: scroll;
+        padding: rem(5);
+
+    }
+
+    &__inputItem {
+        font-size: rem(16);
+
+        &.red {
+            color: red;
+        }
+
+        &.green {
+            color: rgb(2, 212, 2);
+        }
+    }
+
+    &__confirmInput {
+        padding: rem(8) rem(13);
+        border-radius: rem(20);
+        font-size: 1.2vw;
+        background-color: #698AFE;
+        box-shadow: 0px 3px 13px 0px #C2CEF0;
+        color: white;
+        font-family: antique;
+        margin: rem(12) 0 0 auto;
+    }
+
+    &__info {
+        text-align: justify;
+        padding: rem(15) 0;
+        font-size: 1.2vw;
+    }
+
+    &__confirmAddWord {
+        padding: rem(8) rem(13);
+        border-radius: rem(20);
+        font-size: 1.2vw;
+        background-color: #698AFE;
+        box-shadow: 0px 3px 13px 0px #C2CEF0;
+        color: white;
+        font-family: antique;
+        margin: auto 0 0 auto;
+    }
+
+    &__containerFiler {
+        width: 60%;
+        display: flex;
+        border-radius: rem(3);
+        box-shadow: 0px 0px 4px 0px #ffffff;
+        background-color: white;
+        border: 1px solid black;
+        transition: all 0.3s ease;
+        padding: rem(8);
+
+
+        &._close {
+            width: 0;
+            border: 0;
+            padding: 0;
+
+            & .relevance__filterIcon {
+                width: rem(42);
+                height: rem(42);
+            }
+        }
+    }
+
+    &__filterIcon {
+        width: rem(24);
+        height: rem(24);
+        transition: all 0.3s ease;
+        margin: auto 0 auto 0;
+        cursor: pointer;
+
+    }
+
+    &__filter {
+        width: 100%;
+        border-radius: rem(3);
+        box-shadow: 0px 0px 4px 0px #ffffff;
+        background-color: white;
+        border: 1px solid white;
+        position: relative;
+        font-size: rem(16);
+        padding: 0 rem(8);
+        margin: auto 0;
+    }
+
+    &__subFilter {
+        position: absolute;
+        right: 0;
+        z-index: 3;
+        background-color: #fff;
+        border-radius: 0.4rem rem;
+        box-shadow: 0 0.1rem 2rem #04061c1a;
+        padding: rem(15) 0;
+        margin-top: rem(20);
+        width: rem(300);
+        transition: all 0.3s ease;
+        overflow: hidden;
+
+        &._close {
+            height: 0;
+            box-shadow: 0;
+            padding: 0;
+        }
+    }
+
+    &__filterItem {
+        font-size: 1.2rem;
+        font-weight: 400;
+
+        padding: rem(5) rem(5);
+        cursor: pointer;
+
+        &:hover {
+            background-color: #f5f5f6;
+        }
+    }
+
+    &__arrow {
+        width: rem(16);
+        height: rem(16);
+        margin: auto 0 auto 0;
+        cursor: pointer;
+        animation: arrowToDown 0.3s ease;
+        animation-fill-mode: forwards;
+
+        &._active {
+
+            animation: arrowToUp 0.3s ease;
+            animation-fill-mode: forwards;
+
+
+        }
+    }
+
+    &__list {
+        margin: rem(15) 0 0 0;
+        background-color: white;
+        box-shadow: 0px 1px 8px 0px #000000;
+        overflow-y: scroll;
+        padding: rem(5);
+        flex: 1;
+    }
+
+    &__word {
+        font-size: rem(20);
+        cursor: pointer;
+
+        &.red {
+            color: red;
+        }
+
+        &._select {
+            background-color: #cecece;
+        }
+    }
+
+    &__searchContainer {
+        display: flex;
+        border-radius: rem(3);
+        box-shadow: 0px 0px 4px 0px #ffffff;
+        background-color: white;
+        border: 1px solid black;
+        transition: all 0.3s ease;
+
+        position: relative;
+        width: 35%;
+        margin: 0 0 0 auto;
+        padding: rem(5);
+
+        &._close {
+            width: 0;
+            padding: 0;
+            border: 0px;
+
+            & .relevance__searchIcon {
+                width: rem(41);
+                height: rem(41);
+                margin-left: rem(-40);
+            }
+        }
+    }
+
+
+
+    &__search {
+        font-size: rem(16);
+        padding: rem(0) rem(15);
+        width: 100%;
+    }
+
+    &__searchIcon {
+        width: rem(24);
+        height: rem(24);
+        margin: auto 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+    }
+}

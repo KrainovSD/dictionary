@@ -13,10 +13,10 @@
 
     &__list {
         margin: rem(30) 0;
-        overflow-y: scroll;
         max-height: rem(375);
         min-height: rem(375);
         box-shadow: 0px 1px 8px 0px #000000;
+        overflow-y: scroll;
         padding: rem(5);
     }
 
@@ -165,6 +165,12 @@
             width: 0;
             padding: 0;
             border: 0;
+
+            & .newWords__searchIcon {
+                width: rem(32);
+                height: rem(32);
+                margin-left: rem(-15);
+            }
         }
     }
 
@@ -180,6 +186,7 @@
         width: rem(22);
         height: rem(22);
         margin: auto 0;
+        transition: all 0.3s ease;
         cursor: pointer;
 
     }
