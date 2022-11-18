@@ -38,10 +38,12 @@
         <div class="category green" id="32">
           <img src="@/assets/email.png" alt="" class="category__icon" />
           <p class="category__name">My favourite words</p>
+          <p class="category__countWords">words: 42{{}}</p>
         </div>
         <div class="category gray" id="32">
           <img src="@/assets/email.png" alt="" class="category__icon" />
           <p class="category__name">My favourite words</p>
+          <p class="category__countWords">42{{}}</p>
         </div>
         <div class="category red" id="32">
           <img src="@/assets/email.png" alt="" class="category__icon" />

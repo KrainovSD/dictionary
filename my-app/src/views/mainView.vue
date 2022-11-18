@@ -25,7 +25,10 @@
   />
   <setting-popup
     v-if="settingPopupVisible == true"
-    @close="settingPopupVisible = false"
+    @close="
+      settingPopupVisible = false;
+      userMenuVisiable = false;
+    "
   />
 
   <div class="header">

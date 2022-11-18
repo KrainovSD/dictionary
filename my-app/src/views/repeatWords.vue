@@ -9,7 +9,11 @@
             class="repeatWords__filterIcon"
             @click="showFilter"
           />
-          <div class="repeatWords__filter" v-if="filterVisible == true">
+          <div
+            class="repeatWords__filter"
+            @click.self="showSubFilter"
+            v-if="filterVisible == true"
+          >
             {{ filterTitle }}
             <div class="repeatWords__subFilter _close" ref="subFilter">
               <p

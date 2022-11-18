@@ -17,6 +17,9 @@
 @import '_contactView';
 @import "_relevance";
 @import "_settingPopup";
+@import "_newPassword";
+@import "_forgotPassword";
+@import "_iconPopup";
 
 a {
     color: inherit // disables style router-link

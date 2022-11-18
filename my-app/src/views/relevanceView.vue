@@ -1,4 +1,12 @@
 <template>
+  <word-popup
+    v-if="wordPopupVisible == true"
+    @close="wordPopupVisible = false"
+    @add="addWord"
+    wordPopupType="add"
+    :form="{ word: currentSelectWord }"
+  />
+
   <div class="relevance">
     <div style="display: flex">
       <div style="position: relative; width: 45%">
@@ -8,7 +16,7 @@
           :class="errorInput != '' ? '_error' : ''"
           placeholder="Внесите слова"
           name="input"
-          maxlength="164"
+          maxlength="210"
           v-model="input"
           autocomplete="off"
         />
@@ -26,21 +34,28 @@
     </div>
     <div style="display: flex">
       <div style="display: flex; flex-direction: column; width: 45%">
-        <button class="relevance__confirmInput">Внести</button>
+        <button class="relevance__confirmInput" @click="addInput">
+          Внести
+        </button>
         <p class="relevance__info">
           Для записи слов и дальнейшей проверке на актуальность, внесите слово
           или слова, используя в качестве разделителя знак запятой или точки с
           запятой, в текстовое поле. <br />
-          С правой стороны слова выводятся с количеством встреч в течении месяца
-          (первая цифра) и с общим количеством встреч с этим словом с момента
-          записи слова (цифра в скобках). <br />
+          С правой стороны экрана слова выводятся с количеством встреч в течении
+          месяца (первая цифра) и с общим количеством встреч с этим словом с
+          момента записи слова (цифра в скобках). <br />
           Слова имеют три цвета при добавлении: зеленый - новое слово, черный -
           количество встреч не превысило минимум, красное - часто встречающееся
           вам слово.<br />
           Чтобы добавить слово, которое часто вам встречается, в любую категорию
           для дальнейшего изучения, выберите подходящее слово в окошке справа.
         </p>
-        <button class="relevance__confirmAddWord">Добавить слово!</button>
+        <button
+          class="relevance__confirmAddWord"
+          @click="wordPopupVisible = true"
+        >
+          Добавить слово!
+        </button>
       </div>
       <div
         style="
@@ -58,7 +73,11 @@
               class="relevance__filterIcon"
               @click="showFilter"
             />
-            <div class="relevance__filter" v-if="filterVisible == true">
+            <div
+              class="relevance__filter"
+              v-if="filterVisible == true"
+              @click.self="showSubFilter"
+            >
               {{ filterTitle }}
               <div class="relevance__subFilter _close" ref="subFilter">
                 <p
@@ -105,9 +124,9 @@
         <div class="relevance__list">
           <p
             class="relevance__word"
-            id="word"
+            id="Flex"
             @click="selectWord"
-            :class="currentSelectWord == 'word' ? '_select' : ''"
+            :class="currentSelectWord == 'Flex' ? '_select' : ''"
           >
             Flex - 1 (2)
           </p>
@@ -120,7 +139,11 @@
 </template>
 
 <script>
+import wordPopup from "../components/wordPopup.vue";
 export default {
+  components: {
+    wordPopup,
+  },
   data() {
     return {
       input: "",
@@ -139,6 +162,8 @@ export default {
         countPerBirthDown: "По общему количеству встреч (по убыванию)",
       },
       currentSelectWord: "",
+      wordPopupVisible: false,
+      categoryPopupVisible: false,
     };
   },
   mounted() {
@@ -217,6 +242,44 @@ export default {
     selectWord(event) {
       let word = event.target.id;
       this.currentSelectWord = word;
+    },
+    validateInput(input) {
+      this.errorInput = "";
+      if (input == "") {
+        this.errorInput = "Заполните поле!";
+        return;
+      }
+      if (typeof input != "string") {
+        this.errorInput = "Неверный тип данных!";
+        return;
+      }
+      if (!/^[a-zA-Z ,\-;]+$/.test(input)) {
+        this.errorInput =
+          "Для записи слов используйте английский алфавит с разделителем в виде запятой или точки с запятой!";
+        return;
+      }
+      if (input.length > 210) {
+        this.errorInput = "Длина списка не должна превышать 200 символов!";
+        return;
+      }
+    },
+    addInput() {
+      this.validateInput(this.input);
+      if (this.errorInput == "") {
+        let words = this.input.split(/[,;]/);
+        console.log(this.input, words);
+        words = words.filter((el) => el.trim() != "");
+        words = words.map((el) => {
+          return el.trim();
+        });
+        console.log(words);
+      }
+    },
+    addWord() {},
+  },
+  watch: {
+    input() {
+      if (this.errorInput != "") this.validateInput(this.input);
     },
   },
 };

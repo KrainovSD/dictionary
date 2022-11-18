@@ -23,6 +23,7 @@ export default mongoose.model('User', userSchema);
     email: { type: String, required: true },
     hash: { type: String, required: true },
     salt: { type: String, required: true },
+    datePassword: string, !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     role: { type: String, required: true },
     confirmed: { type: Boolean, required: true },
     dateRegistration: { type: String, required: true },

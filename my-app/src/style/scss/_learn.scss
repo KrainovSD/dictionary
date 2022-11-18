@@ -19,9 +19,18 @@
         font-size: 1.3vw;
         padding: rem(10) rem(15);
         background-color: #e7fcf5;
-        margin: auto;
         border: 1px solid #7dfad0;
         font-family: Antique;
+    }
+
+    &__linkContainer {
+        margin: rem(20) auto 0 auto;
+
+        & p {
+            text-align: center;
+            padding-top: rem(15);
+            font-size: 1.2vw;
+        }
     }
 }
 

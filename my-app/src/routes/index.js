@@ -8,6 +8,7 @@ import repeatWords from "../views/repeatWords";
 import docsView from "../views/docsView";
 import contactView from "../views/contactView";
 import relevanceView from "../views/relevanceView";
+import newPassword from "../views/newPassword";
 
 const routes = [
   {
@@ -29,6 +30,7 @@ const routes = [
       { path: "/actual", name: "actual", component: relevanceView },
       { path: "/docs", name: "documentation", component: docsView },
       { path: "/contacts", name: "contacts", component: contactView },
+      { path: "/pass/:key", name: "password", component: newPassword },
     ],
   },
 ];

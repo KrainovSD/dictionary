@@ -1,9 +1,13 @@
 <template>
+  <forgot-password
+    v-if="forgotPasswordVisible == true"
+    @close="forgotPasswordVisible = false"
+  />
   <div
     class="modal__backDrop"
     @click.self="closePopup"
     ref="backDrop"
-    style="z-index: 100"
+    style="z-index: 5"
   >
     <div class="sign" :class="signType == 'signUp' ? 'signUp' : ''">
       <img
@@ -234,7 +238,7 @@
           Регистрация
         </button>
         <div class="sign__actions" v-if="signType === 'signIn'">
-          <p class="sign__forgotPassword">
+          <p class="sign__forgotPassword" @click="forgotPasswordVisible = true">
             Забыли <br />
             пароль?
           </p>
@@ -253,7 +257,12 @@
 </template>
 
 <script>
+import forgotPassword from "../components/forgotPassword.vue";
 export default {
+  components: {
+    forgotPassword,
+  },
+  emits: ["close", "sign", "switch"],
   props: {
     signType: String,
     responseMessage: String,
@@ -276,6 +285,7 @@ export default {
       },
       selectPasswordIcon: "eye-crossed.png",
       selectRepeatPasswordIcon: "eye-crossed.png",
+      forgotPasswordVisible: false,
     };
   },
   mounted() {
@@ -351,11 +361,24 @@ export default {
         }, 300);
       }
     },
+    clearData() {
+      this.selectPasswordIcon = "eye-crossed.png";
+      this.selectRepeatPasswordIcon = "eye-crossed.png";
+      this.forgotPasswordVisible = false;
+      this.nickName = "";
+      this.userName = "";
+      this.email = "";
+      this.password = "";
+      this.repeatPassword = "";
+      this.errors = {};
+      this.currentFocusInput = "";
+    },
     switchTypeSign() {
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
         setTimeout(() => {
           this.$refs.backDrop.classList.toggle("close");
+          this.clearData();
           this.$emit("switch");
         }, 300);
       }

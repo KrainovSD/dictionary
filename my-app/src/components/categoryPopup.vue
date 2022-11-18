@@ -1,5 +1,5 @@
 <template>
-  <div class="modal__backDrop" ref="backDrop">
+  <div class="modal__backDrop" style="z-index: 4" ref="backDrop">
     <div class="categoryIcon" ref="categoryIcon" v-if="addIconVisible == true">
       <img
         src="@/assets/close.png"

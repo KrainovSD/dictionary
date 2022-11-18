@@ -1,4 +1,10 @@
 <template>
+  <category-popup
+    v-if="categoryPopupVisible == true"
+    categoryPopupType="add"
+    @close="categoryPopupVisible = false"
+    @add="addCategory"
+  />
   <div class="modal__backDrop" ref="backDrop">
     <div class="wordPopup">
       <img
@@ -16,6 +22,54 @@
         <p class="sign__description" v-else>
           Редактирование слова из выбранной категории
         </p>
+
+        <div
+          class="wordPopup__containerCategory"
+          ref="category"
+          v-if="wordPopupType == 'add'"
+        >
+          <div
+            class="wordPopup__category"
+            @click.self="showSubCategory"
+            :class="errors.category ? '_error' : ''"
+          >
+            {{ categoryTitle }}
+            <div class="wordPopup__subCategory _close" ref="subCategory">
+              <div
+                class="wordPopup__addCategory wordPopup__categoryItem"
+                @click="categoryPopupVisible = true"
+              >
+                <p>Добавить категорию</p>
+                <img
+                  src="@/assets/pluss.png"
+                  alt=""
+                  class="wordPopup__addCategoryImg"
+                />
+              </div>
+              <p
+                class="wordPopup__categoryItem"
+                v-for="(item, index) in categoryList"
+                :key="index"
+                :id="index"
+                @click="
+                  category = index;
+                  showSubCategory();
+                  validateField('category', category);
+                "
+              >
+                {{ item }}
+              </p>
+            </div>
+          </div>
+          <img
+            src="@/assets/arrowDown.png"
+            alt=""
+            class="wordPopup__arrow"
+            @click="showSubCategory"
+            id="arrow"
+            ref="arrow"
+          />
+        </div>
         <!-- WORD -->
         <div style="position: relative">
           <input
@@ -201,13 +255,20 @@
 
 <script>
 import { nextTick } from "@vue/runtime-core";
+import categoryPopup from "../components/categoryPopup.vue";
 export default {
+  components: {
+    categoryPopup,
+  },
+  emits: ["close", "add", "update"],
   props: {
     wordPopupType: String,
+    form: Object,
   },
   data() {
     return {
       currentFocusInput: "",
+      category: "",
       word: "",
       translate: "",
       transcription: "",
@@ -216,6 +277,11 @@ export default {
       image: "",
       errors: {},
       exampleCount: 0,
+      categoryList: {
+        3232323: "Category1",
+        34242424: "Category2",
+      },
+      categoryPopupVisible: false,
     };
   },
   mounted() {
@@ -229,6 +295,12 @@ export default {
     inputs.forEach((input) => {
       input.addEventListener("focusout", this.unSelectInput);
     });
+    if (this.form) {
+      Object.keys(this.form).forEach((field) => {
+        console.log(field);
+        this[field] = this.form[field];
+      });
+    }
   },
   beforeUnmount() {
     let input = Array.from(document.querySelectorAll("input"));
@@ -241,6 +313,12 @@ export default {
       input.removeEventListener("focusout", this.unSelectInput);
     });
   },
+  computed: {
+    categoryTitle() {
+      if (this.category == "") return "Выберите категорию";
+      return this.categoryList[this.category];
+    },
+  },
   methods: {
     closePopup() {
       if (!this.$refs.backDrop.classList.contains("close")) {
@@ -250,6 +328,18 @@ export default {
           this.$emit("close");
         }, 300);
       }
+    },
+    showSubCategory() {
+      let subCategory = this.$refs.subCategory;
+      let arrow = this.$refs.arrow;
+
+      if (!subCategory?.classList?.contains("_close")) {
+        subCategory.classList.toggle("_close");
+        arrow.classList.toggle("_active");
+        return;
+      }
+      subCategory.classList.toggle("_close");
+      arrow.classList.toggle("_active");
     },
     selectInput(event) {
       let input = event.target;
@@ -323,12 +413,20 @@ export default {
         if (
           typeof form[key] !== "string" &&
           key != "example" &&
-          form[key] != ""
+          form[key] != "" &&
+          key != "category"
         ) {
           this.errors[key] = "Неверный тип данных!";
           return;
         }
         switch (key) {
+          case "category": {
+            if (form[key] == "") {
+              this.errors[key] = "Выберите категорию!";
+              return;
+            }
+            break;
+          }
           case "word": {
             if (!/^[a-zA-Z\- ]+$/.test(form[key])) {
               this.errors[key] =
@@ -418,7 +516,11 @@ export default {
     },
     validateField(field, fieldData) {
       if (this.errors[field]) {
-        if (typeof fieldData !== "string" && field != "example") {
+        if (
+          typeof fieldData !== "string" &&
+          field != "example" &&
+          field != "category"
+        ) {
           this.errors[field] = "Неверный тип данных!";
           return;
         }
@@ -430,6 +532,13 @@ export default {
           return;
         }
         switch (field) {
+          case "category": {
+            if (fieldData == "") {
+              this.errors[field] = "Выберите категорию!";
+              return;
+            }
+            break;
+          }
           case "word": {
             if (!/^[a-zA-Z -]+$/.test(fieldData)) {
               this.errors[field] =
@@ -525,6 +634,7 @@ export default {
       }
 
       let form = {
+        category: this.category,
         word: this.word,
         translate: this.translate,
         transcription: this.$refs.transcription.value,
@@ -546,6 +656,7 @@ export default {
         }, 300);
       }
     },
+    addCategory() {},
   },
   watch: {
     word() {
