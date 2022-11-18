@@ -19,300 +19,94 @@
           Изменить аватар
         </button>
       </div>
-      <!-- NICK NAME-->
+
       <div class="setting__userDataContainer data">
         <h1 class="setting__userDataHeader">Данные пользователя</h1>
-        <div class="setting__container">
-          <p class="setting__userDataTittle">Nick пользователя:</p>
-          <p class="setting__userData" v-if="changes.nickNameChange == false">
-            {{}}KrainovSD
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput"
-              :class="errors.nickName ? '_error' : ''"
-              placeholder="Nick пользователя"
-              name="nickName"
-              id="nickName"
-              v-if="changes.nickNameChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="errors.nickName && currentFocusInput == 'nickName'"
-              :tooltip="errors.nickName"
-            ></div>
-          </div>
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.nickNameChange == false"
-            @click="openEditor('nickName')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.nickNameChange == true"
-            @click="changes.nickNameChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.nickNameChange == true"
-            @click="changeField('nickName')"
-          >
-            Сохранить
-          </button>
-        </div>
-        <!-- USERNAME-->
-        <div class="setting__container">
-          <p class="setting__userDataTittle">Имя пользователя:</p>
-          <p class="setting__userData" v-if="changes.userNameChange == false">
-            {{}}Денис
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput"
-              :class="errors.userName ? '_error' : ''"
-              placeholder="Имя пользователя"
-              name="userName"
-              id="userName"
-              v-if="changes.userNameChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="errors.userName && currentFocusInput == 'userName'"
-              :tooltip="errors.userName"
-            ></div>
-          </div>
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.userNameChange == false"
-            @click="openEditor('userName')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.userNameChange == true"
-            @click="changes.userNameChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.userNameChange == true"
-            @click="changeField('userName')"
-          >
-            Сохранить
-          </button>
-        </div>
-        <!-- EMAIL -->
-        <div class="setting__container">
-          <p class="setting__userDataTittle">Email пользователя:</p>
-          <p class="setting__userData" v-if="changes.emailChange == false">
-            {{}}den***osev**@*****.com
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput"
-              :class="errors.email ? '_error' : ''"
-              placeholder="Email пользователя"
-              name="email"
-              id="email"
-              v-if="changes.emailChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="errors.email && currentFocusInput == 'email'"
-              :tooltip="errors.email"
-            ></div>
-          </div>
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.emailChange == false"
-            @click="openEditor('email')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.emailChange == true"
-            @click="changes.emailChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.emailChange == true"
-            @click="changeField('email')"
-          >
-            Сохранить
-          </button>
-        </div>
-        <!-- PASSWORD -->
-        <div class="setting__container">
-          <p class="setting__userDataTittle">
-            Последний раз пароль был изменен:
-          </p>
-          <p class="setting__userData" v-if="changes.passwordChange == false">
-            {{}}12.02.2031
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput"
-              :class="errors.password ? '_error' : ''"
-              placeholder="Укажите email пользователя"
-              name="password"
-              id="password"
-              v-if="changes.passwordChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="errors.password && currentFocusInput == 'password'"
-              :tooltip="errors.password"
-            ></div>
-          </div>
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.passwordChange == false"
-            @click="openEditor('password')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.passwordChange == true"
-            @click="changes.passwordChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.passwordChange == true"
-            @click="changeField('password')"
-          >
-            Сохранить
-          </button>
-        </div>
+        <setting-field
+          title="Nick пользователя:"
+          data="KrainovSD"
+          field="nickName"
+          inputType="String"
+          placeholder="Введите nickName"
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
+        <setting-field
+          title="Имя пользователя:"
+          data="Денис"
+          field="userName"
+          inputType="String"
+          placeholder="Введите имя"
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
+        <setting-field
+          title="Email пользователя:"
+          data="denis****@*mail.**"
+          field="email"
+          inputType="String"
+          placeholder="Введите email"
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
+        <setting-field
+          title="Последний раз пароль был изменен:"
+          data="12.02.2012"
+          field="password"
+          inputType="String"
+          placeholder="Введите email"
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
       </div>
       <div class="setting__userDataContainer">
         <h1 class="setting__userDataHeader">Изученные слова</h1>
-        <!-- COUNT AT ONE TIME -->
-        <div class="setting__container">
-          <p class="setting__userDataTittle">
-            Количество слов предоставляемых за одно повторение:
-          </p>
-          <p
-            class="setting__userData"
-            v-if="changes.countWordsAtOneTimeChange == false"
-          >
-            {{}}50
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput number"
-              :class="errors.countWordsAtOneTime ? '_error' : ''"
-              name="countWordsAtOneTime"
-              id="countWordsAtOneTime"
-              v-if="changes.countWordsAtOneTimeChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="
-                errors.countWordsAtOneTime &&
-                currentFocusInput == 'countWordsAtOneTime'
-              "
-              :tooltip="errors.countWordsAtOneTime"
-            ></div>
-          </div>
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.countWordsAtOneTimeChange == false"
-            @click="openEditor('countWordsAtOneTime')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.countWordsAtOneTimeChange == true"
-            @click="changes.countWordsAtOneTimeChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.countWordsAtOneTimeChange == true"
-            @click="changeField('countWordsAtOneTime')"
-          >
-            Сохранить
-          </button>
-        </div>
+        <setting-field
+          title="Количество слов предоставляемых за одно повторение:"
+          data="50"
+          field="countWordsAtOneTime"
+          inputType="Number"
+          placeholder=""
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
       </div>
       <div class="setting__userDataContainer">
         <h1 class="setting__userDataHeader">Слова на повторении</h1>
-        <!-- COUNT WRONGS -->
-        <div class="setting__container">
-          <p class="setting__userDataTittle">
-            Количество ошибок необходимых для добавления слова:
-          </p>
-          <p
-            class="setting__userData"
-            v-if="changes.countWrongsToRepeatChange == false"
-          >
-            {{}}3
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput number"
-              :class="errors.countWrongsToRepeat ? '_error' : ''"
-              name="countWrongsToRepeat"
-              id="countWrongsToRepeat"
-              v-if="changes.countWrongsToRepeatChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="
-                errors.countWrongsToRepeat &&
-                currentFocusInput == 'countWrongsToRepeat'
-              "
-              :tooltip="errors.countWrongsToRepeat"
-            ></div>
-          </div>
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.countWrongsToRepeatChange == false"
-            @click="openEditor('countWrongsToRepeat')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.countWrongsToRepeatChange == true"
-            @click="changes.countWrongsToRepeatChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.countWrongsToRepeatChange == true"
-            @click="changeField('countWrongsToRepeat')"
-          >
-            Сохранить
-          </button>
-        </div>
+        <setting-field
+          title="Количество ошибок необходимых для добавления слова:"
+          data="3"
+          field="countWrongsToRepeat"
+          inputType="Number"
+          placeholder=""
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
+
         <!-- REGULARITY TO REPEAT -->
         <div
           class="setting__container"
@@ -378,108 +172,32 @@
       </div>
       <div class="setting__userDataContainer">
         <h1 class="setting__userDataHeader">Проверка на актуальность</h1>
-        <!-- MAX COUNT CHECK -->
-        <div class="setting__container">
-          <p class="setting__userDataTittle">
-            Количество встреч со словом за выбранный промежуток времени:
-          </p>
-          <p
-            class="setting__userData"
-            v-if="changes.maxCountCheckChange == false"
-          >
-            {{}}3
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput number"
-              :class="errors.maxCountCheck ? '_error' : ''"
-              name="maxCountCheck"
-              id="maxCountCheck"
-              v-if="changes.maxCountCheckChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="
-                errors.maxCountCheck && currentFocusInput == 'maxCountCheck'
-              "
-              :tooltip="errors.maxCountCheck"
-            ></div>
-          </div>
-
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.maxCountCheckChange == false"
-            @click="openEditor('maxCountCheck')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.maxCountCheckChange == true"
-            @click="changes.maxCountCheckChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.maxCountCheckChange == true"
-            @click="changeField('maxCountCheck')"
-          >
-            Сохранить
-          </button>
-        </div>
-        <!-- MAX DATE CHECK -->
-        <div class="setting__container">
-          <p class="setting__userDataTittle">
-            Промежуток времени, на котором считаются встречи (в днях):
-          </p>
-          <p
-            class="setting__userData"
-            v-if="changes.maxDateCheckChange == false"
-          >
-            {{}}45
-          </p>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="setting__userDataInput number"
-              :class="errors.maxDateCheck ? '_error' : ''"
-              name="maxDateCheck"
-              id="maxDateCheck"
-              v-if="changes.maxDateCheckChange == true"
-              autocomplete="off"
-            />
-            <div
-              class="wordPopup__tooltip"
-              v-if="errors.maxDateCheck && currentFocusInput == 'maxDateCheck'"
-              :tooltip="errors.maxDateCheck"
-            ></div>
-          </div>
-
-          <button
-            class="setting__userDataReplace _change"
-            v-if="changes.maxDateCheckChange == false"
-            @click="openEditor('maxDateCheck')"
-          >
-            Изменить
-          </button>
-          <img
-            src="@/assets/closeRed.png"
-            alt=""
-            class="setting__userDataClose"
-            v-if="changes.maxDateCheckChange == true"
-            @click="changes.maxDateCheckChange = false"
-          />
-          <button
-            class="setting__userDataReplace"
-            v-if="changes.maxDateCheckChange == true"
-            @click="changeField('maxDateCheck')"
-          >
-            Сохранить
-          </button>
-        </div>
+        <setting-field
+          title="Количество ошибок необходимых для добавления слова:"
+          data="3"
+          field="maxCountCheck"
+          inputType="Number"
+          placeholder=""
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
+        <setting-field
+          title="Промежуток времени, на котором считаются встречи (в днях):"
+          data="45"
+          field="maxDateCheck"
+          inputType="Number"
+          placeholder=""
+          :changes="changes"
+          :errors="errors"
+          :currentFocusInput="currentFocusInput"
+          @close="(payload) => closeEditor(payload)"
+          @change="(payload) => changeField(payload)"
+          @edit="(payload) => openEditor(payload)"
+        />
       </div>
     </div>
   </div>
@@ -488,11 +206,13 @@
 <script>
 import { nextTick } from "@vue/runtime-core";
 import iconPopup from "../components/iconPopup.vue";
+import settingField from "../components/settingField.vue";
 export default {
   emits: ["close"],
 
   components: {
     iconPopup,
+    settingField,
   },
   props: {
     test: String,
@@ -570,6 +290,9 @@ export default {
           input.addEventListener("keydown", this.forbiddenLetter);
         });
       }
+    },
+    closeEditor(fieldChange) {
+      this.changes[fieldChange] = false;
     },
     validateField(field, fieldData) {
       if (fieldData.length == 0) {
