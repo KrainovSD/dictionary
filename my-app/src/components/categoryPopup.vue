@@ -49,22 +49,17 @@
           Редактирование выбранной категории
         </p>
 
-        <div style="position: relative">
-          <input
-            type="text"
-            class="categoryPopup__input"
-            :class="errors.name ? '_error' : ''"
-            placeholder="Name"
-            name="name"
+        <div class="categoryPopup__inputContainer">
+          <input-tooltip
+            type="input"
             v-model="name"
-            autocomplete="off"
+            field="name"
+            fontSize="16"
+            :errors="errors"
+            placeholder="Name"
           />
-          <div
-            class="wordPopup__tooltip"
-            v-if="errors.name && currentFocusInput == 'name'"
-            :tooltip="errors.name"
-          ></div>
         </div>
+
         <div class="categoryPopup__containerIcon">
           <div class="categoryPopup__addIcon" @click="openCategoryIcon">
             Выбрать иконку
@@ -137,7 +132,11 @@
 
 <script>
 import { nextTick } from "@vue/runtime-core";
+import inputTooltip from "../components/inputTooltip.vue";
 export default {
+  components: {
+    inputTooltip,
+  },
   props: {
     categoryPopupType: String,
   },

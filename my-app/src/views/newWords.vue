@@ -14,8 +14,9 @@
     @update="updateCategory"
   />
   <learn-card
+    :learnType="learnType"
     v-if="learnCardVisible == true"
-    @close="this.learnCardVisible = false"
+    @close="learnCardVisible = false"
   />
   <div class="learnPlace__container">
     <div class="categories">
@@ -63,11 +64,17 @@
         </div>
       </div>
       <div class="categories__startLearn">
-        <button class="categories__startButton normal red">
+        <button
+          class="categories__startButton normal red"
+          @click="startLearn('standart')"
+        >
           Обычный режим
         </button>
         <button class="categories__startButton start">Начать учить</button>
-        <button class="categories__startButton reverse red">
+        <button
+          class="categories__startButton reverse red"
+          @click="startLearn('reverse')"
+        >
           Обратный режим
         </button>
       </div>
@@ -205,11 +212,12 @@ export default {
       selectedCategory: "",
       categoryPopupVisible: false,
       wordPopupVisible: false,
-      learnCardVisible: false,
       wordPopupType: "",
       categoryPopupType: "",
       searching: false,
       search: "",
+      learnCardVisible: false,
+      learnType: "standart",
     };
   },
   methods: {
@@ -223,6 +231,10 @@ export default {
       }
       search.classList.toggle("_close");
       this.searching = true;
+    },
+    startLearn(type) {
+      this.learnType = type;
+      this.learnCardVisible = true;
     },
     openWordPopup(type) {
       this.wordPopupVisible = true;

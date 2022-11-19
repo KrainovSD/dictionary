@@ -3,12 +3,7 @@
     v-if="forgotPasswordVisible == true"
     @close="forgotPasswordVisible = false"
   />
-  <div
-    class="modal__backDrop"
-    @click.self="closePopup"
-    ref="backDrop"
-    style="z-index: 5"
-  >
+  <div class="modal__backDrop" ref="backDrop" style="z-index: 5">
     <div class="sign" :class="signType == 'signUp' ? 'signUp' : ''">
       <img
         src="@/assets/close.png"
@@ -25,199 +20,79 @@
         <p class="sign__description" v-if="signType === 'signIn'">
           Вход использует ваш Nickname и пароль
         </p>
-        <!-- NICKNAME -->
-        <div
-          class="sign__inputContainer"
-          :class="errors.nickName ? '_error' : ''"
-        >
-          <div class="sign__iconInputContainer">
-            <img src="@/assets/user.png" alt="" class="sign__inputIcon" />
-          </div>
-          <input
-            type="text"
-            class="sign__input"
-            placeholder="NickName"
-            name="nickName"
+
+        <div class="sign__inputIconContainer">
+          <input-tooltip-icon
             v-model="nickName"
-            autocomplete="off"
-          />
-          <div
-            class="sign__tooltip"
-            v-if="errors.nickName && currentFocusInput == 'nickName'"
-            :tooltip="errors.nickName"
-          ></div>
-        </div>
-        <!-- USERNAME -->
-        <div
-          class="sign__inputContainer"
-          v-if="signType === 'signUp'"
-          :class="errors.userName ? '_error' : ''"
-        >
-          <div class="sign__iconInputContainer">
-            <img src="@/assets/userName.png" alt="" class="sign__inputIcon" />
-          </div>
-
-          <input
             type="text"
-            class="sign__input"
-            placeholder="UserName"
-            name="userName"
+            field="nickName"
+            icon="user.png"
+            placeholder="NickName"
+            fontSize="14"
+            :errors="errors"
+          />
+        </div>
+
+        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+          <input-tooltip-icon
             v-model="userName"
-            autocomplete="off"
-          />
-          <div
-            class="sign__tooltip"
-            v-if="errors.userName && currentFocusInput == 'userName'"
-            :tooltip="errors.userName"
-          ></div>
-        </div>
-        <!-- EMAIL -->
-        <div
-          class="sign__inputContainer"
-          v-if="signType === 'signUp'"
-          :class="errors.email ? '_error' : ''"
-        >
-          <div class="sign__iconInputContainer">
-            <img src="@/assets/email.png" alt="" class="sign__inputIcon" />
-          </div>
-
-          <input
             type="text"
-            class="sign__input"
-            placeholder="Email"
-            name="email"
+            field="userName"
+            icon="userName.png"
+            placeholder="UserName"
+            fontSize="14"
+            :errors="errors"
+          />
+        </div>
+
+        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+          <input-tooltip-icon
             v-model="email"
-            autocomplete="off"
+            type="text"
+            field="email"
+            icon="email.png"
+            placeholder="Email"
+            fontSize="14"
+            :errors="errors"
           />
-          <div
-            class="sign__tooltip"
-            v-if="errors.email && currentFocusInput == 'email'"
-            :tooltip="errors.email"
-          ></div>
         </div>
-        <!-- PASSWORD -->
-        <div
-          class="sign__inputContainer"
-          :class="errors.password ? '_error' : ''"
-        >
-          <div class="sign__iconInputContainer">
-            <img src="@/assets/house-key.png" alt="" class="sign__inputIcon" />
-          </div>
 
-          <input
-            type="password"
-            class="sign__input"
-            placeholder="Password"
-            ref="password"
-            name="password"
+        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+          <input-tooltip-icon
             v-model="password"
-            autocomplete="off"
+            type="passwordAdvice"
+            field="password"
+            icon="house-key.png"
+            placeholder="Password"
+            fontSize="14"
+            :errors="errors"
           />
-          <div class="sign__iconInputContainer">
-            <img
-              :src="passwordIcon"
-              alt=""
-              class="sign__visiblePassword"
-              ref="eyeIcon"
-              @click.stop="switchTypeInput('password', 'eyeIcon')"
-            />
-          </div>
-          <div
-            class="sign__tooltip"
-            v-if="
-              errors.password &&
-              currentFocusInput == 'password' &&
-              signType == 'signIn'
-            "
-            :tooltip="errors.password"
-          ></div>
-          <div
-            class="sign__tooltipPassword"
-            v-if="currentFocusInput == 'password' && signType == 'signUp'"
-          >
-            <p>Надежный пароль должен содержать:</p>
-            <br />
-            <ul>
-              <li
-                class="sign__advicePassword"
-                :class="advicesPassword.minSize ? '_active' : ''"
-              >
-                8 или более символов;
-              </li>
-              <li
-                class="sign__advicePassword"
-                :class="advicesPassword.numberAndLetter ? '_active' : ''"
-              >
-                Сочетаниe букв и цифр;
-              </li>
-              <li
-                class="sign__advicePassword"
-                :class="advicesPassword.lowerAndUpper ? '_active' : ''"
-              >
-                Сочетание верхнего и нижнего регистра
-              </li>
-              <li
-                class="sign__advicePassword"
-                :class="advicesPassword.specialSymbol ? '_active' : ''"
-              >
-                Специальные символы;
-              </li>
-              <li
-                class="sign__advicePassword"
-                :class="advicesPassword.blackList ? '_active' : ''"
-              >
-                Слова не входящие в черный список паролей;
-              </li>
-            </ul>
-            <br />
-            <p>Сложность пароля:</p>
-            <div class="sign__difficultyPassword">
-              <div
-                class="sign__difficultyPasswordBar"
-                :class="barOfDifficultyPassword"
-              ></div>
-            </div>
-            <br />
-            <p style="color: rgb(253, 69, 69)">{{ errors.password }}</p>
-          </div>
         </div>
-        <!-- REPEATPASSWORD -->
-        <div
-          class="sign__inputContainer"
-          v-if="signType === 'signUp'"
-          :class="errors.repeatPassword ? '_error' : ''"
-        >
-          <div class="sign__iconInputContainer">
-            <img src="@/assets/padlock.png" alt="" class="sign__inputIcon" />
-          </div>
 
-          <input
+        <div class="sign__inputIconContainer" v-if="signType === 'signIn'">
+          <input-tooltip-icon
+            v-model="password"
             type="password"
-            class="sign__input"
-            placeholder="Repeat Password"
-            ref="repeatPassword"
-            name="repeatPassword"
-            v-model="repeatPassword"
-            autocomplete="off"
+            field="password"
+            icon="house-key.png"
+            placeholder="Password"
+            fontSize="14"
+            :errors="errors"
           />
-
-          <div class="sign__iconInputContainer">
-            <img
-              :src="repeatPasswordIcon"
-              alt=""
-              class="sign__visiblePassword"
-              ref="repeatEyeIcon"
-              @click.stop="switchTypeInput('repeatPassword', 'repeatEyeIcon')"
-            />
-          </div>
-          <div
-            class="sign__tooltip"
-            v-if="
-              errors.repeatPassword && currentFocusInput == 'repeatPassword'
-            "
-            :tooltip="errors.repeatPassword"
-          ></div>
         </div>
+
+        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+          <input-tooltip-icon
+            v-model="repeatPassword"
+            type="password"
+            field="repeatPassword"
+            icon="padlock.png"
+            placeholder="Repeat Password"
+            fontSize="14"
+            :errors="errors"
+          />
+        </div>
+
         <!-- RESPONSE -->
         <p class="sign__infoMessage">{{ responseMessage }}</p>
 
@@ -258,9 +133,11 @@
 
 <script>
 import forgotPassword from "../components/forgotPassword.vue";
+import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 export default {
   components: {
     forgotPassword,
+    inputTooltipIcon,
   },
   emits: ["close", "sign", "switch"],
   props: {
@@ -275,81 +152,8 @@ export default {
       password: "",
       repeatPassword: "",
       errors: {},
-      currentFocusInput: "",
-      advicesPassword: {
-        minSize: false,
-        numberAndLetter: false,
-        lowerAndUpper: false,
-        specialSymbol: false,
-        blackList: false,
-      },
-      selectPasswordIcon: "eye-crossed.png",
-      selectRepeatPasswordIcon: "eye-crossed.png",
       forgotPasswordVisible: false,
     };
-  },
-  mounted() {
-    let inputs = Array.from(document.querySelectorAll("input"));
-    inputs.forEach((input) => {
-      input.addEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.addEventListener("focusout", this.unSelectInput);
-    });
-  },
-  beforeUnmount() {
-    let inputs = Array.from(document.querySelectorAll("input"));
-    inputs.forEach((input) => {
-      input.removeEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.removeEventListener("focusout", this.unSelectInput);
-    });
-  },
-  computed: {
-    difficultyPassword() {
-      let difficulty = 0;
-      Object.values(this.advicesPassword).forEach((value) => {
-        if (value) difficulty += 1;
-      });
-      return difficulty;
-    },
-    barOfDifficultyPassword() {
-      let style = "";
-      switch (this.difficultyPassword) {
-        case 1:
-          style = "_veryEasy";
-          break;
-        case 2:
-          style = "_easy";
-          break;
-        case 3:
-          style = "_medium";
-          break;
-        case 4:
-          style = "_high";
-          break;
-        case 5:
-          style = "_veryHigh";
-          break;
-        default:
-          style = "";
-          break;
-      }
-      return style;
-    },
-    passwordIcon() {
-      if (!this.selectPasswordIcon != "") {
-        return;
-      }
-      return require(`../assets/${this.selectPasswordIcon}`);
-    },
-    repeatPasswordIcon() {
-      if (!this.selectRepeatPasswordIcon != "") {
-        return;
-      }
-      return require(`../assets/${this.selectRepeatPasswordIcon}`);
-    },
   },
   methods: {
     closePopup() {
@@ -362,8 +166,6 @@ export default {
       }
     },
     clearData() {
-      this.selectPasswordIcon = "eye-crossed.png";
-      this.selectRepeatPasswordIcon = "eye-crossed.png";
       this.forgotPasswordVisible = false;
       this.nickName = "";
       this.userName = "";
@@ -371,7 +173,6 @@ export default {
       this.password = "";
       this.repeatPassword = "";
       this.errors = {};
-      this.currentFocusInput = "";
     },
     switchTypeSign() {
       if (!this.$refs.backDrop.classList.contains("close")) {
@@ -381,50 +182,6 @@ export default {
           this.clearData();
           this.$emit("switch");
         }, 300);
-      }
-    },
-    switchTypeInput(kindOfInput, kindOfEye) {
-      if (this.$refs[kindOfInput].type === "password") {
-        if (!this.$refs[kindOfEye].classList.contains("_active")) {
-          this.$refs[kindOfEye].classList.toggle("_active");
-          setTimeout(() => {
-            this.$refs[kindOfEye].classList.toggle("_active");
-          }, 300);
-          setTimeout(() => {
-            this.$refs[kindOfInput].type = "text";
-            if (kindOfEye == "eyeIcon") this.selectPasswordIcon = "eye.png";
-            else if (kindOfEye == "repeatEyeIcon")
-              this.selectRepeatPasswordIcon = "eye.png";
-          }, 250);
-        }
-      } else if (this.$refs[kindOfInput].type === "text") {
-        if (!this.$refs[kindOfEye].classList.contains("_active")) {
-          this.$refs[kindOfEye].classList.toggle("_active");
-          setTimeout(() => {
-            this.$refs[kindOfEye].classList.toggle("_active");
-          }, 300);
-          setTimeout(() => {
-            this.$refs[kindOfInput].type = "password";
-            if (kindOfEye == "eyeIcon")
-              this.selectPasswordIcon = "eye-crossed.png";
-            else if (kindOfEye == "repeatEyeIcon")
-              this.selectRepeatPasswordIcon = "eye-crossed.png";
-          }, 250);
-        }
-      }
-    },
-    selectInput(event) {
-      let parent = event.target.parentElement;
-      if (!parent.classList.contains("_focus")) {
-        parent.classList.toggle("_focus");
-        this.currentFocusInput = event.target.name;
-      }
-    },
-    unSelectInput(event) {
-      let parent = event.target.parentElement;
-      if (parent.classList.contains("_focus")) {
-        parent.classList.toggle("_focus");
-        this.currentFocusInput = "";
       }
     },
     validateForm(form) {
@@ -555,32 +312,6 @@ export default {
         delete this.errors[field];
       }
     },
-    adviceForPassword(password) {
-      this.advicesPassword = {
-        minSize: false,
-        numberAndLetter: false,
-        lowerAndUpper: false,
-        specialSymbol: false,
-        blackList: false,
-      };
-
-      let blackList = ["password", "world"];
-      if (password.length > 8) {
-        this.advicesPassword.minSize = true;
-      }
-      if (/\d/.test(password) && /[A-Za-zА-Яа-я]/.test(password)) {
-        this.advicesPassword.numberAndLetter = true;
-      }
-      if (/[A-ZА-Я]/.test(password) && /[a-zа-я]/.test(password)) {
-        this.advicesPassword.lowerAndUpper = true;
-      }
-      if (/[!@#$%^&*()_+=\-"№;%:?\\/[\]{}|'~` ><,.]/.test(password)) {
-        this.advicesPassword.specialSymbol = true;
-      }
-      if (!blackList.includes(password)) {
-        this.advicesPassword.blackList = true;
-      }
-    },
     sendData() {
       if (!this.$refs.logInButton.classList.contains("_active")) {
         this.$refs.logInButton.classList.toggle("_active");
@@ -612,7 +343,6 @@ export default {
   },
   watch: {
     password() {
-      this.adviceForPassword(this.password);
       this.validateField("password", this.password);
     },
     nickName() {

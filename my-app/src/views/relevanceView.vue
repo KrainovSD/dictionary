@@ -7,22 +7,27 @@
     :form="{ word: currentSelectWord }"
   />
 
-  <div class="relevance">
+  <div class="relevance appear">
     <div style="display: flex">
       <div style="position: relative; width: 45%">
         <textarea
           type="text"
           class="relevance__input textArea"
-          :class="errorInput != '' ? '_error' : ''"
+          :class="[
+            errorInput != '' ? '_error' : '',
+            focusInput == true ? '_focus' : '',
+          ]"
           placeholder="Внесите слова"
           name="input"
           maxlength="210"
           v-model="input"
           autocomplete="off"
+          @focus="focusInput = true"
+          @focusout="focusInput = false"
         />
         <div
           class="relevance__tooltip"
-          v-if="errorInput != '' && currentFocusInput == true"
+          v-if="errorInput != '' && focusInput == true"
           :tooltip="errorInput"
         ></div>
       </div>
@@ -66,44 +71,13 @@
         "
       >
         <div style="height: 52px; display: flex">
-          <div class="relevance__containerFiler _close" ref="filter">
-            <img
-              src="@/assets/filter.png"
-              alt=""
-              class="relevance__filterIcon"
-              @click="showFilter"
-            />
-            <div
-              class="relevance__filter"
-              v-if="filterVisible == true"
-              @click.self="showSubFilter"
-            >
-              {{ filterTitle }}
-              <div class="relevance__subFilter _close" ref="subFilter">
-                <p
-                  class="relevance__filterItem"
-                  v-for="(item, index) in filterList"
-                  :key="index"
-                  :id="index"
-                  @click="
-                    filter = index;
-                    showSubFilter();
-                  "
-                >
-                  {{ item }}
-                </p>
-              </div>
-            </div>
-            <img
-              src="@/assets/arrowDown.png"
-              alt=""
-              class="relevance__arrow"
-              v-if="filterVisible == true"
-              @click="showSubFilter"
-              id="arrow"
-              ref="arrow"
+          <div class="relevance__filterContainer">
+            <slide-filter
+              :filterList="filterList"
+              @change="(payload) => (filter = payload)"
             />
           </div>
+
           <div class="relevance__searchContainer _close" ref="search">
             <img
               src="@/assets/search.png"
@@ -140,15 +114,17 @@
 
 <script>
 import wordPopup from "../components/wordPopup.vue";
+import slideFilter from "../components/slideFilter.vue";
 export default {
   components: {
     wordPopup,
+    slideFilter,
   },
   data() {
     return {
       input: "",
       errorInput: "",
-      currentFocusInput: false,
+      focusInput: false,
       searching: false,
       search: "",
       filter: "letterUp",
@@ -166,36 +142,12 @@ export default {
       categoryPopupVisible: false,
     };
   },
-  mounted() {
-    let input = document.querySelector("textarea");
-    input.addEventListener("focus", this.selectInput);
-    input.addEventListener("focusout", this.unSelectInput);
-  },
-  beforeUnmount() {
-    let input = document.querySelector("textarea");
-    input.removeEventListener("focus", this.selectInput);
-    input.removeEventListener("focusout", this.unSelectInput);
-  },
   computed: {
     filterTitle() {
       return this.filterList[this.filter];
     },
   },
   methods: {
-    selectInput(event) {
-      let input = event.target;
-      if (!input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = true;
-      }
-    },
-    unSelectInput(event) {
-      let input = event.target;
-      if (input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = false;
-      }
-    },
     showFilter() {
       let filter = this.$refs.filter;
       let subFilter = this.$refs.subFilter;

@@ -70,40 +70,28 @@
             ref="arrow"
           />
         </div>
-        <!-- WORD -->
-        <div style="position: relative">
-          <input
-            type="text"
-            class="wordPopup__input"
-            :class="errors.word ? '_error' : ''"
-            placeholder="*Word"
-            name="word"
+
+        <div class="wordPopup__inputContainer">
+          <input-tooltip
+            type="input"
             v-model="word"
-            autocomplete="off"
+            field="word"
+            fontSize="16"
+            :errors="errors"
+            placeholder="*Word"
           />
-          <div
-            class="wordPopup__tooltip"
-            v-if="errors.word && currentFocusInput == 'word'"
-            :tooltip="errors.word"
-          ></div>
         </div>
-        <!-- TRANSLATE -->
-        <div style="position: relative">
-          <input
-            type="text"
-            class="wordPopup__input"
-            :class="errors.translate ? '_error' : ''"
-            placeholder="*Translate"
-            name="translate"
+        <div class="wordPopup__inputContainer">
+          <input-tooltip
+            type="input"
             v-model="translate"
-            autocomplete="off"
+            field="translate"
+            fontSize="16"
+            :errors="errors"
+            placeholder="*Translate"
           />
-          <div
-            class="wordPopup__tooltip"
-            v-if="errors.translate && currentFocusInput == 'translate'"
-            :tooltip="errors.translate"
-          ></div>
         </div>
+
         <!-- TRANSCTIPTION -->
         <div style="position: relative">
           <div
@@ -182,22 +170,16 @@
           ></div>
         </div>
         <!-- DESCRIPTION -->
-        <div style="position: relative">
-          <textarea
-            type="text"
-            class="wordPopup__input textArea"
-            :class="errors.description ? '_error' : ''"
-            placeholder="Description"
-            name="description"
-            maxlength="164"
+        <div class="wordPopup__textareaContainer">
+          <input-tooltip
+            type="textarea"
+            maxLength="164"
             v-model="description"
-            autocomplete="off"
+            field="description"
+            fontSize="16"
+            :errors="errors"
+            placeholder="Description"
           />
-          <div
-            class="wordPopup__tooltip"
-            v-if="errors.description && currentFocusInput == 'description'"
-            :tooltip="errors.description"
-          ></div>
         </div>
         <!-- EXAMPLE -->
         <div
@@ -256,9 +238,11 @@
 <script>
 import { nextTick } from "@vue/runtime-core";
 import categoryPopup from "../components/categoryPopup.vue";
+import inputTooltip from "../components/inputTooltip";
 export default {
   components: {
     categoryPopup,
+    inputTooltip,
   },
   emits: ["close", "add", "update"],
   props: {

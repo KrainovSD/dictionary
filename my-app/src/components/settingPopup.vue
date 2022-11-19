@@ -199,6 +199,13 @@
           @edit="(payload) => openEditor(payload)"
         />
       </div>
+      <div class="setting__userDataContainer">
+        <h1 class="setting__userDataHeader">Резервная копия</h1>
+        <div class="setting__backup">
+          <button class="setting__backupButton export">Экспортировать</button>
+          <button class="setting__backupButton import">Импортировать</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -213,9 +220,6 @@ export default {
   components: {
     iconPopup,
     settingField,
-  },
-  props: {
-    test: String,
   },
   data() {
     return {

@@ -1,5 +1,5 @@
 <template>
-  <div class="learnType">
+  <div class="learnType appear">
     <div class="learnType__container">
       <div class="learnType__linkContainer">
         <router-link :to="{ name: 'known' }" class="learnType__button">

@@ -10,46 +10,29 @@
       <div class="sign__container">
         <h1 class="sign__header">Восстановление пароля</h1>
         <p class="sign__description">Укажите свой Nickname и Email</p>
-        <div
-          class="sign__inputContainer"
-          :class="errors.nickName ? '_error' : ''"
-        >
-          <div class="sign__iconInputContainer">
-            <img src="@/assets/user.png" alt="" class="sign__inputIcon" />
-          </div>
-          <input
-            type="text"
-            class="sign__input"
-            placeholder="NickName"
-            name="nickName"
+        <div class="sign__inputIconContainer">
+          <input-tooltip-icon
             v-model="nickName"
-            autocomplete="off"
-          />
-          <div
-            class="sign__tooltip"
-            v-if="errors.nickName && currentFocusInput == 'nickName'"
-            :tooltip="errors.nickName"
-          ></div>
-        </div>
-        <div class="sign__inputContainer" :class="errors.email ? '_error' : ''">
-          <div class="sign__iconInputContainer">
-            <img src="@/assets/email.png" alt="" class="sign__inputIcon" />
-          </div>
-
-          <input
             type="text"
-            class="sign__input"
-            placeholder="Email"
-            name="email"
-            v-model="email"
-            autocomplete="off"
+            field="nickName"
+            icon="user.png"
+            placeholder="NickName"
+            fontSize="14"
+            :errors="errors"
           />
-          <div
-            class="sign__tooltip"
-            v-if="errors.email && currentFocusInput == 'email'"
-            :tooltip="errors.email"
-          ></div>
         </div>
+        <div class="sign__inputIconContainer">
+          <input-tooltip-icon
+            v-model="email"
+            type="text"
+            field="email"
+            icon="email.png"
+            placeholder="Email"
+            fontSize="14"
+            :errors="errors"
+          />
+        </div>
+
         <button class="sign__logInButton" ref="confirm" @click.stop="sendData">
           Отправить
         </button>
@@ -59,31 +42,17 @@
 </template>
 
 <script>
+import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 export default {
-  props: {
-    test: String,
+  components: {
+    inputTooltipIcon,
   },
   data() {
     return {
       nickName: "",
       email: "",
       errors: {},
-      currentFocusInput: "",
     };
-  },
-  mounted() {
-    let inputs = Array.from(document.querySelectorAll("input"));
-    inputs.forEach((input) => {
-      input.addEventListener("focus", this.selectInput);
-      input.addEventListener("focusout", this.unSelectInput);
-    });
-  },
-  beforeUnmount() {
-    let inputs = Array.from(document.querySelectorAll("input"));
-    inputs.forEach((input) => {
-      input.removeEventListener("focus", this.selectInput);
-      input.removeEventListener("focusout", this.unSelectInput);
-    });
   },
 
   methods: {
@@ -94,21 +63,6 @@ export default {
           this.$refs.backDrop.classList.toggle("close");
           this.$emit("close");
         }, 300);
-      }
-    },
-    selectInput(event) {
-      let parent = event.target.parentElement;
-      let input = event.target;
-      if (!parent.classList.contains("_focus")) {
-        parent.classList.toggle("_focus");
-        this.currentFocusInput = input.name;
-      }
-    },
-    unSelectInput(event) {
-      let parent = event.target.parentElement;
-      if (parent.classList.contains("_focus")) {
-        parent.classList.toggle("_focus");
-        this.currentFocusInput = "";
       }
     },
     validateForm(form) {

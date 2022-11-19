@@ -13,6 +13,10 @@ body {
     background-color: whitesmoke;
 }
 
+.appear {
+    animation: appearPage 0.3s linear;
+}
+
 .workplaceContainer {
     max-width: rem(1000);
     margin: auto;

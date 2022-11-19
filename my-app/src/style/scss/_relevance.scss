@@ -6,7 +6,6 @@
 .relevance {
     max-width: rem(1000);
     padding: rem(40) 0 rem(20);
-
     margin: rem(0) auto;
 
     &__input {
@@ -129,98 +128,11 @@
         margin: auto 0 0 auto;
     }
 
-    &__containerFiler {
+    &__filterContainer {
         width: 60%;
-        display: flex;
-        border-radius: rem(3);
-        box-shadow: 0px 0px 4px 0px #ffffff;
-        background-color: white;
-        border: 1px solid black;
-        transition: all 0.3s ease;
-        padding: rem(8);
-
-
-        &._close {
-            width: 0;
-            border: 0;
-            padding: 0;
-
-            & .relevance__filterIcon {
-                width: rem(42);
-                height: rem(42);
-            }
-        }
     }
 
-    &__filterIcon {
-        width: rem(24);
-        height: rem(24);
-        transition: all 0.3s ease;
-        margin: auto 0 auto 0;
-        cursor: pointer;
 
-    }
-
-    &__filter {
-        width: 100%;
-        border-radius: rem(3);
-        box-shadow: 0px 0px 4px 0px #ffffff;
-        background-color: white;
-        border: 1px solid white;
-        position: relative;
-        font-size: rem(16);
-        padding: 0 rem(8);
-        margin: auto 0;
-    }
-
-    &__subFilter {
-        position: absolute;
-        right: 0;
-        z-index: 3;
-        background-color: #fff;
-        border-radius: 0.4rem rem;
-        box-shadow: 0 0.1rem 2rem #04061c1a;
-        padding: rem(15) 0;
-        margin-top: rem(20);
-        width: rem(300);
-        transition: all 0.3s ease;
-        overflow: hidden;
-
-        &._close {
-            height: 0;
-            box-shadow: 0;
-            padding: 0;
-        }
-    }
-
-    &__filterItem {
-        font-size: 1.2rem;
-        font-weight: 400;
-
-        padding: rem(5) rem(5);
-        cursor: pointer;
-
-        &:hover {
-            background-color: #f5f5f6;
-        }
-    }
-
-    &__arrow {
-        width: rem(16);
-        height: rem(16);
-        margin: auto 0 auto 0;
-        cursor: pointer;
-        animation: arrowToDown 0.3s ease;
-        animation-fill-mode: forwards;
-
-        &._active {
-
-            animation: arrowToUp 0.3s ease;
-            animation-fill-mode: forwards;
-
-
-        }
-    }
 
     &__list {
         margin: rem(15) 0 0 0;

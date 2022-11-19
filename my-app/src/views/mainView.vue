@@ -126,8 +126,8 @@ export default {
   },
   computed: {
     auth() {
-      //let auth = this.$store.getters.getAuth;
-      return true;
+      let auth = this.$store.getters.getAuth;
+      return auth;
     },
     userInfo() {
       let userInfo = this.$store.getters.getInfo;

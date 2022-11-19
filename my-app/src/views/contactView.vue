@@ -1,5 +1,5 @@
 <template>
-  <div class="contact">
+  <div class="contact appear">
     <p class="contact__info">
       Вы можете оставить отзыв или внести предложение по улучшению работы
       сервиса, воспользовавшись формой для отправки сообщения ниже.
@@ -10,37 +10,25 @@
       <p>Оставьте свой вопрос или предложение, и мы свяжемся с вами.</p>
       <div class="mailer__container">
         <div class="mailer__containerInput">
-          <div style="position: relative">
-            <input
-              type="text"
-              class="mailer__input"
-              :class="errors.userName ? '_error' : ''"
-              placeholder="Имя"
-              name="userName"
+          <div class="wordPopup__inputContainer">
+            <input-tooltip
+              type="input"
               v-model="userName"
-              autocomplete="off"
+              field="userName"
+              fontSize="18"
+              :errors="errors"
+              placeholder="Имя"
             />
-            <div
-              class="mailer__tooltip"
-              v-if="errors.userName && currentFocusInput == 'userName'"
-              :tooltip="errors.userName"
-            ></div>
           </div>
-          <div style="position: relative">
-            <input
-              type="text"
-              class="mailer__input"
-              :class="errors.email ? '_error' : ''"
-              placeholder="Адресс почты для связи"
-              name="email"
+          <div class="wordPopup__inputContainer">
+            <input-tooltip
+              type="input"
               v-model="email"
-              autocomplete="off"
+              field="email"
+              fontSize="18"
+              :errors="errors"
+              placeholder="Адресс почты для связи"
             />
-            <div
-              class="mailer__tooltip"
-              v-if="errors.email && currentFocusInput == 'email'"
-              :tooltip="errors.email"
-            ></div>
           </div>
           <span>
             Нажимая на кнопку отправить, вы соглашаетесь на обработку
@@ -55,23 +43,15 @@
           </button>
         </div>
         <div class="mailer__containerTextarea">
-          <div style="position: relative">
-            <textarea
-              type="text"
-              class="mailer__input textArea"
-              :class="errors.message ? '_error' : ''"
-              placeholder="Ваше сообщение"
-              name="message"
-              v-model="message"
-              autocomplete="off"
-              maxlength="600"
-            ></textarea>
-            <div
-              class="mailer__tooltip"
-              v-if="errors.message && currentFocusInput == 'message'"
-              :tooltip="errors.message"
-            ></div>
-          </div>
+          <input-tooltip
+            type="textarea"
+            maxLength="600"
+            v-model="message"
+            field="message"
+            fontSize="18"
+            :errors="errors"
+            placeholder="Ваше сообщение"
+          />
         </div>
       </div>
     </div>
@@ -93,54 +73,21 @@
 </template>
 
 <script>
+import inputTooltip from "../components/inputTooltip.vue";
 export default {
+  components: {
+    inputTooltip,
+  },
   data() {
     return {
       userName: "",
       email: "",
       message: "",
-      currentFocusInput: "",
       errors: {},
     };
   },
-  mounted() {
-    let input = Array.from(document.querySelectorAll("input"));
-    let textarea = Array.from(document.querySelectorAll("textarea"));
-    let inputs = [...input, ...textarea];
-    inputs.forEach((input) => {
-      input.addEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.addEventListener("focusout", this.unselectInput);
-    });
-  },
-  beforeUnmount() {
-    let input = Array.from(document.querySelectorAll("input"));
-    let textarea = Array.from(document.querySelectorAll("textarea"));
-    let inputs = [...input, ...textarea];
-    inputs.forEach((input) => {
-      input.removeEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.removeEventListener("focusout", this.unselectInput);
-    });
-  },
 
   methods: {
-    selectInput(event) {
-      let input = event.target;
-      if (!input.classList.contains("_focus")) {
-        this.currentFocusInput = input.name;
-        input.classList.toggle("_focus");
-      }
-    },
-    unselectInput(event) {
-      let input = event.target;
-      if (input.classList.contains("_focus")) {
-        this.currentFocusInput = "";
-        input.classList.toggle("_focus");
-      }
-    },
     validateForm(form) {
       this.errors = {};
       console.log(form);

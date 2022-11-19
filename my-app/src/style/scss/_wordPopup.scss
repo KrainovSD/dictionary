@@ -116,6 +116,19 @@
         margin-left: rem(8);
     }
 
+    &__inputContainer {
+        padding: rem(5) 0 0 0;
+        font-size: rem(16);
+        color: red;
+    }
+
+    &__textareaContainer {
+        height: rem(100);
+        display: flex;
+        padding-top: rem(5);
+        font-size: rem(16);
+    }
+
     &__tooltip {
         position: absolute;
         display: inline-block;

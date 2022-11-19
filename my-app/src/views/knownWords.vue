@@ -1,45 +1,19 @@
 <template>
+  <learn-card
+    :learnType="learnType"
+    v-if="learnCardVisible == true"
+    @close="learnCardVisible = false"
+  />
   <div class="learnPlace__container">
     <div class="knownWords">
       <div class="knownWords__header">
-        <div class="knownWords__containerFiler _close" ref="filter">
-          <img
-            src="@/assets/filter.png"
-            alt=""
-            class="knownWords__filterIcon"
-            @click="showFilter"
-          />
-          <div
-            class="knownWords__filter"
-            @click.self="showSubFilter"
-            v-if="filterVisible == true"
-          >
-            {{ filterTitle }}
-            <div class="knownWords__subFilter _close" ref="subFilter">
-              <p
-                class="knownWords__filterItem"
-                v-for="(item, index) in filterList"
-                :key="index"
-                :id="index"
-                @click="
-                  filter = index;
-                  showSubFilter();
-                "
-              >
-                {{ item }}
-              </p>
-            </div>
-          </div>
-          <img
-            src="@/assets/arrowDown.png"
-            alt=""
-            class="knownWords__arrow"
-            v-if="filterVisible == true"
-            @click="showSubFilter"
-            id="arrow"
-            ref="arrow"
+        <div class="knownWords__filterContainer">
+          <slide-filter
+            :filterList="filterList"
+            @change="(payload) => (filter = payload)"
           />
         </div>
+
         <div class="knownWords__searchContainer _close" ref="search">
           <img
             src="@/assets/search.png"
@@ -121,11 +95,17 @@
         </div>
       </div>
       <div class="knownWords__startLearn">
-        <button class="knownWords__startButton normal red">
+        <button
+          class="knownWords__startButton normal red"
+          @click="startLearn('standart')"
+        >
           Обычный режим
         </button>
         <p>Количество слов повторяемых за раз: {{}}</p>
-        <button class="knownWords__startButton reverse red">
+        <button
+          class="knownWords__startButton reverse red"
+          @click="startLearn('reverse')"
+        >
           Обратный режим
         </button>
       </div>
@@ -134,13 +114,18 @@
 </template>
 
 <script>
+import learnCard from "../components/learnCard.vue";
+import slideFilter from "../components/slideFilter.vue";
 export default {
+  components: {
+    learnCard,
+    slideFilter,
+  },
   data() {
     return {
       searching: false,
       search: "",
       filter: "letterUp",
-      filterVisible: false,
       filterList: {
         letterUp: "По алфавиту от A до Z",
         letterDown: "По алфавиту от Z до A",
@@ -153,13 +138,11 @@ export default {
         lastReverseRepeatDown:
           "По дате последнего повторения в обратном режиме (по убыванию)",
       },
+      learnCardVisible: false,
+      learnType: "standart",
     };
   },
-  computed: {
-    filterTitle() {
-      return this.filterList[this.filter];
-    },
-  },
+
   methods: {
     showSearch() {
       let search = this.$refs.search;
@@ -172,37 +155,9 @@ export default {
       search.classList.toggle("_close");
       this.searching = true;
     },
-    showFilter() {
-      let filter = this.$refs.filter;
-      let subFilter = this.$refs.subFilter;
-      let arrow = this.$refs.arrow;
-      if (!filter.classList.contains("_close")) {
-        if (!subFilter.classList.contains("_close")) {
-          subFilter.classList.toggle("_close");
-          arrow.classList.toggle("_active");
-        }
-
-        filter.classList.toggle("_close");
-        this.filterVisible = false;
-
-        return;
-      }
-      filter.classList.toggle("_close");
-      setTimeout(() => {
-        this.filterVisible = true;
-      }, 200);
-    },
-    showSubFilter() {
-      let subFilter = this.$refs.subFilter;
-      let arrow = this.$refs.arrow;
-
-      if (!subFilter?.classList?.contains("_close")) {
-        subFilter.classList.toggle("_close");
-        arrow.classList.toggle("_active");
-        return;
-      }
-      subFilter.classList.toggle("_close");
-      arrow.classList.toggle("_active");
+    startLearn(type) {
+      this.learnType = type;
+      this.learnCardVisible = true;
     },
   },
   watch: {},

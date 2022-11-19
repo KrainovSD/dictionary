@@ -9,6 +9,7 @@ import docsView from "../views/docsView";
 import contactView from "../views/contactView";
 import relevanceView from "../views/relevanceView";
 import newPassword from "../views/newPassword";
+import notFoundPage from "../views/notFoundPage";
 
 const routes = [
   {
@@ -16,7 +17,7 @@ const routes = [
     name: "main",
     component: mainView,
     children: [
-      { path: "/home", name: "home", component: homeView },
+      { path: "/", name: "home", component: homeView },
       {
         path: "/learn",
         name: "learn",
@@ -31,6 +32,7 @@ const routes = [
       { path: "/docs", name: "documentation", component: docsView },
       { path: "/contacts", name: "contacts", component: contactView },
       { path: "/pass/:key", name: "password", component: newPassword },
+      { path: "/:catchAll(.*)", name: "notFound", component: notFoundPage },
     ],
   },
 ];
