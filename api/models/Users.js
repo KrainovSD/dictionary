@@ -24,6 +24,8 @@ export default mongoose.model('User', userSchema);
     hash: { type: String, required: true },
     salt: { type: String, required: true },
     datePassword: string, !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    resetPasswordKey: String,
+    resetPasswordDate: String,
     role: { type: String, required: true },
     confirmed: { type: Boolean, required: true },
     dateRegistration: { type: String, required: true },
@@ -46,6 +48,7 @@ export default mongoose.model('User', userSchema);
             dateOfKnown: string,
             wrongs: number,
             countWordsAtOneTime: number,
+            irregularVerbs: bollean,
         }
     },
     categoriesToLean: {
@@ -60,6 +63,7 @@ export default mongoose.model('User', userSchema);
             historyOfRepeat: [of string],
             countOfRepeat: number,
             startLearn: string,
+            
         }
     },
     wordsToStudy: {
@@ -70,6 +74,7 @@ export default mongoose.model('User', userSchema);
             example: [string], 
             wrongs: number, 
             category: number,
+            irregularVerbs: bollean,
         }
     }
     wordsToRepeat: {
@@ -84,6 +89,7 @@ export default mongoose.model('User', userSchema);
             nextReverseRepeat: string,
             countWrongsToRepeat: number,
             regularityToRepeat: [of number],
+            irregularVerbs: bollean,
         }
     }
     revelance: {

@@ -40,19 +40,19 @@
                 insurance agent will tell you that.
               </p>
             </div>
-            <button class="learnCard__confirm" ref="confirm" @click="nextWord">
-              Далее
-            </button>
+            <div class="learnCard__confirmContainer">
+              <confirm-button text="Далее" @click="nextWord" fontSize="14" />
+            </div>
           </template>
           <template v-if="learnType == 'standart' && showAnswer == false">
             <input type="text" class="learnCard__input" placeholder="Answer" />
-            <button
-              class="learnCard__confirm"
-              @click="confirmAnswer"
-              ref="confirm"
-            >
-              Подтвердить
-            </button>
+            <div class="learnCard__confirmContainer">
+              <confirm-button
+                text="Подтвердить"
+                @click="confirmAnswer"
+                fontSize="14"
+              />
+            </div>
           </template>
           <template v-if="learnType == 'reverse' && showAnswer == false">
             <div class="learnCard__optionContainer">
@@ -75,7 +75,11 @@
 </template>
 
 <script>
+import confirmButton from "../components/confirmButton.vue";
 export default {
+  components: {
+    confirmButton,
+  },
   props: {
     learnType: String,
   },
@@ -98,24 +102,9 @@ export default {
         }, 300);
       }
     },
-    async animatedConfirm(object) {
-      object.classList.toggle("_active");
-      setTimeout(() => {
-        object.classList.toggle("_active");
-      }, 300);
-    },
-    nextWord() {
-      let confirm = this.$refs.confirm;
-      if (!confirm.classList.contains("_active")) {
-        this.animatedConfirm(confirm);
-      }
-    },
-    confirmAnswer() {
-      let confirm = this.$refs.confirm;
-      if (!confirm.classList.contains("_active")) {
-        this.animatedConfirm(confirm);
-      }
-    },
+
+    nextWord() {},
+    confirmAnswer() {},
   },
 };
 </script>

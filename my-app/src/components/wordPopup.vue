@@ -214,22 +214,26 @@
           ></div>
         </div>
         <!-- CONFIRM BUTTON -->
-        <button
-          class="wordPopup__confirmButton"
-          ref="confirmButton"
-          @click.stop="operationWithWord('add')"
+        <div
+          class="newPassword__confirmContainer"
           v-if="wordPopupType == 'add'"
         >
-          Добавить слово
-        </button>
-        <button
-          class="wordPopup__confirmButton"
-          ref="confirmButton"
-          @click.stop="operationWithWord('update')"
+          <confirm-button
+            text="Добавить слово"
+            @click="operationWithWord('add')"
+            fontSize="14"
+          />
+        </div>
+        <div
+          class="newPassword__confirmContainer"
           v-if="wordPopupType == 'update'"
         >
-          Редактировать слово
-        </button>
+          <confirm-button
+            text="Редактировать слово"
+            @click="operationWithWord('update')"
+            fontSize="14"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -239,10 +243,12 @@
 import { nextTick } from "@vue/runtime-core";
 import categoryPopup from "../components/categoryPopup.vue";
 import inputTooltip from "../components/inputTooltip";
+import confirmButton from "../components/confirmButton";
 export default {
   components: {
     categoryPopup,
     inputTooltip,
+    confirmButton,
   },
   emits: ["close", "add", "update"],
   props: {
@@ -613,10 +619,6 @@ export default {
       }
     },
     operationWithWord(type) {
-      if (!this.$refs.confirmButton.classList.contains("_active")) {
-        this.$refs.confirmButton.classList.toggle("_active");
-      }
-
       let form = {
         category: this.category,
         word: this.word,
@@ -628,16 +630,10 @@ export default {
 
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
-        setTimeout(() => {
-          this.$refs.confirmButton.classList.toggle("_active");
-          this.$emit(type, form);
-          //this.closePopup();
-        }, 300);
+        this.$emit(type, form);
+        //this.closePopup();
       } else {
         console.log(this.errors);
-        setTimeout(() => {
-          this.$refs.confirmButton.classList.toggle("_active");
-        }, 300);
       }
     },
     addCategory() {},

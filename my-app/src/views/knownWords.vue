@@ -13,22 +13,10 @@
             @change="(payload) => (filter = payload)"
           />
         </div>
-
-        <div class="knownWords__searchContainer _close" ref="search">
-          <img
-            src="@/assets/search.png"
-            alt=""
-            class="knownWords__searchIcon"
-            @click="showSearch"
-          />
-          <input
-            type="text"
-            class="knownWords__search"
-            placeholder="Search"
-            v-if="searching == true"
-            v-model="search"
-          />
+        <div class="knownWords__searchContainer">
+          <search-panel v-model="search" />
         </div>
+
         <div class="knownWords__lastInfo">
           <p>Последнее повторение в обычном режиме: {{}}</p>
           <p>Последнее повторение в обратном режиме: {{}}</p>
@@ -116,14 +104,15 @@
 <script>
 import learnCard from "../components/learnCard.vue";
 import slideFilter from "../components/slideFilter.vue";
+import searchPanel from "../components/searchPanel.vue";
 export default {
   components: {
     learnCard,
     slideFilter,
+    searchPanel,
   },
   data() {
     return {
-      searching: false,
       search: "",
       filter: "letterUp",
       filterList: {
@@ -144,17 +133,6 @@ export default {
   },
 
   methods: {
-    showSearch() {
-      let search = this.$refs.search;
-      if (!search.classList.contains("_close")) {
-        search.classList.toggle("_close");
-        this.searching = false;
-        this.search = "";
-        return;
-      }
-      search.classList.toggle("_close");
-      this.searching = true;
-    },
     startLearn(type) {
       this.learnType = type;
       this.learnCardVisible = true;

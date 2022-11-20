@@ -88,20 +88,8 @@
         >
           Добавить
         </button>
-        <div class="newWords__searchContainer _close" ref="search">
-          <img
-            src="@/assets/search.png"
-            alt=""
-            class="newWords__searchIcon"
-            @click="showSearch"
-          />
-          <input
-            type="text"
-            class="newWords__search"
-            placeholder="Search"
-            v-if="searching == true"
-            v-model="search"
-          />
+        <div class="newWords__searchContainer">
+          <search-panel v-model="search" />
         </div>
         <button
           class="CRUDpanel__toolsButton update reverse"
@@ -201,11 +189,13 @@
 import categoryPopup from "../components/categoryPopup";
 import wordPopup from "../components/wordPopup";
 import learnCard from "../components/learnCard";
+import searchPanel from "../components/searchPanel";
 export default {
   components: {
     categoryPopup,
     wordPopup,
     learnCard,
+    searchPanel,
   },
   data() {
     return {
@@ -214,24 +204,12 @@ export default {
       wordPopupVisible: false,
       wordPopupType: "",
       categoryPopupType: "",
-      searching: false,
       search: "",
       learnCardVisible: false,
       learnType: "standart",
     };
   },
   methods: {
-    showSearch() {
-      let search = this.$refs.search;
-      if (!search.classList.contains("_close")) {
-        search.classList.toggle("_close");
-        this.searching = false;
-        this.search = "";
-        return;
-      }
-      search.classList.toggle("_close");
-      this.searching = true;
-    },
     startLearn(type) {
       this.learnType = type;
       this.learnCardVisible = true;

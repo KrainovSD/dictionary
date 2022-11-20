@@ -4,6 +4,7 @@
       src="@/assets/filter.png"
       alt=""
       class="slideFilter__icon"
+      ref="icon"
       @click="showFilter"
     />
     <div
@@ -55,23 +56,30 @@ export default {
       return this.filterList[this.filter];
     },
   },
+  mounted() {
+    let filter = this.$refs.filter;
+    let icon = this.$refs.icon;
+    icon.style.width = `${filter.clientHeight}px`;
+  },
   methods: {
     showFilter() {
       let filter = this.$refs.filter;
       let subFilter = this.$refs.subFilter;
+      let icon = this.$refs.icon;
       let arrow = this.$refs.arrow;
       if (!filter.classList.contains("_close")) {
         if (!subFilter.classList.contains("_close")) {
           subFilter.classList.toggle("_close");
           arrow.classList.toggle("_active");
         }
-
+        icon.style.width = `${filter.clientHeight}px`;
         filter.classList.toggle("_close");
         this.filterVisible = false;
 
         return;
       }
       filter.classList.toggle("_close");
+      icon.style.width = `28px`;
       setTimeout(() => {
         this.filterVisible = true;
       }, 200);
@@ -115,11 +123,9 @@ export default {
   padding: 0;
 }
 .slideFilter._close .slideFilter__icon {
-  width: 52px;
-  height: 52px;
+  height: 100%;
 }
 .slideFilter__icon {
-  width: 28px;
   height: 28px;
   transition: all 0.3s ease;
   margin: auto 0 auto 0;

@@ -13,22 +13,10 @@
             @change="(payload) => (filter = payload)"
           />
         </div>
-
-        <div class="repeatWords__searchContainer _close" ref="search">
-          <img
-            src="@/assets/search.png"
-            alt=""
-            class="repeatWords__searchIcon"
-            @click="showSearch"
-          />
-          <input
-            type="text"
-            class="repeatWords__search"
-            placeholder="Search"
-            v-if="searching == true"
-            v-model="search"
-          />
+        <div class="knownWords__searchContainer">
+          <search-panel v-model="search" />
         </div>
+
         <div class="repeatWords__lastInfo">
           <p>Количество ошибок в слове для добавления:{{}}</p>
         </div>
@@ -105,15 +93,16 @@
 <script>
 import learnCard from "../components/learnCard.vue";
 import slideFilter from "../components/slideFilter.vue";
+import searchPanel from "../components/searchPanel.vue";
 export default {
   components: {
     learnCard,
     slideFilter,
+    searchPanel,
   },
 
   data() {
     return {
-      searching: false,
       search: "",
       filter: "letterUp",
       filterList: {
@@ -128,17 +117,6 @@ export default {
   },
 
   methods: {
-    showSearch() {
-      let search = this.$refs.search;
-      if (!search.classList.contains("_close")) {
-        search.classList.toggle("_close");
-        this.searching = false;
-        this.search = "";
-        return;
-      }
-      search.classList.toggle("_close");
-      this.searching = true;
-    },
     startLearn(type) {
       this.learnType = type;
       this.learnCardVisible = true;

@@ -34,13 +34,13 @@
             Нажимая на кнопку отправить, вы соглашаетесь на обработку
             персональных данных в соответствии с Политикой конфиденциальности.
           </span>
-          <button
-            class="mailer__confirm"
-            ref="confirmButton"
-            @click="sendMessage"
-          >
-            Отправить
-          </button>
+          <div class="mailer__confirmContainer">
+            <confirm-button
+              text="Отправить"
+              @click="sendMessage"
+              fontSize="15"
+            />
+          </div>
         </div>
         <div class="mailer__containerTextarea">
           <input-tooltip
@@ -74,9 +74,11 @@
 
 <script>
 import inputTooltip from "../components/inputTooltip.vue";
+import confirmButton from "../components/confirmButton.vue";
 export default {
   components: {
     inputTooltip,
+    confirmButton,
   },
   data() {
     return {
@@ -198,28 +200,18 @@ export default {
     },
 
     sendMessage() {
-      if (!this.$refs.confirmButton.classList.contains("_active")) {
-        this.$refs.confirmButton.classList.toggle("_active");
-        let form = {
-          userName: this.userName,
-          email: this.email,
-          message: this.message,
-        };
+      let form = {
+        userName: this.userName,
+        email: this.email,
+        message: this.message,
+      };
 
-        this.validateForm(form);
+      this.validateForm(form);
 
-        if (Object.keys(this.errors).length === 0) {
-          setTimeout(() => {
-            this.$refs.confirmButton.classList.toggle("_active");
-            //API
-            //this.closePopup();
-          }, 300);
-        } else {
-          console.log(this.errors);
-          setTimeout(() => {
-            this.$refs.confirmButton.classList.toggle("_active");
-          }, 300);
-        }
+      if (Object.keys(this.errors).length === 0) {
+        //api
+      } else {
+        console.log(this.errors);
       }
     },
   },

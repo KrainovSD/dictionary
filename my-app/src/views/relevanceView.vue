@@ -9,27 +9,16 @@
 
   <div class="relevance appear">
     <div style="display: flex">
-      <div style="position: relative; width: 45%">
-        <textarea
-          type="text"
-          class="relevance__input textArea"
-          :class="[
-            errorInput != '' ? '_error' : '',
-            focusInput == true ? '_focus' : '',
-          ]"
-          placeholder="Внесите слова"
-          name="input"
-          maxlength="210"
+      <div style="position: relative; width: 45%; height: 100px">
+        <input-tooltip
+          type="textarea"
+          maxLength="210"
           v-model="input"
-          autocomplete="off"
-          @focus="focusInput = true"
-          @focusout="focusInput = false"
+          field="input"
+          fontSize="16"
+          :errors="errors"
+          placeholder="Внесите слова"
         />
-        <div
-          class="relevance__tooltip"
-          v-if="errorInput != '' && focusInput == true"
-          :tooltip="errorInput"
-        ></div>
       </div>
       <div class="relevance__newInput">
         <p class="relevance__inputItem red">Glock - 1 (3)</p>
@@ -77,21 +66,8 @@
               @change="(payload) => (filter = payload)"
             />
           </div>
-
-          <div class="relevance__searchContainer _close" ref="search">
-            <img
-              src="@/assets/search.png"
-              alt=""
-              class="relevance__searchIcon"
-              @click="showSearch"
-            />
-            <input
-              type="text"
-              class="relevance__search"
-              placeholder="Search"
-              v-if="searching == true"
-              v-model="search"
-            />
+          <div class="relevance__searchContainer">
+            <search-panel v-model="search" />
           </div>
         </div>
 
@@ -115,20 +91,21 @@
 <script>
 import wordPopup from "../components/wordPopup.vue";
 import slideFilter from "../components/slideFilter.vue";
+import searchPanel from "../components/searchPanel.vue";
+import inputTooltip from "../components/inputTooltip.vue";
 export default {
   components: {
     wordPopup,
     slideFilter,
+    searchPanel,
+    inputTooltip,
   },
   data() {
     return {
       input: "",
-      errorInput: "",
-      focusInput: false,
-      searching: false,
+      errors: {},
       search: "",
       filter: "letterUp",
-      filterVisible: false,
       filterList: {
         letterUp: "По алфавиту от A до Z",
         letterDown: "По алфавиту от Z до A",
@@ -142,82 +119,35 @@ export default {
       categoryPopupVisible: false,
     };
   },
-  computed: {
-    filterTitle() {
-      return this.filterList[this.filter];
-    },
-  },
+
   methods: {
-    showFilter() {
-      let filter = this.$refs.filter;
-      let subFilter = this.$refs.subFilter;
-      let arrow = this.$refs.arrow;
-      if (!filter.classList.contains("_close")) {
-        if (!subFilter.classList.contains("_close")) {
-          subFilter.classList.toggle("_close");
-          arrow.classList.toggle("_active");
-        }
-
-        filter.classList.toggle("_close");
-        this.filterVisible = false;
-
-        return;
-      }
-      filter.classList.toggle("_close");
-      setTimeout(() => {
-        this.filterVisible = true;
-      }, 200);
-    },
-    showSubFilter() {
-      let subFilter = this.$refs.subFilter;
-      let arrow = this.$refs.arrow;
-
-      if (!subFilter?.classList?.contains("_close")) {
-        subFilter.classList.toggle("_close");
-        arrow.classList.toggle("_active");
-        return;
-      }
-      subFilter.classList.toggle("_close");
-      arrow.classList.toggle("_active");
-    },
-    showSearch() {
-      let search = this.$refs.search;
-      if (!search.classList.contains("_close")) {
-        search.classList.toggle("_close");
-        this.searching = false;
-        this.search = "";
-        return;
-      }
-      search.classList.toggle("_close");
-      this.searching = true;
-    },
     selectWord(event) {
       let word = event.target.id;
       this.currentSelectWord = word;
     },
-    validateInput(input) {
-      this.errorInput = "";
+    validateInput(field, input) {
       if (input == "") {
-        this.errorInput = "Заполните поле!";
+        this.errors[field] = "Заполните поле!";
         return;
       }
       if (typeof input != "string") {
-        this.errorInput = "Неверный тип данных!";
+        this.errors[field] = "Неверный тип данных!";
         return;
       }
       if (!/^[a-zA-Z ,\-;]+$/.test(input)) {
-        this.errorInput =
+        this.errors[field] =
           "Для записи слов используйте английский алфавит с разделителем в виде запятой или точки с запятой!";
         return;
       }
       if (input.length > 210) {
-        this.errorInput = "Длина списка не должна превышать 200 символов!";
+        this.errors[field] = "Длина списка не должна превышать 200 символов!";
         return;
       }
+      delete this.errors[field];
     },
     addInput() {
-      this.validateInput(this.input);
-      if (this.errorInput == "") {
+      this.validateInput("input", this.input);
+      if (this.errors?.input == "") {
         let words = this.input.split(/[,;]/);
         console.log(this.input, words);
         words = words.filter((el) => el.trim() != "");
@@ -231,7 +161,7 @@ export default {
   },
   watch: {
     input() {
-      if (this.errorInput != "") this.validateInput(this.input);
+      if (this.errors?.input) this.validateInput("input", this.input);
     },
   },
 };

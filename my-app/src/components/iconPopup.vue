@@ -21,24 +21,25 @@
             <p class="iconPopup__error" v-if="error != ''">{{ error }}</p>
           </div>
         </div>
-        <button
-          class="sign__logInButton"
-          ref="confirm"
-          @click.stop="sendData"
-          :disabled="checkConfirm"
-        >
-          Подтвердить
-        </button>
+        <div class="newPassword__confirmContainer">
+          <confirm-button
+            text="Подтвердить"
+            @click="sendData"
+            fontSize="14"
+            :disabled="checkConfirm"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import confirmButton from "../components/confirmButton.vue";
 export default {
   emits: ["close"],
-  props: {
-    test: String,
+  components: {
+    confirmButton,
   },
   data() {
     return {
@@ -88,22 +89,7 @@ export default {
       };
       reader.readAsDataURL(file);
     },
-    sendData() {
-      let confirm = this.$refs.confirm;
-      if (!confirm.classList.contains("_active")) {
-        confirm.classList.toggle("_active");
-
-        setTimeout(() => {
-          confirm.classList.toggle("_active");
-          console.log("ok");
-        }, 300);
-      } else {
-        console.log(this.errors);
-        setTimeout(() => {
-          confirm.classList.toggle("_active");
-        }, 300);
-      }
-    },
+    sendData() {},
   },
 };
 </script>

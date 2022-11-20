@@ -1,11 +1,12 @@
 <template>
   <div class="setting__container">
     <p class="setting__userDataTittle">{{ title }}</p>
-    <p class="setting__userData" v-if="changes[fieldChange] == false">
+    <p class="setting__userData" v-if="fieldChangin == false">
       {{ data }}
     </p>
     <div style="position: relative">
       <input
+        ref="input"
         type="text"
         class="setting__userDataInput"
         :class="[
@@ -14,20 +15,23 @@
         ]"
         :placeholder="placeholder"
         :name="field"
-        :id="field"
-        v-if="changes?.[fieldChange] == true"
+        :value="modelValue"
+        @input="$emit('update:modelValue', $event.target.value)"
+        @focus="focusInput = true"
+        @focusout="focusInput = false"
+        v-if="fieldChangin == true"
         autocomplete="off"
       />
       <div
         class="wordPopup__tooltip"
-        v-if="errors?.[field] && currentFocusInput == field"
+        v-if="errors?.[field] && focusInput == true"
         :tooltip="errors?.[field]"
       ></div>
     </div>
     <button
       class="setting__userDataReplace _change"
-      v-if="changes?.[fieldChange] == false"
-      @click="$emit('edit', field)"
+      v-if="fieldChangin == false"
+      @click="openEditor"
     >
       Изменить
     </button>
@@ -35,13 +39,13 @@
       src="@/assets/closeRed.png"
       alt=""
       class="setting__userDataClose"
-      v-if="changes?.[fieldChange] == true"
-      @click="$emit('close', fieldChange)"
+      v-if="fieldChangin == true"
+      @click="fieldChangin = false"
     />
     <button
       class="setting__userDataReplace"
-      v-if="changes?.[fieldChange] == true"
-      @click="$emit('change', field)"
+      v-if="fieldChangin == true"
+      @click="$emit('change', { field: field, fieldData: this.modelValue })"
     >
       Сохранить
     </button>
@@ -49,35 +53,54 @@
 </template>
 
 <script>
+import { nextTick } from "@vue/runtime-core";
 export default {
-  emits: ["edit", "change", "close"],
+  emits: ["edit", "change", "close", "update:modelValue"],
   props: {
+    modelValue: String,
     title: String,
     data: String,
     field: String,
     placeholder: String,
-    changes: Object,
     errors: Object,
-    currentFocusInput: String,
     inputType: String,
+  },
+  data() {
+    return {
+      focusInput: false,
+      fieldChangin: false,
+    };
   },
   computed: {
     fieldChange() {
       return `${this.field}Change`;
     },
-    /*inputClass(field) {
-      let classes = [];
-      if (this.errors[field]) {
-        classes.push("_error");
+  },
+  methods: {
+    forbiddenLetter(event) {
+      let value = event.target.value;
+      let key = event.key;
+      if (!/^[0-9]$|^Backspace$/.test(key)) {
+        event.preventDefault();
+        return;
       }
-      if (this.inputType == "Number") {
-        classes.push("number");
+      if (value.length >= 2 && key != "Backspace") {
+        event.preventDefault();
+        return;
       }
-      console.log(classes);
-      let style = classes.join(",");
+    },
+    checkNumber(input) {
+      if (this.inputType == "Number")
+        input.addEventListener("keydown", this.forbiddenLetter);
+    },
+    async openEditor() {
+      this.fieldChangin = true;
+      await nextTick();
+      let input = this.$refs.input;
 
-      return style;
-    },*/
+      this.checkNumber(input);
+      this.$emit("edit", this.field);
+    },
   },
 };
 </script>

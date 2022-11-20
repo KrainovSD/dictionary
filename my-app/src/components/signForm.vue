@@ -95,23 +95,13 @@
 
         <!-- RESPONSE -->
         <p class="sign__infoMessage">{{ responseMessage }}</p>
+        <div class="newPassword__confirmContainer" v-if="signType === 'signIn'">
+          <confirm-button text="Войти" @click="sendData" fontSize="14" />
+        </div>
+        <div class="newPassword__confirmContainer" v-if="signType === 'signUp'">
+          <confirm-button text="Регистрация" @click="sendData" fontSize="14" />
+        </div>
 
-        <button
-          class="sign__logInButton"
-          ref="logInButton"
-          @click.stop="sendData"
-          v-if="signType === 'signIn'"
-        >
-          Войти
-        </button>
-        <button
-          class="sign__logInButton"
-          ref="logInButton"
-          @click.stop="sendData"
-          v-if="signType === 'signUp'"
-        >
-          Регистрация
-        </button>
         <div class="sign__actions" v-if="signType === 'signIn'">
           <p class="sign__forgotPassword" @click="forgotPasswordVisible = true">
             Забыли <br />
@@ -134,10 +124,12 @@
 <script>
 import forgotPassword from "../components/forgotPassword.vue";
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
+import confirmButton from "../components/confirmButton.vue";
 export default {
   components: {
     forgotPassword,
     inputTooltipIcon,
+    confirmButton,
   },
   emits: ["close", "sign", "switch"],
   props: {
@@ -313,31 +305,22 @@ export default {
       }
     },
     sendData() {
-      if (!this.$refs.logInButton.classList.contains("_active")) {
-        this.$refs.logInButton.classList.toggle("_active");
-        let form = {};
-        if (this.signType == "signIn") {
-          form.nickName = this.nickName.trim();
-          form.password = this.password.trim();
-        } else if (this.signType == "signUp") {
-          form.nickName = this.nickName.trim();
-          form.userName = this.userName.trim().toLowerCase();
-          form.email = this.email.trim().toLowerCase();
-          form.password = this.password.trim();
-          form.repeatPassword = this.repeatPassword.trim();
-        }
-        this.validateForm(form);
-        if (Object.keys(this.errors).length === 0) {
-          setTimeout(() => {
-            this.$refs.logInButton.classList.toggle("_active");
-            this.$emit("sign", form);
-          }, 300);
-        } else {
-          console.log(this.errors);
-          setTimeout(() => {
-            this.$refs.logInButton.classList.toggle("_active");
-          }, 300);
-        }
+      let form = {};
+      if (this.signType == "signIn") {
+        form.nickName = this.nickName.trim();
+        form.password = this.password.trim();
+      } else if (this.signType == "signUp") {
+        form.nickName = this.nickName.trim();
+        form.userName = this.userName.trim().toLowerCase();
+        form.email = this.email.trim().toLowerCase();
+        form.password = this.password.trim();
+        form.repeatPassword = this.repeatPassword.trim();
+      }
+      this.validateForm(form);
+      if (Object.keys(this.errors).length === 0) {
+        this.$emit("sign", form);
+      } else {
+        console.log(this.errors);
       }
     },
   },

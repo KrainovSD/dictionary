@@ -35,45 +35,8 @@
 
 
     &__searchContainer {
-        display: flex;
-        border-radius: rem(3);
-        box-shadow: 0px 0px 4px 0px #ffffff;
-        background-color: white;
-        border: 1px solid black;
-        transition: all 0.3s ease;
-
-        position: relative;
         width: 25%;
         margin: 0 0 0 auto;
-        padding: rem(5);
-
-        &._close {
-            width: 0;
-            padding: 0;
-            border: 0px;
-
-            & .knownWords__searchIcon {
-                width: rem(41);
-                height: rem(41);
-            }
-        }
-    }
-
-
-
-    &__search {
-        font-size: rem(16);
-        padding: rem(0) rem(15);
-        width: 100%;
-    }
-
-    &__searchIcon {
-        width: rem(24);
-        height: rem(24);
-        margin: auto 0;
-        cursor: pointer;
-        transition: all 0.3s ease;
-
     }
 
     &__wordsContainer {

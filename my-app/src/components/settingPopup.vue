@@ -28,12 +28,10 @@
           field="nickName"
           inputType="String"
           placeholder="Введите nickName"
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="nickName"
         />
         <setting-field
           title="Имя пользователя:"
@@ -41,12 +39,10 @@
           field="userName"
           inputType="String"
           placeholder="Введите имя"
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="userName"
         />
         <setting-field
           title="Email пользователя:"
@@ -54,12 +50,10 @@
           field="email"
           inputType="String"
           placeholder="Введите email"
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="email"
         />
         <setting-field
           title="Последний раз пароль был изменен:"
@@ -67,12 +61,10 @@
           field="password"
           inputType="String"
           placeholder="Введите email"
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="password"
         />
       </div>
       <div class="setting__userDataContainer">
@@ -83,12 +75,10 @@
           field="countWordsAtOneTime"
           inputType="Number"
           placeholder=""
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="countWordsAtOneTime"
         />
       </div>
       <div class="setting__userDataContainer">
@@ -99,12 +89,10 @@
           field="countWrongsToRepeat"
           inputType="Number"
           placeholder=""
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="countWrongsToRepeat"
         />
 
         <!-- REGULARITY TO REPEAT -->
@@ -119,8 +107,11 @@
             </p>
             <button
               class="setting__userDataReplace _change"
-              v-if="changes.regularityToRepeatChange == false"
-              @click="openEditor('regularityToRepeat')"
+              v-if="regularityToRepeatChange == false"
+              @click="
+                regularityToRepeatChange = true;
+                clearField('regularityToRepeat');
+              "
             >
               Изменить
             </button>
@@ -128,48 +119,43 @@
               src="@/assets/closeRed.png"
               alt=""
               class="setting__userDataClose"
-              v-if="changes.regularityToRepeatChange == true"
-              @click="changes.regularityToRepeatChange = false"
+              v-if="regularityToRepeatChange == true"
+              @click="regularityToRepeatChange = false"
             />
             <button
               class="setting__userDataReplace"
-              v-if="changes.regularityToRepeatChange == true"
-              @click="changeField('regularityToRepeat')"
+              v-if="regularityToRepeatChange == true"
+              @click="
+                changeField({
+                  field: 'regularityToRepeat',
+                  fieldData: regularityToRepeat,
+                })
+              "
             >
               Сохранить
             </button>
           </div>
           <div
-            id="regularityToRepeat"
             class="setting__regularityData"
-            v-if="changes.regularityToRepeatChange == true"
+            v-if="regularityToRepeatChange == true"
           >
-            <template
-              v-for="(item, index) in ['', '', '', '', '', '', '', '']"
-              :key="index"
-            >
-              <div style="position: relative">
-                <input
-                  type="text"
-                  class="setting__regularityItem"
-                  :name="`regularityToRepeat${index}`"
-                  :class="errors?.regularityToRepeat?.[index] ? '_error' : ''"
-                  autocomplete="off"
+            <template v-for="(item, index) in regularityToRepeat" :key="index">
+              <div class="setting__multipleInputContainer">
+                <multiple-input-tooltip
+                  v-model="regularityToRepeat[index]"
+                  field="regularityToRepeat"
+                  fontSize="16"
+                  :index="index"
+                  :errors="errors"
                 />
-                <div
-                  class="wordPopup__tooltip"
-                  v-if="
-                    errors?.regularityToRepeat?.[index] &&
-                    currentFocusInput == `regularityToRepeat${index}`
-                  "
-                  :tooltip="errors?.regularityToRepeat?.[index]"
-                ></div>
               </div>
+
               <p class="setting__regularDash" v-if="index != 7">-</p>
             </template>
           </div>
         </div>
       </div>
+      <!-- -->
       <div class="setting__userDataContainer">
         <h1 class="setting__userDataHeader">Проверка на актуальность</h1>
         <setting-field
@@ -178,12 +164,10 @@
           field="maxCountCheck"
           inputType="Number"
           placeholder=""
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="maxCountCheck"
         />
         <setting-field
           title="Промежуток времени, на котором считаются встречи (в днях):"
@@ -191,12 +175,10 @@
           field="maxDateCheck"
           inputType="Number"
           placeholder=""
-          :changes="changes"
           :errors="errors"
-          :currentFocusInput="currentFocusInput"
-          @close="(payload) => closeEditor(payload)"
           @change="(payload) => changeField(payload)"
-          @edit="(payload) => openEditor(payload)"
+          @edit="(payload) => clearField(payload)"
+          v-model="maxDateCheck"
         />
       </div>
       <div class="setting__userDataContainer">
@@ -214,28 +196,29 @@
 import { nextTick } from "@vue/runtime-core";
 import iconPopup from "../components/iconPopup.vue";
 import settingField from "../components/settingField.vue";
+import multipleInputTooltip from "../components/multipleInputTooltip.vue";
+
 export default {
   emits: ["close"],
 
   components: {
     iconPopup,
     settingField,
+    multipleInputTooltip,
   },
   data() {
     return {
-      changes: {
-        nickNameChange: false,
-        userNameChange: false,
-        emailChange: false,
-        passwordChange: false,
-        countWordsAtOneTimeChange: false,
-        countWrongsToRepeatChange: false,
-        regularityToRepeatChange: false,
-        maxDateCheckChange: false,
-        maxCountCheckChange: false,
-      },
+      nickName: "",
+      userName: "",
+      email: "",
+      password: "",
+      countWordsAtOneTime: "",
+      countWrongsToRepeat: "",
+      regularityToRepeat: ["", "", "", "", "", "", "", ""],
+      maxCountCheck: "",
+      maxDateCheck: "",
       iconPopupVisible: false,
-      currentFocusInput: "",
+      regularityToRepeatChange: false,
       errors: {},
     };
   },
@@ -249,32 +232,7 @@ export default {
         }, 300);
       }
     },
-    selectInput(event) {
-      let input = event.target;
-      if (!input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = input.name;
-      }
-    },
-    unSelectInput(event) {
-      let input = event.target;
-      if (input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = "";
-      }
-    },
-    forbiddenLetter(event) {
-      let value = event.target.value;
-      let key = event.key;
-      if (!/^[0-9]$|^Backspace$/.test(key)) {
-        event.preventDefault();
-        return;
-      }
-      if (value.length >= 2 && key != "Backspace") {
-        event.preventDefault();
-        return;
-      }
-    },
+
     async openEditor(field) {
       let change = `${field}Change`;
       this.changes[change] = true;
@@ -298,6 +256,7 @@ export default {
     closeEditor(fieldChange) {
       this.changes[fieldChange] = false;
     },
+
     validateField(field, fieldData) {
       if (fieldData.length == 0) {
         this.errors[field] = "Поле обязательно для заполнения!";
@@ -405,7 +364,8 @@ export default {
                 "Последовательность должна состоять из цифр!";
               return;
             }
-            if (item > 16 && item < 1) {
+
+            if (item > 16 || item < 1) {
               this.errors[field][index] =
                 "Интервал не может превышать 16-ти дней и быть меньше 1-ого дня!";
               return;
@@ -420,29 +380,57 @@ export default {
       )
         delete this.errors[field];
     },
-
-    changeField(field) {
-      let fieldData;
-      if (field != "regularityToRepeat") {
-        fieldData = document.querySelector(`#${field}`).value;
-        this.validateField(field, fieldData);
-        if (this.errors[field]) {
-          return;
-        }
-      } else {
-        let inputs = Array.from(document.querySelectorAll(`#${field} input`));
-        fieldData = [];
-        inputs.forEach((input) => {
-          fieldData.push(input.value);
-        });
-        this.validateField(field, fieldData);
-        if (this.errors[field]) {
-          return;
-        }
+    clearField(payload) {
+      delete this.errors[payload];
+      if (payload == "regularityToRepeat") {
+        this[payload] = ["", "", "", "", "", "", "", ""];
+        return;
       }
-      let change = `${field}Change`;
-      this.changes[change] = false;
-      console.log(fieldData);
+      this[payload] = "";
+    },
+    changeField(data) {
+      let { field, fieldData } = data;
+      this.validateField(field, fieldData);
+      if (this.errors[field]) {
+        return;
+      }
+    },
+  },
+  watch: {
+    nickName() {
+      if (this.errors?.nickName) this.validateField("nickName", this.nickName);
+    },
+    userName() {
+      if (this.errors?.userName) this.validateField("userName", this.userName);
+    },
+    email() {
+      if (this.errors?.email) this.validateField("email", this.email);
+    },
+    password() {
+      if (this.errors?.password) this.validateField("password", this.password);
+    },
+    countWordsAtOneTime() {
+      if (this.errors?.countWordsAtOneTime)
+        this.validateField("countWordsAtOneTime", this.countWordsAtOneTime);
+    },
+    countWrongsToRepeat() {
+      if (this.errors?.countWrongsToRepeat)
+        this.validateField("countWrongsToRepeat", this.countWrongsToRepeat);
+    },
+    maxCountCheck() {
+      if (this.errors?.maxCountCheck)
+        this.validateField("maxCountCheck", this.maxCountCheck);
+    },
+    maxDateCheck() {
+      if (this.errors?.maxDateCheck)
+        this.validateField("maxDateCheck", this.maxDateCheck);
+    },
+    regularityToRepeat: {
+      handler: function () {
+        if (this.errors?.regularityToRepeat)
+          this.validateField("regularityToRepeat", this.regularityToRepeat);
+      },
+      deep: true,
     },
   },
 };

@@ -19,15 +19,14 @@
             :class="currentSelectionIcon == item ? '_focus' : ''"
           />
         </div>
-        <button
-          class="wordPopup__confirmButton"
-          :style="currentSelectionIcon == '' ? 'disable: true' : ''"
-          ref="confirmIconButton"
-          @click="chooseIcon"
-          :disabled="isCurrentSelectionIconEmpty"
-        >
-          Выбрать иконку
-        </button>
+        <div class="newPassword__confirmContainer">
+          <confirm-button
+            text="Подтвердить"
+            @click="chooseIcon"
+            fontSize="14"
+            :disabled="isCurrentSelectionIconEmpty"
+          />
+        </div>
       </div>
     </div>
     <div class="categoryPopup">
@@ -86,45 +85,36 @@
 
         <div class="categoryPopup__containerRegularity">
           <div
-            style="position: relative"
+            class="categoryPopup__multipleInputContainer"
             v-for="(item, index) in regularityToRepeat"
             :key="index"
           >
-            <input
-              type="text"
-              class="categoryPopup__regularityCase onlyNumber"
-              :class="errors?.regularityToRepeat?.[index] ? '_error' : ''"
+            <multiple-input-tooltip
               v-model="regularityToRepeat[index]"
-              :name="`regular${index}`"
-              autocomplete="off"
+              :index="index"
+              :errors="errors"
+              field="regularityToRepeat"
+              fontSize="18"
             />
-            <div
-              class="wordPopup__tooltip"
-              v-if="
-                errors.regularityToRepeat?.[index] &&
-                currentFocusInput == `regular${index}`
-              "
-              :tooltip="errors.regularityToRepeat?.[index]"
-            ></div>
           </div>
         </div>
-
-        <button
-          class="wordPopup__confirmButton"
-          ref="confirmButton"
-          @click.stop="operationWithCategory('add')"
+        <div
+          class="newPassword__confirmContainer"
           v-if="categoryPopupType == 'add'"
         >
-          Добавить категорию
-        </button>
-        <button
-          class="wordPopup__confirmButton"
-          ref="confirmButton"
-          @click.stop="operationWithCategory('update')"
-          v-else
-        >
-          Редактировать категорию
-        </button>
+          <confirm-button
+            text="Добавить категорию"
+            @click="operationWithCategory('add')"
+            fontSize="14"
+          />
+        </div>
+        <div class="newPassword__confirmContainer" v-else>
+          <confirm-button
+            text="Редактировать категорию"
+            @click="operationWithCategory('update')"
+            fontSize="14"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -133,9 +123,13 @@
 <script>
 import { nextTick } from "@vue/runtime-core";
 import inputTooltip from "../components/inputTooltip.vue";
+import confirmButton from "../components/confirmButton.vue";
+import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 export default {
   components: {
     inputTooltip,
+    confirmButton,
+    multipleInputTooltip,
   },
   props: {
     categoryPopupType: String,
@@ -147,7 +141,6 @@ export default {
       regularityToRepeat: ["", "", "", "", "", "", "", "", "", "", "", ""],
       errors: {},
       tooltip: false,
-      currentFocusInput: "",
       addIconVisible: false,
       currentSelectionIcon: "",
       iconProd: [
@@ -188,33 +181,7 @@ export default {
       ],
     };
   },
-  mounted() {
-    let inputs = Array.from(document.querySelectorAll("input"));
-    inputs.forEach((input) => {
-      input.addEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.addEventListener("focusout", this.unSelectInput);
-    });
 
-    inputs = Array.from(document.querySelectorAll(".onlyNumber"));
-    inputs.forEach((input) => {
-      input.addEventListener("keydown", this.enterNumber);
-    });
-  },
-  beforeUnmount() {
-    let inputs = Array.from(document.querySelectorAll("input"));
-    inputs.forEach((input) => {
-      input.removeEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.removeEventListener("focusout", this.unSelectInput);
-    });
-    inputs = Array.from(document.querySelectorAll(".onlyNumber"));
-    inputs.forEach((input) => {
-      input.removeEventListener("keydown", this.enterNumber);
-    });
-  },
   computed: {
     isCurrentSelectionIconEmpty() {
       if (this.currentSelectionIcon == "") return true;
@@ -231,28 +198,7 @@ export default {
         }, 300);
       }
     },
-    selectInput(event) {
-      let input = event.target;
-      if (!input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = input.name;
-      }
-    },
-    unSelectInput(event) {
-      let input = event.target;
-      if (input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = "";
-      }
-    },
-    enterNumber(event) {
-      if (!/^Backspace$|\d/.test(event.key)) {
-        event.preventDefault();
-      }
-      if (event.target.value.length >= 2 && event.key != "Backspace") {
-        event.preventDefault();
-      }
-    },
+
     async openCategoryIcon() {
       this.addIconVisible = true;
       if (this.icon != "") this.currentSelectionIcon = this.icon;
@@ -275,27 +221,11 @@ export default {
     selectIcon(event) {
       let icon = event.target;
       this.currentSelectionIcon = icon.id;
-      console.log(this.currentSelectionIcon);
     },
     chooseIcon() {
-      if (!this.$refs.confirmIconButton.classList.contains("_active")) {
-        this.$refs.confirmIconButton.classList.toggle("_active");
-      }
-
       if (this.currentSelectionIcon != "") {
-        setTimeout(() => {
-          if (this.$refs.confirmIconButton.classList.contains("_active")) {
-            this.$refs.confirmIconButton.classList.toggle("_active");
-            this.icon = this.currentSelectionIcon;
-            this.closeCategoryIcon();
-          }
-        }, 300);
-      } else {
-        setTimeout(() => {
-          if (this.$refs.confirmIconButton.classList.contains("_active")) {
-            this.$refs.confirmIconButton.classList.toggle("_active");
-          }
-        }, 300);
+        this.icon = this.currentSelectionIcon;
+        this.closeCategoryIcon();
       }
     },
     validateForm(form) {
@@ -411,10 +341,6 @@ export default {
       }
     },
     operationWithCategory(type) {
-      if (!this.$refs.confirmButton.classList.contains("_active")) {
-        this.$refs.confirmButton.classList.toggle("_active");
-      }
-
       let form = {
         name: this.name,
         icon: this.icon,
@@ -423,16 +349,9 @@ export default {
 
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
-        setTimeout(() => {
-          this.$refs.confirmButton.classList.toggle("_active");
-          this.$emit(type, form);
-          // this.closePopup();
-        }, 300);
+        this.$emit(type, form);
       } else {
         console.log(this.errors);
-        setTimeout(() => {
-          this.$refs.confirmButton.classList.toggle("_active");
-        }, 300);
       }
     },
   },

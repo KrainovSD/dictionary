@@ -30,9 +30,9 @@
         <!-- RESPONSE -->
         <p class="sign__infoMessage">{{ responseMessage }}</p>
 
-        <button class="sign__logInButton" ref="confirm" @click.stop="sendData">
-          Отправить
-        </button>
+        <div class="newPassword__confirmContainer">
+          <confirm-button text="Подтвердить" @click="sendData" fontSize="14" />
+        </div>
       </div>
     </div>
   </div>
@@ -40,8 +40,9 @@
 
 <script>
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
+import confirmButton from "../components/confirmButton.vue";
 export default {
-  components: { inputTooltipIcon },
+  components: { inputTooltipIcon, confirmButton },
   data() {
     return {
       password: "",
@@ -98,28 +99,17 @@ export default {
       });
     },
     sendData() {
-      let confirm = this.$refs.confirm;
-      if (!confirm.classList.contains("_active")) {
-        confirm.classList.toggle("_active");
+      let form = {
+        password: this.password,
+        repeatPassword: this.repeatPassword,
+      };
 
-        let form = {
-          password: this.password,
-          repeatPassword: this.repeatPassword,
-        };
+      this.validateForm(form);
 
-        this.validateForm(form);
-
-        if (Object.keys(this.errors).length === 0) {
-          setTimeout(() => {
-            confirm.classList.toggle("_active");
-            console.log("OK");
-          }, 300);
-        } else {
-          console.log(this.errors);
-          setTimeout(() => {
-            confirm.classList.toggle("_active");
-          }, 300);
-        }
+      if (Object.keys(this.errors).length === 0) {
+        console.log("ok");
+      } else {
+        console.log(this.errors);
       }
     },
   },
