@@ -131,10 +131,9 @@ export default {
     inputTooltipIcon,
     confirmButton,
   },
-  emits: ["close", "sign", "switch"],
+  emits: ["close", "register", "switch"],
   props: {
     signType: String,
-    responseMessage: String,
   },
   data() {
     return {
@@ -144,6 +143,7 @@ export default {
       password: "",
       repeatPassword: "",
       errors: {},
+      responseMessage: "",
       forgotPasswordVisible: false,
     };
   },
@@ -159,6 +159,7 @@ export default {
     },
     clearData() {
       this.forgotPasswordVisible = false;
+      this.responseMessage = "";
       this.nickName = "";
       this.userName = "";
       this.email = "";
@@ -304,8 +305,59 @@ export default {
         delete this.errors[field];
       }
     },
+    login(form) {
+      this.$api.auth
+        .login(form)
+        .then((res) => {
+          let user = res.data;
+          this.$store.commit("setUserInfo", user);
+          this.$emit("close");
+        })
+        .catch((err) => {
+          if (err.response.status == 400) {
+            let errors = err.response.data;
+            let message = "";
+            Object.values(errors).forEach((err) => {
+              if (message == "") {
+                message = `${err} \n`;
+                return;
+              }
+              message += `${err} \n`;
+            });
+            this.responseMessage = message;
+            return;
+          }
+          console.log(err);
+          this.responseMessage = "Сервер не отвечает";
+        });
+    },
+    register(form) {
+      this.$api.auth
+        .register(form)
+        .then((res) => {
+          this.$emit("register", res.data.message);
+        })
+        .catch((err) => {
+          if (err.response.status == 400) {
+            let errors = err.response.data;
+            let message = "";
+            Object.values(errors).forEach((err) => {
+              if (message == "") {
+                message = `${err} \n`;
+                return;
+              }
+              message += `${err} \n`;
+            });
+            this.responseMessage = message;
+            return;
+          }
+          console.log(err);
+          this.responseMessage = "Сервер не отвечает";
+        });
+    },
     sendData() {
       let form = {};
+      this.responseMessage = "";
       if (this.signType == "signIn") {
         form.nickName = this.nickName.trim();
         form.password = this.password.trim();
@@ -318,7 +370,8 @@ export default {
       }
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
-        this.$emit("sign", form);
+        if (this.signType == "signIn") this.login(form);
+        if (this.signType == "signUp") this.register(form);
       } else {
         console.log(this.errors);
       }

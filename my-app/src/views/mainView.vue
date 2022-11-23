@@ -2,16 +2,9 @@
   <sign-form
     v-if="signVisiable == true"
     :signType="signType"
-    :responseMessage="responseMessage"
-    @close="
-      this.signVisiable = false;
-      this.responseMessage = '';
-    "
-    @sign="sign"
-    @switch="
-      this.responseMessage = '';
-      this.signType = 'signUp';
-    "
+    @close="this.signVisiable = false"
+    @switch="this.signType = 'signUp'"
+    @register="(payload) => register(payload)"
   />
   <info-popup
     v-if="infoVisiable == true"
@@ -72,8 +65,8 @@
             else userMenuVisiable = true;
           "
         >
-          <img src="@/assets/avatar.png" alt="" class="header__avatar" />
-          <p class="header__nickName">{{ userInfo.nickName }} Krainov</p>
+          <img :src="avatar" alt="" class="header__avatar" />
+          <p class="header__nickName">{{ userInfo.nickName }}</p>
           <img src="@/assets/arrow-down.png" alt="" class="header__arrow" />
         </div>
         <div
@@ -84,7 +77,7 @@
             <img src="@/assets/cog.png" alt="" class="header__settingsIcon" />
             <p class="header__settingsTittle">Настройки</p>
           </div>
-          <div class="header__settingsItem" @click="logOut">
+          <div class="header__settingsItem" @click="logout">
             <img src="@/assets/exit.png" alt="" class="header__settingsIcon" />
             <p class="header__settingsTittle">Выход</p>
           </div>
@@ -117,7 +110,6 @@ export default {
       infoVisiable: false,
       infoTittle: "",
       infoHeader: "",
-      responseMessage: "",
       settingPopupVisible: false,
     };
   },
@@ -126,13 +118,18 @@ export default {
   },
   computed: {
     auth() {
-      //let auth = this.$store.getters.getAuth;
-      let auth = true;
+      let auth = this.$store.getters.getAuth;
       return auth;
     },
     userInfo() {
-      let userInfo = this.$store.getters.getInfo;
+      let userInfo = this.$store.getters.getUserInfo;
       return userInfo;
+    },
+    avatar() {
+      if (this.userInfo?.avatar != "none") {
+        return require(`../assets/avatar/${this.userInfo.nickName}/${this.userInfo.avatar}`);
+      }
+      return require("../assets/avatar.png");
     },
   },
   methods: {
@@ -140,21 +137,11 @@ export default {
       this.$api.auth
         .checkAuth()
         .then((res) => {
-          console.log(res);
-          switch (res.data.type) {
-            case 1: {
-              let user = res.data.userInfo;
-              this.$store.commit("setUserInfo", user);
-              break;
-            }
-            default: {
-              this.$store.commit("resetAuth");
-              break;
-            }
-          }
+          let user = res.data.user;
+          this.$store.commit("setUserInfo", user);
         })
-        .catch((err) => {
-          console.log(err);
+        .catch(() => {
+          this.$store.commit("resetAuth");
         });
     },
     openSettingPopup() {},
@@ -178,66 +165,25 @@ export default {
         this.signType = "signUp";
       }
     },
-    sign(data) {
-      console.log(data, this.signType);
-      if (this.signType == "signUp") {
-        this.$api.auth
-          .register(data)
-          .then((res) => {
-            console.log(res);
-            switch (res.data.type) {
-              case 1: {
-                // Информационное окно
-                this.infoHeader = "Регистрация";
-                this.infoTittle = res.data.message;
-                this.infoVisiable = true;
-                this.signVisiable = false;
-                break;
-              }
-              default: {
-                this.responseMessage = res.data.message;
-                break;
-              }
-            }
-          })
-          .catch((err) => {
-            console.log(err);
-            this.responseMessage = "Сервер не отвечает";
-          });
-      } else if (this.signType == "signIn") {
-        this.$api.auth
-          .login(data)
-          .then((res) => {
-            console.log(res);
-            switch (res.data.type) {
-              case 1: {
-                let user = res.data.userInfo;
-                this.$store.commit("setUserInfo", user);
-                this.signVisiable = false;
-                break;
-              }
-              default: {
-                this.responseMessage = res.data.message;
-                break;
-              }
-            }
-          })
-          .catch((err) => {
-            console.log(err);
-            this.responseMessage = "Сервер не отвечает";
-          });
-      }
+    showInfoPopup(header, tittle) {
+      this.infoHeader = header;
+      this.infoTittle = tittle;
+      this.infoVisiable = true;
     },
-    logOut() {
+    register(payload) {
+      this.showInfoPopup("Регистрация", payload);
+      this.signVisiable = false;
+    },
+    logout() {
       this.$api.auth
         .logout()
         .then((res) => {
-          console.log(res);
-          this.checkAuth();
+          this.showInfoPopup("Logout", res.data.message);
+          this.$store.commit("resetAuth");
         })
         .catch((err) => {
-          console.log(err);
-          this.checkAuth();
+          this.showInfoPopup("Logout", err.response.data.message);
+          this.$store.commit("resetAuth");
         });
     },
   },

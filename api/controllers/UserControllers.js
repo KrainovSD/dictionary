@@ -52,11 +52,35 @@ export const register = async (req, res) => {
       email: req.body.email,
       hash,
       salt,
-      dateRegistration: Date.now(),
       role: 'user',
+      dateOfPassword: Date.now(),
+      resetPasswordKey: 'none',
+      resetPasswordTime: 0,
       confirmed: false,
+      dateRegistration: Date.now(),
       avatar: 'none',
-      token: 'none',
+      refreshToken: 'none',
+      lastLogin: 0,
+      statistics: [
+        {
+          lastLearning: 0,
+          bestStreak: 0,
+        },
+      ],
+      knownWords: [],
+      categoriesToLean: [],
+      wordsToStudy: [],
+      wordsToRepeat: [],
+      relevance: [],
+      options: [
+        {
+          countKnownWordsAtOneTime: 50,
+          countWrongsToAddToRepeat: 3,
+          regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+          maxDateChekRelevance: 45,
+          maxCountCheckRelevance: 3,
+        },
+      ],
     });
     const user = await doc.save();
     console.log(user);
@@ -65,9 +89,10 @@ export const register = async (req, res) => {
       from: config.server.postLog,
       to: req.body.email,
       subject: `Confirmation`,
-      text: `follow the link in order to confirm your account http://${config.server.host}:${config.server.port}/confirm?id=${user._id}`,
-      html: `follow the link in order to confirm your account <a href="http://${config.server.host}:${config.server.port}/confirm?id=${user._id}">Confirm</a> `,
+      text: `follow the link in order to confirm your account http://${config.server.host}:${config.server.port}/confirm/${user._id}`,
+      html: `follow the link in order to confirm your account <a href="http://${config.server.host}:${config.server.port}/confirm/${user._id}">Confirm</a> `,
     };
+    console.log(message.text, message.html, message);
     await transporter.sendMail(message);
 
     res.json({
@@ -86,23 +111,22 @@ export const confirm = async (req, res) => {
   try {
     let user = await User.updateOne(
       {
-        _id: req.query.id,
+        _id: req.body.id,
       },
       {
         confirmed: true,
       },
       {
         upsert: false, // Если не будет найдена запись, проигнорирует обновление, если true добавит запись новую запись со значением
-        useFindAndModify: true,
       }
     );
     if (user.modifiedCount == 0) {
-      return res.status(404).json('Not Found');
+      return res.status(404).json({ message: 'Not Found account' });
     }
-    return res.json('Account has been confirmed successfully');
+    return res.json({ message: 'Account has been confirmed successfully' });
   } catch (err) {
     console.log(err);
-    return res.status(404).json('Not Found');
+    return res.status(404).json({ message: 'Not Found account' });
   }
 };
 
@@ -134,15 +158,19 @@ export const login = async (req, res) => {
           'Account is not confirmed. Please, check your email and follow instruction',
       });
     }
-    const refreshToken = jwt.sign({ id: user._id }, secretRefreshToken, {
-      expiresIn: `${config.server.liveTimeRefreshToken}`,
-    });
+    const refreshTokenToSetCoockies = jwt.sign(
+      { id: user._id },
+      secretRefreshToken,
+      {
+        expiresIn: `${config.server.liveTimeRefreshToken}`,
+      }
+    );
     await User.updateOne(
       {
         nickName: user.nickName,
       },
       {
-        token: refreshToken,
+        refreshToken: refreshTokenToSetCoockies,
       },
       {
         upsert: false,
@@ -151,8 +179,7 @@ export const login = async (req, res) => {
     const timeExistCookies = getTimeExistCoockies(
       config.server.liveTimeRefreshToken
     );
-    console.log(timeExistCookies);
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie('refreshToken', refreshTokenToSetCoockies, {
       httpOnly: true,
       expires: timeExistCookies,
       sameSite: 'None', // DEV OPTIONS
@@ -160,14 +187,18 @@ export const login = async (req, res) => {
       // sameSite: strict - if UI exist inside domain
       // secure: true - if app use https protocol
     });
-    const userInfo = {
-      nickName: user.nickName,
-      userName: user.userName,
-      role: user.role,
-      dateRegistration: user.dateRegistration,
-      avatar: user.avatar,
-    };
-    res.json(userInfo);
+    let {
+      _id,
+      hash,
+      salt,
+      refreshToken,
+      resetPasswordKey,
+      resetPasswordTime,
+      confirmed,
+      ...userData
+    } = user._doc;
+    userData.email = replaceEmailToStar(userData.email);
+    res.json(userData);
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -193,10 +224,10 @@ export const logout = async (req, res) => {
     }
     let user = await User.updateOne(
       {
-        token: refreshToken,
+        refreshToken: refreshToken,
       },
       {
-        token: 'none',
+        refreshToken: 'none',
       },
       {
         upset: true,
@@ -220,16 +251,15 @@ export const logout = async (req, res) => {
 
 export const updateAccessToken = async (req, res) => {
   try {
-    let refreshToken = req.cookies?.refreshToken;
-    console.log(refreshToken);
-    if (!refreshToken) {
+    let refreshTokenFromCoockies = req.cookies?.refreshToken;
+    if (!refreshTokenFromCoockies) {
       return res.status(401).json({
         message: 'Need authorization',
       });
     }
 
     try {
-      let decoded = jwt.verify(refreshToken, secretRefreshToken);
+      let decoded = jwt.verify(refreshTokenFromCoockies, secretRefreshToken);
     } catch (err) {
       console.log(err);
       return res.status(401).json({
@@ -237,8 +267,7 @@ export const updateAccessToken = async (req, res) => {
       });
     }
 
-    let user = await User.findOne({ token: refreshToken });
-    console.log(user);
+    let user = await User.findOne({ token: refreshTokenFromCoockies });
     if (!user) {
       return res.status(401).json({
         message: 'Need authorization',
@@ -253,17 +282,11 @@ export const updateAccessToken = async (req, res) => {
         expiresIn: `${config.common.liveTimeAccessToken}`,
       }
     );
-    const userInfo = {
-      nickName: user.nickName,
-      userName: user.userName,
-      role: user.role,
-      dateRegistration: user.dateRegistration,
-      avatar: user.avatar,
-    };
-    console.log('done');
+    let { _id, hash, salt, refreshToken, ...userData } = user._doc;
+    userData.email = replaceEmailToStar(userData.email);
     return res.json({
       token: accessToken,
-      userInfo,
+      user: userData,
     });
   } catch (err) {
     console.log(err);
@@ -314,4 +337,18 @@ function getTimeExistCoockies(options) {
       break;
   }
   return timeExistToken;
+}
+function replaceEmailToStar(email) {
+  let start;
+  let length = email.length;
+  let star = '*';
+  if (length - 8 > 0) start = 5;
+  else if (length - 6 > 0) start = 3;
+  else if (length - 5 > 0) start = 2;
+  else return email;
+  let end = length - 3;
+  for (let i = 1; i < end - start; i++) {
+    star += '*';
+  }
+  return email.replace(email.slice(start, end), star);
 }

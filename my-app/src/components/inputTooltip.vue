@@ -37,6 +37,7 @@
     />
     <div
       class="inputTooltip__tooltip"
+      :class="tooltip == 'top' ? 'top' : ''"
       v-if="errors?.[field] && focusInput == true"
       :tooltip="errors?.[field]"
     ></div>
@@ -53,6 +54,7 @@ export default {
     placeholder: String,
     fontSize: String,
     type: String,
+    tooltip: String,
     maxLength: String, // for textarea
   },
   data() {
@@ -126,5 +128,16 @@ export default {
   top: 50%;
   margin-left: 1px;
   transform: translatey(-50%) rotate(90deg);
+}
+
+.inputTooltip__tooltip.top {
+  left: 50%;
+  top: -10%;
+}
+.inputTooltip__tooltip.top::after {
+  transform: translateX(-50%) translateY(-100%);
+}
+.inputTooltip__tooltip.top::before {
+  transform: translatey(-50%) rotate(0deg);
 }
 </style>

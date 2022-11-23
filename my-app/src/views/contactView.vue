@@ -51,6 +51,7 @@
             fontSize="18"
             :errors="errors"
             placeholder="Ваше сообщение"
+            tooltip="top"
           />
         </div>
       </div>

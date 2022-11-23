@@ -260,7 +260,7 @@ body {
 }
 
 .headerContainer {
-  max-width: 71.42857rem;
+  max-width: 1200px;
   margin: auto;
   display: flex;
 }
@@ -389,11 +389,13 @@ body {
 }
 
 .header__avatar {
-  width: 28%;
+  width: 2.42857rem;
+  height: 2.42857rem;
 }
 
 .header__nickName {
   margin: auto 0 auto 0.57143rem;
+  font-size: 1.2vw;
 }
 
 .header__arrow {
@@ -404,20 +406,22 @@ body {
 
 .header__userSettings {
   position: absolute;
-  top: 0;
-  left: 0;
+  display: flex;
+  flex-direction: column;
+  top: 105%;
+  left: -2.85714rem;
   width: 100%;
   background: rgba(0, 0, 0, 0.7);
   color: white;
   border-radius: 5px;
-  padding: 1.42857rem 0 0.35714rem 1.42857rem;
+  padding: 1.42857rem 1.42857rem 0.35714rem 1.42857rem;
   transition: all 0.3s ease;
   transform: scaleY(0);
+  width: auto;
 }
 
 .header__userSettings._active {
   transform: scaleY(100%);
-  top: 100%;
 }
 
 .header__settingsItem {
@@ -577,63 +581,6 @@ body {
   background: linear-gradient(-42deg, #e7fcf5 50%, #fce5f9 50%);
   display: flex;
   flex-direction: column;
-}
-
-.infoPopup {
-  margin: auto;
-  z-index: 2;
-  background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
-  display: flex;
-  flex-direction: column;
-  min-width: 30%;
-  max-width: 50%;
-  padding: 20px;
-}
-
-.infoPopup__header {
-  font-weight: 700;
-  font-size: 1.8vw;
-  margin: 0 auto;
-}
-
-.infoPopup__tittle {
-  text-align: justify;
-  font-size: 1.2vw;
-  font-family: Dreamcast;
-}
-
-.infoPopup__button {
-  padding: 0.92857rem;
-  font-family: Dreamcast;
-  position: relative;
-  background-color: white;
-  border-radius: 0.21429rem;
-  box-shadow: 0px 0px 4px 0px #ffffff;
-  outline: 1px solid rgba(255, 255, 255, 0.5);
-  transition: all 0.3s ease;
-  background-color: #ffffff;
-  width: 30%;
-  margin: 0.35714rem auto;
-}
-
-.infoPopup__button:hover {
-  transform: translateY(-0.28571rem);
-  box-shadow: 0px 0.57143rem 0.57143rem -0.42857rem #6092ff;
-  outline: 1px solid rgba(96, 146, 255, 0.5);
-}
-
-.infoPopup__button._active {
-  outline: 1px solid rgba(96, 146, 255, 0);
-  outline-offset: 1.07143rem;
-  transform: translateY(0);
-  box-shadow: 0px 0 0 0 #fff;
-}
-
-.infoPopup__line {
-  width: 80%;
-  margin: 0.57143rem auto;
-  height: 0.07143rem;
-  background-color: black;
 }
 
 .homeImg {

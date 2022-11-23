@@ -6,12 +6,6 @@ app.use(express.json()); // req.body only for application/json
 import cookieParser from 'cookie-parser';
 app.use(cookieParser()); // req.cookies
 
-import mongoManager from 'mongodb-topology-manager';
-const server = new mongoManager.Server('mongod', {
-  dbpath: `mongodb://localhost:27017`,
-  port: 27017,
-});
-server.start();
 import mongoose from 'mongoose';
 mongoose
   .connect(`mongodb://${config.server.dbHost}/${config.server.dbName}`)
@@ -29,7 +23,6 @@ mongoose.connection.on('recconect', () => {
 mongoose.connection.on('close', () => {
   console.log('DB close connect');
 });
-server.stop();
 
 app.listen(config.server.port, config.server.host, (err) => {
   if (err) {
@@ -71,7 +64,7 @@ app.post(
   handleValidationErrors,
   UserController.register
 );
-app.get('/confirm', UserController.confirm);
+app.post('/confirm', UserController.confirm);
 app.post(
   '/login',
   loginValidation,
@@ -79,7 +72,7 @@ app.post(
   UserController.login
 );
 app.post('/logout', UserController.logout);
-app.put('/tokens', UserController.updateAccessToken);
+app.post('/tokens', UserController.updateAccessToken);
 
 app.post('/checkAuth', checkAuth, (req, res) => {
   res.json(req.userId);

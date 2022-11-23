@@ -1,10 +1,10 @@
-@import '_custom';
-@import '_fonts';
-@import '_animations';
+@import './static/_custom';
+@import './static/_fonts';
+@import './static/_animations';
+@import './static/_const';
 
 @import '_main';
 @import '_signForm';
-@import '_infoPopup';
 @import '_home';
 @import '_learn';
 @import '_newWord';
