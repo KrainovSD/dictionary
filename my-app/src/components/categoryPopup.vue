@@ -1,34 +1,17 @@
 <template>
   <div class="modal__backDrop" style="z-index: 4" ref="backDrop">
-    <div class="categoryIcon" ref="categoryIcon" v-if="addIconVisible == true">
-      <img
-        src="@/assets/close.png"
-        alt=""
-        class="sign__closeButton"
-        @click.stop="closeCategoryIcon"
-      />
-      <div class="categoryIcon__container">
-        <div class="categoryIcon__containerIcon">
-          <img
-            v-for="(item, index) in iconProd"
-            :key="index"
-            :src="require(`@/assets/category/${item}.png`)"
-            alt=""
-            :id="item"
-            class="categoryIcon__icon categIcon"
-            :class="currentSelectionIcon == item ? '_focus' : ''"
-          />
-        </div>
-        <div class="newPassword__confirmContainer">
-          <confirm-button
-            text="Подтвердить"
-            @click="chooseIcon"
-            fontSize="14"
-            :disabled="isCurrentSelectionIconEmpty"
-          />
-        </div>
-      </div>
-    </div>
+    <category-icon
+      v-if="addIconVisible == true"
+      :icon="icon"
+      @close="addIconVisible = false"
+      @add="
+        (payload) => {
+          icon = payload;
+          addIconVisible = false;
+        }
+      "
+    />
+
     <div class="categoryPopup">
       <img
         src="@/assets/close.png"
@@ -60,7 +43,7 @@
         </div>
 
         <div class="categoryPopup__containerIcon">
-          <div class="categoryPopup__addIcon" @click="openCategoryIcon">
+          <div class="categoryPopup__addIcon" @click="addIconVisible = true">
             Выбрать иконку
           </div>
           <p style="color: red" v-if="icon == ''">Выберите иконку!</p>
@@ -121,15 +104,16 @@
 </template>
 
 <script>
-import { nextTick } from "@vue/runtime-core";
 import inputTooltip from "../components/inputTooltip.vue";
 import confirmButton from "../components/confirmButton.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
+import categoryIcon from "../components/categoryIcon.vue";
 export default {
   components: {
     inputTooltip,
     confirmButton,
     multipleInputTooltip,
+    categoryIcon,
   },
   props: {
     categoryPopupType: String,
@@ -142,52 +126,9 @@ export default {
       errors: {},
       tooltip: false,
       addIconVisible: false,
-      currentSelectionIcon: "",
-      iconProd: [
-        "apple",
-        "bag",
-        "beers",
-        "belt",
-        "block",
-        "box",
-        "cap",
-        "car",
-        "cat",
-        "chrome",
-        "clock",
-        "cloud",
-        "coffee",
-        "crown",
-        "fist",
-        "flag",
-        "folder",
-        "heart",
-        "hole",
-        "home",
-        "key",
-        "location",
-        "mask",
-        "money",
-        "paw",
-        "plane",
-        "playpen",
-        "puzzle",
-        "shield",
-        "space",
-        "star",
-        "telephone",
-        "trophy",
-        "t-shirt",
-      ],
     };
   },
 
-  computed: {
-    isCurrentSelectionIconEmpty() {
-      if (this.currentSelectionIcon == "") return true;
-      return false;
-    },
-  },
   methods: {
     closePopup() {
       if (!this.$refs.backDrop.classList.contains("close")) {
@@ -199,35 +140,6 @@ export default {
       }
     },
 
-    async openCategoryIcon() {
-      this.addIconVisible = true;
-      if (this.icon != "") this.currentSelectionIcon = this.icon;
-      await nextTick();
-      let imgs = Array.from(document.querySelectorAll(".categIcon"));
-      imgs.forEach((img) => {
-        img.addEventListener("click", this.selectIcon);
-      });
-    },
-    closeCategoryIcon() {
-      let div = this.$refs.categoryIcon;
-      if (!div.classList.contains("close")) {
-        div.classList.toggle("close");
-      }
-      setTimeout(() => {
-        this.currentSelectionIcon = "";
-        this.addIconVisible = false;
-      }, 300);
-    },
-    selectIcon(event) {
-      let icon = event.target;
-      this.currentSelectionIcon = icon.id;
-    },
-    chooseIcon() {
-      if (this.currentSelectionIcon != "") {
-        this.icon = this.currentSelectionIcon;
-        this.closeCategoryIcon();
-      }
-    },
     validateForm(form) {
       this.errors = {};
       Object.keys(form).forEach((key) => {

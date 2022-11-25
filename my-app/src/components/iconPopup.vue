@@ -94,4 +94,51 @@ export default {
 };
 </script>
 
-<style></style>
+<style>
+.iconPopup {
+  margin: auto;
+  background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+}
+.iconPopup__container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.iconPopup__avatarContainer {
+  padding: 20px 0;
+  display: flex;
+  margin: 0 auto;
+}
+.iconPopup__avatar {
+  width: 64px;
+  height: 64px;
+}
+.iconPopup__fileContainer {
+  display: flex;
+  flex-direction: column;
+  margin-left: 20px;
+}
+.iconPopup__avatarReplace {
+  margin: 0 0 0 0;
+  font-family: antique;
+}
+.iconPopup__avatarReplace::file-selector-button {
+  padding: 8px 13px;
+  border-radius: 20px;
+  font-size: 14px;
+  background-color: #698afe;
+  box-shadow: 0px 3px 13px 0px #c2cef0;
+  color: white;
+  font-family: antique;
+  border: 0;
+  cursor: pointer;
+}
+.iconPopup__error {
+  color: red;
+  padding-top: 4px;
+  margin: 0 0 auto 0;
+}
+</style>

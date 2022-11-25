@@ -23,7 +23,7 @@
         autocomplete="off"
       />
       <div
-        class="wordPopup__tooltip"
+        class="inputTooltip__tooltip"
         v-if="errors?.[field] && focusInput == true"
         :tooltip="errors?.[field]"
       ></div>
@@ -105,4 +105,58 @@ export default {
 };
 </script>
 
-<style></style>
+<style>
+.setting__userDataTittle {
+  font-size: 14px;
+  line-height: 1;
+}
+.setting__userData {
+  font-size: 14px;
+  margin-left: 5px;
+  margin-right: 8px;
+  line-height: 1;
+}
+.setting__userDataInput {
+  border-radius: 3px;
+  box-shadow: 0px 0px 4px 0px #ffffff;
+  background-color: white;
+  border: 1px solid white;
+  position: relative;
+  font-size: 14px;
+  margin-left: 10px;
+  width: 180px;
+}
+.setting__userDataInput._focus {
+  border-color: #66afe9;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),
+    0 0 8px rgba(102, 175, 233, 0.6);
+}
+.setting__userDataInput._error {
+  border-color: #e96666;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),
+    0 0 8px rgba(233, 102, 102, 0.6);
+}
+
+.setting__userDataInput.number {
+  width: 25px;
+}
+.setting__userDataReplace {
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 12px;
+  background-color: #698afe;
+  box-shadow: 0px 3px 13px 0px #c2cef0;
+  color: white;
+  font-family: antique;
+  margin: auto 5px auto 0;
+}
+.setting__userDataReplace._change {
+  margin: auto 5px auto auto;
+}
+.setting__userDataClose {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  margin: auto 5px auto auto;
+}
+</style>

@@ -3,7 +3,7 @@
     class="confirmButton"
     ref="confirmButton"
     @click="confirmData"
-    :style="`font-size: ${fontSize}px`"
+    :style="`font-size: ${fontSize}`"
   >
     {{ text }}
   </button>

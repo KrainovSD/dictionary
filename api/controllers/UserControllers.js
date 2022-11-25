@@ -65,6 +65,8 @@ export const register = async (req, res) => {
         {
           lastLearning: 0,
           bestStreak: 0,
+          lastRepeatKnownWords: 0,
+          lastReverseRepeatKnownWords: 0,
         },
       ],
       knownWords: [],
@@ -83,7 +85,6 @@ export const register = async (req, res) => {
       ],
     });
     const user = await doc.save();
-    console.log(user);
 
     const message = {
       from: config.server.postLog,
@@ -92,7 +93,6 @@ export const register = async (req, res) => {
       text: `follow the link in order to confirm your account http://${config.server.host}:${config.server.port}/confirm/${user._id}`,
       html: `follow the link in order to confirm your account <a href="http://${config.server.host}:${config.server.port}/confirm/${user._id}">Confirm</a> `,
     };
-    console.log(message.text, message.html, message);
     await transporter.sendMail(message);
 
     res.json({
@@ -171,6 +171,7 @@ export const login = async (req, res) => {
       },
       {
         refreshToken: refreshTokenToSetCoockies,
+        lastLogin: Date.now(),
       },
       {
         upsert: false,
@@ -267,12 +268,17 @@ export const updateAccessToken = async (req, res) => {
       });
     }
 
-    let user = await User.findOne({ token: refreshTokenFromCoockies });
+    let user = await User.findOne({ refreshToken: refreshTokenFromCoockies });
     if (!user) {
       return res.status(401).json({
         message: 'Need authorization',
       });
     }
+    let update = await User.updateOne(
+      { refreshToken: refreshTokenFromCoockies },
+      { lastLogin: Date.now() },
+      { upset: true }
+    );
     const accessToken = jwt.sign(
       {
         userId: user._id,
@@ -294,6 +300,120 @@ export const updateAccessToken = async (req, res) => {
       message: "Couldn't update token",
     });
   }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    let { nickName, email } = req.body;
+    let user = await User.findOne({ nickName: nickName });
+    if (!user) {
+      return res.status(400).json({
+        message: `Nickname or email isn't correct!`,
+      });
+    }
+    if (user.email != email) {
+      return res.status(400).json({
+        message: `Nickname or email isn't correct!`,
+      });
+    }
+    let dateOfPassword = user.dateOfPassword;
+    if (checkSimilarDay(dateOfPassword)) {
+      return res.status(400).json({
+        message: `You have changed password today!`,
+      });
+    }
+
+    let resetPasswordKey = crypto.randomBytes(128).toString('base64');
+    resetPasswordKey = resetPasswordKey.replace(/\//g, '');
+    let resetPasswordTime = new Date(Date.now() + 5 * 60000);
+    let update = await User.updateOne(
+      {
+        nickName: nickName,
+      },
+      {
+        resetPasswordKey: resetPasswordKey,
+        resetPasswordTime: resetPasswordTime,
+      },
+      {
+        upset: true,
+      }
+    );
+    if (update.modifiedCount == 0) {
+      return res.status(400).json({
+        message: `Couldn't perform the operation`,
+      });
+    }
+    const message = {
+      from: config.server.postLog,
+      to: req.body.email,
+      subject: `ResetPassword`,
+      text: `follow the link in order to resetPassword for your account http://${config.server.host}:${config.server.port}/pass/${resetPasswordKey}`,
+      html: `follow the link in order to resetPassword for your account <a href="http://${config.server.host}:${config.server.port}/pass/${resetPasswordKey}">ResetPassword</a> `,
+    };
+    await transporter.sendMail(message);
+
+    res.json({
+      message:
+        'We have send message to your email with the instraction for replace your password.',
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: "Couldn't perform the operation",
+    });
+  }
+};
+
+export const newPassword = async (req, res) => {
+  try {
+    let { password, key } = req.body;
+    let user = await User.findOne({ resetPasswordKey: key });
+    if (!user) {
+      return res.status(400).json({
+        message: `Key isn't correct or time to reset is up`,
+      });
+    }
+    if (user.resetPasswordTime < Date.now()) {
+      return res.status(400).json({
+        message: `Key isn't correct or time to reset is up`,
+      });
+    }
+    let salt = crypto.randomBytes(128).toString('base64');
+    let hash = pbkdf2Sync(
+      password + salt,
+      secretPassword + salt,
+      iterations,
+      512,
+      'sha512'
+    );
+    hash = hash.toString('hex');
+    let update = await User.updateOne(
+      { resetPasswordKey: key },
+      {
+        salt: salt,
+        hash: hash,
+        resetPasswordKey: '',
+        resetPasswordTime: 0,
+        dateOfPassword: Date.now(),
+      },
+      { upset: true }
+    );
+    if (update.modifiedCount == 0) {
+      return res.status(400).json({
+        message: `Couldn't perform the operation`,
+      });
+    }
+    res.json({ message: 'Password has successfully replaced' });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: "Couldn't perform the operation",
+    });
+  }
+};
+
+export const changeInfo = async (req, res) => {
+  console.log(req.userId);
 };
 
 function checkSimilarField(users, reqData) {
@@ -351,4 +471,34 @@ function replaceEmailToStar(email) {
     star += '*';
   }
   return email.replace(email.slice(start, end), star);
+}
+
+function dateFormat(date) {
+  date = new Date(date);
+  let minute = date.getMinutes();
+  let hour = date.getHours();
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  if (minute >= 0 && minute < 10) {
+    minute = `0${minute}`;
+  }
+  if (hour >= 0 && hour < 10) {
+    hour = `0${hour}`;
+  }
+
+  return `${hour}:${minute} ${day}-${month}-${year}`;
+}
+function checkSimilarDay(date) {
+  date = new Date(date);
+  let now = new Date(Date.now());
+  if (
+    date.getDate() == now.getDate() &&
+    date.getMonth() == now.getMonth() &&
+    date.getFullYear() == now.getFullYear()
+  ) {
+    return true;
+  }
+  return false;
 }

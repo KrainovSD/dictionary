@@ -3,26 +3,27 @@
 @import './static/_animations';
 @import './static/_const';
 
-@import '_main';
-@import '_signForm';
-@import '_home';
-@import '_learn';
-@import '_newWord';
-@import '_wordPopup';
-@import '_categoryPopup';
-@import '_learnCard';
-@import '_knownWords';
-@import '_repeatWords';
-@import '_docsView';
-@import '_contactView';
-@import "_relevance";
-@import "_settingPopup";
-@import "_newPassword";
-@import "_forgotPassword";
-@import "_iconPopup";
+
+@import './view/_mainView';
+@import './view/_homeView';
+@import './view/_learnView';
+@import './view/_newWords';
+@import './view/_knownWords';
+@import './view/_repeatWords';
+@import './view/_docsView';
+@import './view/_contactView';
+@import "./view/_relevanceView";
+
+
+@import './components/_signForm';
+@import './components/_wordPopup';
+@import './components/_categoryPopup';
+@import './components/_learnCard';
+@import "./components/_settingPopup";
+
 
 a {
-    color: inherit // disables style router-link
+    color: inherit //                 ./components/ disables style router-link
 }
 
 body {

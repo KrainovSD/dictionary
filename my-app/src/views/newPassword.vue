@@ -1,4 +1,14 @@
 <template>
+  <info-popup
+    v-if="infoVisible == true"
+    :infoTittle="infoTittle"
+    :infoHeader="infoHeader"
+    @close="
+      this.infoVisible = false;
+      this.infoTittle = '';
+      this.infoHeader = '';
+    "
+  />
   <div class="newPassword">
     <div class="newPassword__container">
       <div class="sign__container">
@@ -31,7 +41,7 @@
         <p class="sign__infoMessage">{{ responseMessage }}</p>
 
         <div class="newPassword__confirmContainer">
-          <confirm-button text="Подтвердить" @click="sendData" fontSize="14" />
+          <confirm-button text="Подтвердить" @click="checkData" fontSize="14" />
         </div>
       </div>
     </div>
@@ -41,19 +51,24 @@
 <script>
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 import confirmButton from "../components/confirmButton.vue";
+import infoPopup from "../components/infoPopup.vue";
 export default {
-  components: { inputTooltipIcon, confirmButton },
+  components: { inputTooltipIcon, confirmButton, infoPopup },
   data() {
     return {
       password: "",
       repeatPassword: "",
       errors: {},
-      key: "",
       responseMessage: "",
+      infoVisible: false,
+      infoHeader: "",
+      infoTittle: "",
     };
   },
-  mounted() {
-    this.key = this.$route.params.key;
+  computed: {
+    key() {
+      return this.$route.params.key;
+    },
   },
 
   methods: {
@@ -98,7 +113,8 @@ export default {
         }
       });
     },
-    sendData() {
+    checkData() {
+      this.responseMessage = "";
       let form = {
         password: this.password,
         repeatPassword: this.repeatPassword,
@@ -107,10 +123,36 @@ export default {
       this.validateForm(form);
 
       if (Object.keys(this.errors).length === 0) {
-        console.log("ok");
+        this.sendData({ password: form.password, key: this.key });
       } else {
         console.log(this.errors);
       }
+    },
+    sendData(form) {
+      this.$api.change
+        .password(form)
+        .then((res) => {
+          this.infoHeader = "New Password";
+          this.infoTittle = res.data.message;
+          this.infoVisible = true;
+        })
+        .catch((err) => {
+          if (err.response.status == 400) {
+            let errors = err.response.data;
+            let message = "";
+            Object.values(errors).forEach((err) => {
+              if (message == "") {
+                message = `${err} \n`;
+                return;
+              }
+              message += `${err} \n`;
+            });
+            this.responseMessage = message;
+            return;
+          }
+          console.log(err);
+          this.responseMessage = "Сервер не отвечает";
+        });
     },
   },
   watch: {
@@ -124,4 +166,18 @@ export default {
 };
 </script>
 
-<style></style>
+<style>
+.newPassword {
+  display: flex;
+}
+.newPassword__container {
+  margin: 50px auto;
+  background: linear-gradient(-42deg, #e7fcf5 50%, #fce5f9 50%);
+  display: flex;
+  flex-direction: column;
+  width: 345px;
+}
+.newPassword__confirmContainer {
+  margin-top: 16px;
+}
+</style>

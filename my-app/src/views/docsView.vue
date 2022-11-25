@@ -103,6 +103,7 @@ export default {
   },
   mounted() {
     this.$refs.docsContent.addEventListener("scroll", this.selectChapter);
+    /* Отправлять запрос серверу на скачивание документа и записывать его в docs */
   },
 
   methods: {

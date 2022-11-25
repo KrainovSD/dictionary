@@ -49,7 +49,13 @@ app.use((request, response, next) => {
 app.use('/', routes.auth);*/
 
 import { UserController } from './controllers/index.js';
-import { loginValidation, registerValidation } from './validations.js';
+import {
+  loginValidation,
+  registerValidation,
+  forgotPasswordValidation,
+  newPasswordValidation,
+  infoValidation,
+} from './validations.js';
 import {
   handleValidationErrors,
   checkAuth,
@@ -73,10 +79,25 @@ app.post(
 );
 app.post('/logout', UserController.logout);
 app.post('/tokens', UserController.updateAccessToken);
-
-app.post('/checkAuth', checkAuth, (req, res) => {
-  res.json(req.userId);
-});
+app.post(
+  '/forgot',
+  forgotPasswordValidation,
+  handleValidationErrors,
+  UserController.forgotPassword
+);
+app.post(
+  '/password',
+  newPasswordValidation,
+  handleValidationErrors,
+  UserController.newPassword
+);
+app.post(
+  '/info',
+  checkAuth,
+  infoValidation,
+  handleValidationErrors,
+  UserController.changeInfo
+);
 
 process.on('uncaughtException', (err) => {
   console.log(err);

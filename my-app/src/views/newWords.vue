@@ -180,7 +180,9 @@
           </div>
         </div>
       </div>
-      <p class="newWords__nameCategory">Selected category</p>
+      <p class="newWords__nameCategory">
+        Selected category: {{ selectedCategory }}
+      </p>
     </div>
   </div>
 </template>
@@ -208,6 +210,11 @@ export default {
       learnCardVisible: false,
       learnType: "standart",
     };
+  },
+  computed: {
+    userInfo() {
+      return this.$store.getters.getUserInfo;
+    },
   },
   methods: {
     startLearn(type) {

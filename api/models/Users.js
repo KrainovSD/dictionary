@@ -3,6 +3,8 @@ const statisticsSchema = new mongoose.Schema(
   {
     lastLearning: Number,
     bestStreak: Number,
+    lastRepeatKnownWords: Number,
+    lastReverseRepeatKnownWords: Number,
   },
   { _id: false }
 );

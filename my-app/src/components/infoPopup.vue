@@ -1,5 +1,5 @@
 <template>
-  <div class="modal__backDrop" ref="backDrop">
+  <div class="modal__backDrop" style="z-index: 1000" ref="backDrop">
     <div class="infoPopup">
       <h1 class="infoPopup__header">{{ infoHeader }}</h1>
       <div class="infoPopup__line"></div>
@@ -8,7 +8,7 @@
       </p>
       <div class="infoPopup__line"></div>
       <div class="infoPopup__confirmContainer">
-        <confirm-button text="OK" @click="closePopup" fontSize="14" />
+        <confirm-button text="OK" @click="closePopup" fontSize="1vw" />
       </div>
     </div>
   </div>

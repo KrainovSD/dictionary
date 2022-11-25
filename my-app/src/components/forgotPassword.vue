@@ -32,8 +32,9 @@
             :errors="errors"
           />
         </div>
+        <p class="sign__infoMessage">{{ responseMessage }}</p>
         <div class="newPassword__confirmContainer">
-          <confirm-button text="Отправить" @click="sendData" fontSize="14" />
+          <confirm-button text="Отправить" @click="checkData" fontSize="14" />
         </div>
       </div>
     </div>
@@ -53,6 +54,7 @@ export default {
       nickName: "",
       email: "",
       errors: {},
+      responseMessage: "",
     };
   },
 
@@ -77,9 +79,9 @@ export default {
                 "NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания!";
               return;
             }
-            if (fieldData.length < 3 && fieldData.length > 25) {
+            if (fieldData.length < 3 && fieldData.length > 16) {
               this.errors[field] =
-                "Длина NickName не должна превышать 25 символов или быть меньше, чем 3 символа!";
+                "Длина NickName не должна превышать 16 символов или быть меньше, чем 3 символа!";
               return;
             }
             break;
@@ -105,9 +107,9 @@ export default {
                 "NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания!";
               return;
             }
-            if (fieldData.length < 3 && fieldData.length > 25) {
+            if (fieldData.length < 3 && fieldData.length > 16) {
               this.errors[field] =
-                "Длина NickName не должна превышать 25 символов или быть меньше, чем 3 символа!";
+                "Длина NickName не должна превышать 16 символов или быть меньше, чем 3 символа!";
               return;
             }
             break;
@@ -125,7 +127,8 @@ export default {
         delete this.errors[field];
       }
     },
-    sendData() {
+    checkData() {
+      this.responseMessage = "";
       let form = {
         nickName: this.nickName,
         email: this.email,
@@ -134,10 +137,40 @@ export default {
       this.validateForm(form);
 
       if (Object.keys(this.errors).length === 0) {
-        this.$emit("send", form);
+        this.sendData(form);
       } else {
         console.log(this.errors);
       }
+    },
+    sendData(form) {
+      this.$api.change
+        .forgot(form)
+        .then((res) => {
+          if (!this.$refs.backDrop.classList.contains("close")) {
+            this.$refs.backDrop.classList.toggle("close");
+            setTimeout(() => {
+              this.$refs.backDrop.classList.toggle("close");
+              this.$emit("forgot", res.data.message);
+            }, 300);
+          }
+        })
+        .catch((err) => {
+          if (err.response.status == 400) {
+            let errors = err.response.data;
+            let message = "";
+            Object.values(errors).forEach((err) => {
+              if (message == "") {
+                message = `${err} \n`;
+                return;
+              }
+              message += `${err} \n`;
+            });
+            this.responseMessage = message;
+            return;
+          }
+          console.log(err);
+          this.responseMessage = "Сервер не отвечает";
+        });
     },
   },
   watch: {
@@ -151,4 +184,12 @@ export default {
 };
 </script>
 
-<style></style>
+<style>
+.forgotPassword {
+  margin: auto;
+  background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
+  display: flex;
+  flex-direction: column;
+  width: 345px;
+}
+</style>

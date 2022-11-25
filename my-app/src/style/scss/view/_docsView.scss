@@ -4,7 +4,8 @@
 }
 
 .docs {
-    max-width: rem(1000);
+    max-width: $maxWidth;
+    padding: 0 rem(20);
     margin: 0 auto;
     display: flex;
     font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
@@ -100,5 +101,6 @@
         padding-bottom: rem(20);
         text-align: justify;
         letter-spacing: rem(1);
+        font-size: 1.1vw;
     }
 }

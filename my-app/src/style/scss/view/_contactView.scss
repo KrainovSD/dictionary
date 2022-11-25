@@ -4,9 +4,9 @@
 }
 
 .contact {
-    max-width: rem(1000);
+    max-width: $maxWidth;
     margin: 0 auto;
-    padding: rem(30) 0;
+    padding: rem(30) rem(20);
     display: flex;
     flex-direction: column;
 
@@ -46,18 +46,22 @@
         display: flex;
     }
 
-    &__containerInput {
+    &__leftSide {
         width: 40%;
         margin: 0 auto 0 0;
         display: flex;
         flex-direction: column;
     }
 
-    &__containerTextarea {
+    &__rightSide {
         width: 55%;
         height: rem(215);
         display: block;
         margin-top: rem(5);
+    }
+
+    &__inputContainer {
+        padding: 0.35714rem 0 0 0;
     }
 
     &__confirmContainer {

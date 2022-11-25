@@ -193,7 +193,6 @@
 </template>
 
 <script>
-import { nextTick } from "@vue/runtime-core";
 import iconPopup from "../components/iconPopup.vue";
 import settingField from "../components/settingField.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
@@ -232,31 +231,6 @@ export default {
         }, 300);
       }
     },
-
-    async openEditor(field) {
-      let change = `${field}Change`;
-      this.changes[change] = true;
-      delete this.errors[field];
-      await nextTick();
-      if (field != "regularityToRepeat") {
-        let input = document.querySelector(`#${field}`);
-        input.addEventListener("focus", this.selectInput);
-        input.addEventListener("focusout", this.unSelectInput);
-        if (input.classList.contains("number"))
-          input.addEventListener("keydown", this.forbiddenLetter);
-      } else {
-        let inputs = Array.from(document.querySelectorAll(`#${field} input`));
-        inputs.forEach((input) => {
-          input.addEventListener("focus", this.selectInput);
-          input.addEventListener("focusout", this.unSelectInput);
-          input.addEventListener("keydown", this.forbiddenLetter);
-        });
-      }
-    },
-    closeEditor(fieldChange) {
-      this.changes[fieldChange] = false;
-    },
-
     validateField(field, fieldData) {
       if (fieldData.length == 0) {
         this.errors[field] = "Поле обязательно для заполнения!";

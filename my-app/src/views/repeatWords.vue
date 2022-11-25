@@ -18,7 +18,9 @@
         </div>
 
         <div class="repeatWords__lastInfo">
-          <p>Количество ошибок в слове для добавления:{{}}</p>
+          <p>
+            Количество ошибок в слове для добавления: {{ countWrongsToAdd }}
+          </p>
         </div>
       </div>
 
@@ -115,7 +117,16 @@ export default {
       learnType: "standart",
     };
   },
-
+  computed: {
+    userInfo() {
+      return this.$store.getters.getUserInfo;
+    },
+    countWrongsToAdd() {
+      if (this.userInfo?.options?.[0]?.countWrongsToAddToRepeat)
+        return this.userInfo?.options?.[0]?.countWrongsToAddToRepeat;
+      return "Не обнаружено";
+    },
+  },
   methods: {
     startLearn(type) {
       this.learnType = type;

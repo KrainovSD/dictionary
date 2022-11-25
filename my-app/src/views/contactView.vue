@@ -9,8 +9,8 @@
       <h1>Мы на связи</h1>
       <p>Оставьте свой вопрос или предложение, и мы свяжемся с вами.</p>
       <div class="mailer__container">
-        <div class="mailer__containerInput">
-          <div class="wordPopup__inputContainer">
+        <div class="mailer__leftSide">
+          <div class="mailer__inputContainer">
             <input-tooltip
               type="input"
               v-model="userName"
@@ -20,7 +20,7 @@
               placeholder="Имя"
             />
           </div>
-          <div class="wordPopup__inputContainer">
+          <div class="mailer__inputContainer">
             <input-tooltip
               type="input"
               v-model="email"
@@ -38,11 +38,11 @@
             <confirm-button
               text="Отправить"
               @click="sendMessage"
-              fontSize="15"
+              fontSize="15px"
             />
           </div>
         </div>
-        <div class="mailer__containerTextarea">
+        <div class="mailer__rightSide">
           <input-tooltip
             type="textarea"
             maxLength="600"

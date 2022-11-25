@@ -1,14 +1,25 @@
 <template>
-  <div class="responceMessage__container">
-    <div class="responceMessage">{{ responceMessage }}</div>
-  </div>
+  <info-popup
+    v-if="infoVisiable == true"
+    :infoTittle="infoTittle"
+    :infoHeader="infoHeader"
+    @close="
+      this.infoVisiable = false;
+      this.infoTittle = '';
+      this.infoHeader = '';
+    "
+  />
 </template>
 
 <script>
+import infoPopup from "../components/infoPopup.vue";
 export default {
+  components: {
+    infoPopup,
+  },
   data() {
     return {
-      responceMessage: "account has been confirmed successfully!",
+      infoVisiable: false,
     };
   },
   mounted() {
@@ -18,7 +29,8 @@ export default {
     this.$api.auth
       .confirm(form)
       .then((res) => {
-        this.responceMessage = res.data.message;
+        let responseMessage = res.data.message;
+        this.showInfoPopup("Confirm", responseMessage);
       })
       .catch((err) => {
         if (err.response.status == 400) {
@@ -31,28 +43,26 @@ export default {
             }
             message += `${err} \n`;
           });
-          this.responseMessage = message;
+          let responseMessage = message;
+          this.showInfoPopup("Confirm", responseMessage);
           return;
         }
         if (err.response.status == 404) {
-          this.responceMessage = err.response.data.message;
+          let responseMessage = err.response.data.message;
+          this.showInfoPopup("Confirm", responseMessage);
         }
-        this.responseMessage = "Сервер не отвечает";
+        let responseMessage = "Сервер не отвечает";
+        this.showInfoPopup("Confirm", responseMessage);
       });
+  },
+  methods: {
+    showInfoPopup(header, tittle) {
+      this.infoHeader = header;
+      this.infoTittle = tittle;
+      this.infoVisiable = true;
+    },
   },
 };
 </script>
 
-<style>
-.responceMessage__container {
-  display: flex;
-  margin: 0 auto;
-  max-width: 1000px;
-}
-.responceMessage {
-  margin: 40px auto;
-  font-size: 5vw;
-  font-family: antique;
-  text-align: center;
-}
-</style>
+<style></style>

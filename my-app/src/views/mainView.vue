@@ -1,17 +1,17 @@
 <template>
   <sign-form
-    v-if="signVisiable == true"
+    v-if="signVisible == true"
     :signType="signType"
-    @close="this.signVisiable = false"
+    @close="this.signVisible = false"
     @switch="this.signType = 'signUp'"
     @register="(payload) => register(payload)"
   />
   <info-popup
-    v-if="infoVisiable == true"
+    v-if="infoVisible == true"
     :infoTittle="infoTittle"
     :infoHeader="infoHeader"
     @close="
-      this.infoVisiable = false;
+      this.infoVisible = false;
       this.infoTittle = '';
       this.infoHeader = '';
     "
@@ -20,7 +20,7 @@
     v-if="settingPopupVisible == true"
     @close="
       settingPopupVisible = false;
-      userMenuVisiable = false;
+      userMenuVisible = false;
     "
   />
 
@@ -61,8 +61,8 @@
         <div
           class="header__activeUserMenu"
           @click="
-            if (userMenuVisiable == true) userMenuVisiable = false;
-            else userMenuVisiable = true;
+            if (userMenuVisible == true) userMenuVisible = false;
+            else userMenuVisible = true;
           "
         >
           <img :src="avatar" alt="" class="header__avatar" />
@@ -71,7 +71,7 @@
         </div>
         <div
           class="header__userSettings"
-          :class="userMenuVisiable == true ? '_active' : ''"
+          :class="userMenuVisible == true ? '_active' : ''"
         >
           <div class="header__settingsItem" @click="settingPopupVisible = true">
             <img src="@/assets/cog.png" alt="" class="header__settingsIcon" />
@@ -104,17 +104,17 @@ export default {
   },
   data() {
     return {
-      signVisiable: false,
+      signVisible: false,
       signType: "",
-      userMenuVisiable: false,
-      infoVisiable: false,
+      userMenuVisible: false,
+      infoVisible: false,
       infoTittle: "",
       infoHeader: "",
       settingPopupVisible: false,
     };
   },
   mounted() {
-    this.checkAuth();
+    if (!this.auth) this.checkAuth();
   },
   computed: {
     auth() {
@@ -151,7 +151,7 @@ export default {
         setTimeout(() => {
           this.$refs.signIn.classList.toggle("header__signIn_active");
         }, 500);
-        this.signVisiable = true;
+        this.signVisible = true;
         this.signType = "signIn";
       }
     },
@@ -161,18 +161,18 @@ export default {
         setTimeout(() => {
           this.$refs.signUp.classList.toggle("header__signUp_active");
         }, 500);
-        this.signVisiable = true;
+        this.signVisible = true;
         this.signType = "signUp";
       }
     },
     showInfoPopup(header, tittle) {
       this.infoHeader = header;
       this.infoTittle = tittle;
-      this.infoVisiable = true;
+      this.infoVisible = true;
     },
     register(payload) {
       this.showInfoPopup("Регистрация", payload);
-      this.signVisiable = false;
+      this.signVisible = false;
     },
     logout() {
       this.$api.auth

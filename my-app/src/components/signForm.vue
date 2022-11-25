@@ -2,6 +2,17 @@
   <forgot-password
     v-if="forgotPasswordVisible == true"
     @close="forgotPasswordVisible = false"
+    @forgot="(payload) => forgot(payload)"
+  />
+  <info-popup
+    v-if="infoVisible == true"
+    :infoTittle="infoTittle"
+    :infoHeader="infoHeader"
+    @close="
+      this.infoVisible = false;
+      this.infoTittle = '';
+      this.infoHeader = '';
+    "
   />
   <div class="modal__backDrop" ref="backDrop" style="z-index: 5">
     <div class="sign" :class="signType == 'signUp' ? 'signUp' : ''">
@@ -125,11 +136,13 @@
 import forgotPassword from "../components/forgotPassword.vue";
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 import confirmButton from "../components/confirmButton.vue";
+import infoPopup from "../components/infoPopup.vue";
 export default {
   components: {
     forgotPassword,
     inputTooltipIcon,
     confirmButton,
+    infoPopup,
   },
   emits: ["close", "register", "switch"],
   props: {
@@ -137,14 +150,17 @@ export default {
   },
   data() {
     return {
-      nickName: "",
+      nickName: "KrainovSD",
       userName: "",
       email: "",
-      password: "",
+      password: "denis010542",
       repeatPassword: "",
       errors: {},
       responseMessage: "",
       forgotPasswordVisible: false,
+      infoVisible: false,
+      infoTittle: "",
+      infoHeader: "",
     };
   },
   methods: {
@@ -195,9 +211,9 @@ export default {
                 "NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания!";
               return;
             }
-            if (form[key].length < 3 && form[key].length > 25) {
+            if (form[key].length < 3 && form[key].length > 16) {
               this.errors[key] =
-                "Длина NickName не должна превышать 25 символов или быть меньше, чем 3 символа!";
+                "Длина NickName не должна превышать 16 символов или быть меньше, чем 3 символа!";
               return;
             }
             break;
@@ -258,9 +274,9 @@ export default {
                 "NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания!";
               return;
             }
-            if (fieldData.length < 3 && fieldData.length > 25) {
+            if (fieldData.length < 3 && fieldData.length > 16) {
               this.errors[field] =
-                "Длина NickName не должна превышать 25 символов или быть меньше, чем 3 символа!";
+                "Длина NickName не должна превышать 16 символов или быть меньше, чем 3 символа!";
               return;
             }
             break;
@@ -375,6 +391,12 @@ export default {
       } else {
         console.log(this.errors);
       }
+    },
+    forgot(message) {
+      this.infoVisible = true;
+      this.forgotPasswordVisible = false;
+      this.infoHeader = "Reset password";
+      this.infoTittle = message;
     },
   },
   watch: {
