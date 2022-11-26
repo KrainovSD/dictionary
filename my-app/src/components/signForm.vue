@@ -15,7 +15,7 @@
     "
   />
   <div class="modal__backDrop" ref="backDrop" style="z-index: 5">
-    <div class="sign" :class="signType == 'signUp' ? 'signUp' : ''">
+    <div class="sign" :class="signType == 'register' ? 'signUp' : ''">
       <img
         src="@/assets/close.png"
         alt=""
@@ -23,12 +23,10 @@
         @click.stop="closePopup"
       />
       <div class="sign__container">
-        <h1 class="sign__header" v-if="signType === 'signUp'">Регистрация</h1>
-        <p class="sign__description" v-if="signType === 'signUp'"></p>
-        <h1 class="sign__header" v-if="signType === 'signIn'">
-          Вход в систему
-        </h1>
-        <p class="sign__description" v-if="signType === 'signIn'">
+        <h1 class="sign__header" v-if="signType === 'register'">Регистрация</h1>
+        <p class="sign__description" v-if="signType === 'register'"></p>
+        <h1 class="sign__header" v-if="signType === 'login'">Вход в систему</h1>
+        <p class="sign__description" v-if="signType === 'login'">
           Вход использует ваш Nickname и пароль
         </p>
 
@@ -44,7 +42,7 @@
           />
         </div>
 
-        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+        <div class="sign__inputIconContainer" v-if="signType === 'register'">
           <input-tooltip-icon
             v-model="userName"
             type="text"
@@ -56,7 +54,7 @@
           />
         </div>
 
-        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+        <div class="sign__inputIconContainer" v-if="signType === 'register'">
           <input-tooltip-icon
             v-model="email"
             type="text"
@@ -68,7 +66,7 @@
           />
         </div>
 
-        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+        <div class="sign__inputIconContainer" v-if="signType === 'register'">
           <input-tooltip-icon
             v-model="password"
             type="passwordAdvice"
@@ -80,7 +78,7 @@
           />
         </div>
 
-        <div class="sign__inputIconContainer" v-if="signType === 'signIn'">
+        <div class="sign__inputIconContainer" v-if="signType === 'login'">
           <input-tooltip-icon
             v-model="password"
             type="password"
@@ -92,7 +90,7 @@
           />
         </div>
 
-        <div class="sign__inputIconContainer" v-if="signType === 'signUp'">
+        <div class="sign__inputIconContainer" v-if="signType === 'register'">
           <input-tooltip-icon
             v-model="repeatPassword"
             type="password"
@@ -106,14 +104,17 @@
 
         <!-- RESPONSE -->
         <p class="sign__infoMessage">{{ responseMessage }}</p>
-        <div class="newPassword__confirmContainer" v-if="signType === 'signIn'">
+        <div class="newPassword__confirmContainer" v-if="signType === 'login'">
           <confirm-button text="Войти" @click="sendData" fontSize="14" />
         </div>
-        <div class="newPassword__confirmContainer" v-if="signType === 'signUp'">
+        <div
+          class="newPassword__confirmContainer"
+          v-if="signType === 'register'"
+        >
           <confirm-button text="Регистрация" @click="sendData" fontSize="14" />
         </div>
 
-        <div class="sign__actions" v-if="signType === 'signIn'">
+        <div class="sign__actions" v-if="signType === 'login'">
           <p class="sign__forgotPassword" @click="forgotPasswordVisible = true">
             Забыли <br />
             пароль?
@@ -325,22 +326,13 @@ export default {
       this.$api.auth
         .login(form)
         .then((res) => {
-          let user = res.data;
-          this.$store.commit("setUserInfo", user);
+          this.$store.commit("setUserInfo", res.data.user);
+          this.$store.commit("setAccessToken", res.data.token);
           this.$emit("close");
         })
         .catch((err) => {
           if (err.response.status == 400) {
-            let errors = err.response.data;
-            let message = "";
-            Object.values(errors).forEach((err) => {
-              if (message == "") {
-                message = `${err} \n`;
-                return;
-              }
-              message += `${err} \n`;
-            });
-            this.responseMessage = message;
+            this.responseMessage = err.response.data.message;
             return;
           }
           console.log(err);
@@ -355,16 +347,7 @@ export default {
         })
         .catch((err) => {
           if (err.response.status == 400) {
-            let errors = err.response.data;
-            let message = "";
-            Object.values(errors).forEach((err) => {
-              if (message == "") {
-                message = `${err} \n`;
-                return;
-              }
-              message += `${err} \n`;
-            });
-            this.responseMessage = message;
+            this.responseMessage = err.response.data.message;
             return;
           }
           console.log(err);
@@ -374,10 +357,10 @@ export default {
     sendData() {
       let form = {};
       this.responseMessage = "";
-      if (this.signType == "signIn") {
+      if (this.signType == "login") {
         form.nickName = this.nickName.trim();
         form.password = this.password.trim();
-      } else if (this.signType == "signUp") {
+      } else if (this.signType == "register") {
         form.nickName = this.nickName.trim();
         form.userName = this.userName.trim().toLowerCase();
         form.email = this.email.trim().toLowerCase();
@@ -386,8 +369,11 @@ export default {
       }
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
-        if (this.signType == "signIn") this.login(form);
-        if (this.signType == "signUp") this.register(form);
+        if (this.signType == "login") this.login(form);
+        if (this.signType == "register") {
+          delete form.repeatPassword;
+          this.register(form);
+        }
       } else {
         console.log(this.errors);
       }

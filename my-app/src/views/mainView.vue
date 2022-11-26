@@ -3,7 +3,7 @@
     v-if="signVisible == true"
     :signType="signType"
     @close="this.signVisible = false"
-    @switch="this.signType = 'signUp'"
+    @switch="this.signType = 'register'"
     @register="(payload) => register(payload)"
   />
   <info-popup
@@ -22,6 +22,7 @@
       settingPopupVisible = false;
       userMenuVisible = false;
     "
+    @noAuth="noAuth"
   />
 
   <div class="header">
@@ -50,10 +51,10 @@
         >
       </div>
       <div class="header__authPanel" v-if="auth == false">
-        <button class="header__signIn" ref="signIn" @click="openSignIn">
+        <button class="header__signIn" ref="login" @click="openLogin">
           Войти
         </button>
-        <button class="header__signUp" ref="signUp" @click="openSignUp">
+        <button class="header__signUp" ref="register" @click="openRegister">
           Регистрация
         </button>
       </div>
@@ -126,8 +127,11 @@ export default {
       return userInfo;
     },
     avatar() {
-      if (this.userInfo?.avatar != "none") {
-        return require(`../assets/avatar/${this.userInfo.nickName}/${this.userInfo.avatar}`);
+      if (
+        this.userInfo?.avatar != "" &&
+        Object.keys(this.userInfo).length > 0
+      ) {
+        return require(`../assets/avatar/${this.userInfo._id}/${this.userInfo.avatar}`);
       }
       return require("../assets/avatar.png");
     },
@@ -138,31 +142,35 @@ export default {
         .checkAuth()
         .then((res) => {
           let user = res.data.user;
+          let token = res.data.token;
           this.$store.commit("setUserInfo", user);
+          this.$store.commit("setAccessToken", token);
         })
         .catch(() => {
           this.$store.commit("resetAuth");
         });
     },
     openSettingPopup() {},
-    openSignIn() {
-      if (!this.$refs.signIn.classList.contains("header__signIn_active")) {
-        this.$refs.signIn.classList.toggle("header__signIn_active");
+    openLogin() {
+      let login = this.$refs.login;
+      if (!login.classList.contains("header__signIn_active")) {
+        login.classList.toggle("header__signIn_active");
         setTimeout(() => {
-          this.$refs.signIn.classList.toggle("header__signIn_active");
+          login.classList.toggle("header__signIn_active");
         }, 500);
         this.signVisible = true;
-        this.signType = "signIn";
+        this.signType = "login";
       }
     },
-    openSignUp() {
-      if (!this.$refs.signUp.classList.contains("header__signUp_active")) {
-        this.$refs.signUp.classList.toggle("header__signUp_active");
+    openRegister() {
+      let register = this.$refs.register;
+      if (!register.classList.contains("header__signUp_active")) {
+        register.classList.toggle("header__signUp_active");
         setTimeout(() => {
-          this.$refs.signUp.classList.toggle("header__signUp_active");
+          register.classList.toggle("header__signUp_active");
         }, 500);
         this.signVisible = true;
-        this.signType = "signUp";
+        this.signType = "register";
       }
     },
     showInfoPopup(header, tittle) {
@@ -185,6 +193,18 @@ export default {
           this.showInfoPopup("Logout", err.response.data.message);
           this.$store.commit("resetAuth");
         });
+    },
+    showInfo(tittle, header) {
+      this.infoVisible = true;
+      this.infoHeader = header;
+      this.infoTittle = tittle;
+    },
+    noAuth() {
+      this.settingPopupVisible = false;
+      this.userMenuVisible = false;
+      this.signType = "login";
+      this.signVisible = true;
+      this.showInfo("Need authorization", "Change field");
     },
   },
 };

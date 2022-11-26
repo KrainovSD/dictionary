@@ -45,9 +45,6 @@ app.use((request, response, next) => {
   next();
 });
 
-/*const routes = require('./routes/index.js');
-app.use('/', routes.auth);*/
-
 import { UserController } from './controllers/index.js';
 import {
   loginValidation,

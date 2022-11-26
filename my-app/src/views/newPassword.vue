@@ -7,6 +7,8 @@
       this.infoVisible = false;
       this.infoTittle = '';
       this.infoHeader = '';
+      updateInfo();
+      redirect();
     "
   />
   <div class="newPassword">
@@ -72,6 +74,19 @@ export default {
   },
 
   methods: {
+    updateInfo() {
+      this.$api.auth
+        .checkAuth()
+        .then((res) => {
+          let user = res.data.user;
+          let token = res.data.token;
+          this.$store.commit("setUserInfo", user);
+          this.$store.commit("setAccessToken", token);
+        })
+        .catch(() => {
+          this.$store.commit("resetAuth");
+        });
+    },
     validateField(field, fieldData) {
       if (this.errors[field]) {
         switch (field) {
@@ -128,31 +143,28 @@ export default {
         console.log(this.errors);
       }
     },
+    showInfo(title, header) {
+      this.infoHeader = header;
+      this.infoTittle = title;
+      this.infoVisible = true;
+    },
     sendData(form) {
       this.$api.change
         .password(form)
         .then((res) => {
-          this.infoHeader = "New Password";
-          this.infoTittle = res.data.message;
-          this.infoVisible = true;
+          this.showInfo(res.data.message, "New Password");
         })
         .catch((err) => {
           if (err.response.status == 400) {
-            let errors = err.response.data;
-            let message = "";
-            Object.values(errors).forEach((err) => {
-              if (message == "") {
-                message = `${err} \n`;
-                return;
-              }
-              message += `${err} \n`;
-            });
-            this.responseMessage = message;
+            this.responseMessage = err.response.data.message;
             return;
           }
           console.log(err);
           this.responseMessage = "Сервер не отвечает";
         });
+    },
+    redirect() {
+      this.$router.push({ name: "home" });
     },
   },
   watch: {

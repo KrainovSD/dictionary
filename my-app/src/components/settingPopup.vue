@@ -3,6 +3,16 @@
     v-if="iconPopupVisible == true"
     @close="iconPopupVisible = false"
   />
+  <info-popup
+    v-if="infoVisible == true"
+    :infoTittle="infoTittle"
+    :infoHeader="infoHeader"
+    @close="
+      this.infoVisible = false;
+      this.infoTittle = '';
+      this.infoHeader = '';
+    "
+  />
   <div class="modal__backDrop" ref="backDrop">
     <div class="setting">
       <img
@@ -14,7 +24,7 @@
       <h1 class="sign__header">Пользовательские настройки</h1>
 
       <div class="setting__avatarContainer">
-        <img src="@/assets/avatar.png" alt="" class="setting__avatar" />
+        <img :src="avatar" alt="" class="setting__avatar" />
         <button class="setting__avatarReplace" @click="iconPopupVisible = true">
           Изменить аватар
         </button>
@@ -24,46 +34,46 @@
         <h1 class="setting__userDataHeader">Данные пользователя</h1>
         <setting-field
           title="Nick пользователя:"
-          data="KrainovSD"
+          :data="userInfo.nickName"
           field="nickName"
           inputType="String"
           placeholder="Введите nickName"
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
           v-model="nickName"
         />
         <setting-field
           title="Имя пользователя:"
-          data="Денис"
+          :data="userInfo.userName"
           field="userName"
           inputType="String"
           placeholder="Введите имя"
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
           v-model="userName"
         />
         <setting-field
           title="Email пользователя:"
-          data="denis****@*mail.**"
+          :data="userInfo.email"
           field="email"
           inputType="String"
           placeholder="Введите email"
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
           v-model="email"
         />
         <setting-field
           title="Последний раз пароль был изменен:"
-          data="12.02.2012"
+          :data="dateFormat(userInfo.dateOfPassword)"
           field="password"
           inputType="String"
           placeholder="Введите email"
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
           v-model="password"
         />
       </div>
@@ -71,28 +81,28 @@
         <h1 class="setting__userDataHeader">Изученные слова</h1>
         <setting-field
           title="Количество слов предоставляемых за одно повторение:"
-          data="50"
-          field="countWordsAtOneTime"
+          :data="userInfo.options?.[0]?.countKnownWordsAtOneTime"
+          field="countKnownWordsAtOneTime"
           inputType="Number"
           placeholder=""
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
-          v-model="countWordsAtOneTime"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
+          v-model="countKnownWordsAtOneTime"
         />
       </div>
       <div class="setting__userDataContainer">
         <h1 class="setting__userDataHeader">Слова на повторении</h1>
         <setting-field
           title="Количество ошибок необходимых для добавления слова:"
-          data="3"
-          field="countWrongsToRepeat"
+          :data="userInfo.options?.[0]?.countWrongsToAddToRepeat"
+          field="countWrongsToAddToRepeat"
           inputType="Number"
           placeholder=""
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
-          v-model="countWrongsToRepeat"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
+          v-model="countWrongsToAddToRepeat"
         />
 
         <!-- REGULARITY TO REPEAT -->
@@ -101,17 +111,14 @@
           style="flex-direction: column; align-items: flex-start"
         >
           <div class="setting__regularityInfo">
-            <p class="setting__userDataTittle" style="width: 360px">
+            <p class="setting__userDataTittle" style="width: 345px">
               Регулярность повторения слова попавшее на повторение:
-              22-22-22-42-42-42-82-82 {{}}
+              {{ stringRegularityToRepeat }}
             </p>
             <button
               class="setting__userDataReplace _change"
               v-if="regularityToRepeatChange == false"
-              @click="
-                regularityToRepeatChange = true;
-                clearField('regularityToRepeat');
-              "
+              @click="regularityToRepeatChange = true"
             >
               Изменить
             </button>
@@ -120,13 +127,16 @@
               alt=""
               class="setting__userDataClose"
               v-if="regularityToRepeatChange == true"
-              @click="regularityToRepeatChange = false"
+              @click="
+                regularityToRepeatChange = false;
+                clearField('regularityToRepeat');
+              "
             />
             <button
               class="setting__userDataReplace"
               v-if="regularityToRepeatChange == true"
               @click="
-                changeField({
+                checkField({
                   field: 'regularityToRepeat',
                   fieldData: regularityToRepeat,
                 })
@@ -160,25 +170,25 @@
         <h1 class="setting__userDataHeader">Проверка на актуальность</h1>
         <setting-field
           title="Количество ошибок необходимых для добавления слова:"
-          data="3"
-          field="maxCountCheck"
+          :data="userInfo.options?.[0]?.maxCountCheckRelevance"
+          field="maxCountCheckRelevance"
           inputType="Number"
           placeholder=""
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
-          v-model="maxCountCheck"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
+          v-model="maxCountCheckRelevance"
         />
         <setting-field
           title="Промежуток времени, на котором считаются встречи (в днях):"
-          data="45"
-          field="maxDateCheck"
+          :data="userInfo.options?.[0]?.maxDateCheckRelevance"
+          field="maxDateCheckRelevance"
           inputType="Number"
           placeholder=""
           :errors="errors"
-          @change="(payload) => changeField(payload)"
-          @edit="(payload) => clearField(payload)"
-          v-model="maxDateCheck"
+          @change="(payload) => checkField(payload)"
+          @close="(payload) => clearField(payload)"
+          v-model="maxDateCheckRelevance"
         />
       </div>
       <div class="setting__userDataContainer">
@@ -196,14 +206,16 @@
 import iconPopup from "../components/iconPopup.vue";
 import settingField from "../components/settingField.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
+import infoPopup from "../components/infoPopup.vue";
 
 export default {
-  emits: ["close"],
+  emits: ["close", "noAuth"],
 
   components: {
     iconPopup,
     settingField,
     multipleInputTooltip,
+    infoPopup,
   },
   data() {
     return {
@@ -211,17 +223,61 @@ export default {
       userName: "",
       email: "",
       password: "",
-      countWordsAtOneTime: "",
-      countWrongsToRepeat: "",
+      countKnownWordsAtOneTime: "",
+      countWrongsToAddToRepeat: "",
       regularityToRepeat: ["", "", "", "", "", "", "", ""],
-      maxCountCheck: "",
-      maxDateCheck: "",
+      maxCountCheckRelevance: "",
+      maxDateCheckRelevance: "",
       iconPopupVisible: false,
       regularityToRepeatChange: false,
       errors: {},
+      infoVisible: false,
+      infoTittle: "",
+      infoHeader: "",
     };
   },
+  computed: {
+    userInfo() {
+      return this.$store.getters.getUserInfo;
+    },
+    stringRegularityToRepeat() {
+      let regularity = this.userInfo.options?.[0].regularityToRepeat;
+      if (!regularity) return "";
+      let stringRegularity = "";
+      Object.values(regularity).forEach((el) => {
+        if (stringRegularity == "") stringRegularity = `${el}`;
+        stringRegularity += `-${el}`;
+      });
+      return stringRegularity;
+    },
+    avatar() {
+      if (
+        this.userInfo?.avatar != "" &&
+        Object.keys(this.userInfo).length > 0
+      ) {
+        return require(`../assets/avatar/${this.userInfo._id}/${this.userInfo.avatar}`);
+      }
+      return require("../assets/avatar.png");
+    },
+  },
   methods: {
+    dateFormat(date) {
+      date = new Date(date);
+      let minute = date.getMinutes();
+      let hour = date.getHours();
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+
+      if (minute >= 0 && minute < 10) {
+        minute = `0${minute}`;
+      }
+      if (hour >= 0 && hour < 10) {
+        hour = `0${hour}`;
+      }
+
+      return `${day}-${month}-${year}`;
+    },
     closePopup() {
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
@@ -238,10 +294,10 @@ export default {
       }
       if (
         !/^[0-9]+$/.test(fieldData) &&
-        (field == "countWordsAtOneTime" ||
-          field == "countWrongsToRepeat" ||
-          field == "maxCountCheck" ||
-          field == "maxDateCheck")
+        (field == "countKnownWordsAtOneTime" ||
+          field == "countWrongsToAddToRepeat" ||
+          field == "maxCountCheckRelevance" ||
+          field == "maxDateCheckRelevance")
       ) {
         this.errors[field] = "Разрешается использовать только цифры!";
         return;
@@ -253,7 +309,7 @@ export default {
               "NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания!";
             return;
           }
-          if (fieldData.length < 3 && fieldData.length > 25) {
+          if (fieldData.length < 3 || fieldData.length > 25) {
             this.errors[field] =
               "Длина NickName не должна превышать 25 символов или быть меньше, чем 3 символа!";
             return;
@@ -265,7 +321,7 @@ export default {
               "Имя может содержать только буквы английского или русского алфавита!";
             return;
           }
-          if (fieldData.length < 2 && fieldData.length > 15) {
+          if (fieldData.length < 2 || fieldData.length > 15) {
             this.errors[field] =
               "Длина Имени не должна превышать 15 символов или быть меньше, чем 2 символа! Если ваше имя содержит более 15-ти символов, используйте, пожалуйста, сокращенную версию!";
             return;
@@ -291,7 +347,7 @@ export default {
             return;
           }
           break;
-        case "countWordsAtOneTime": {
+        case "countKnownWordsAtOneTime": {
           if (fieldData < 20 || fieldData > 99) {
             this.errors[field] =
               "За один урок следует повторять не менее 20 слов и не более 99!";
@@ -299,7 +355,7 @@ export default {
           }
           break;
         }
-        case "countWrongsToRepeat": {
+        case "countWrongsToAddToRepeat": {
           if (fieldData < 3 || fieldData > 9) {
             this.errors[field] =
               "Слово не следует добавлять чаще, чем после 3 ошибок и реже, чем после 9!";
@@ -307,7 +363,7 @@ export default {
           }
           break;
         }
-        case "maxCountCheck": {
+        case "maxCountCheckRelevance": {
           if (fieldData < 3 || fieldData > 9) {
             this.errors[field] =
               "Слово не следует добавлять чаще, чем после 3 встреч и реже, чем после 9!";
@@ -315,7 +371,7 @@ export default {
           }
           break;
         }
-        case "maxDateCheck": {
+        case "maxDateCheckRelevance": {
           if (fieldData < 10 || fieldData > 90) {
             this.errors[field] =
               "Слово не следует анализировать за срок короче, чем 10 дней и длиннее, чем 90!";
@@ -362,12 +418,45 @@ export default {
       }
       this[payload] = "";
     },
-    changeField(data) {
+    checkField(data) {
       let { field, fieldData } = data;
       this.validateField(field, fieldData);
       if (this.errors[field]) {
         return;
       }
+
+      this.clearField(field);
+      if (field == "regularityToRepeat") {
+        this.regularityToRepeatChange = false;
+        fieldData = fieldData.map((x) => +x);
+      }
+      let form = {};
+      form[field] = fieldData;
+      this.sendInfo(form);
+    },
+    sendInfo(form) {
+      this.$api.change
+        .info(form)
+        .then((res) => {
+          this.showInfo(res.data.message, `Change field`);
+          this.$store.commit("setUserInfo", res.data.user);
+        })
+        .catch((err) => {
+          if (err.response?.status == 401) {
+            this.$emit("noAuth");
+          }
+          if (err.response?.status == 400) {
+            let message = err.response.data.message;
+            this.showInfo(message, `Change field`);
+            return;
+          }
+          this.showInfo(err?.response?.data?.message, `Change field`);
+        });
+    },
+    showInfo(tittle, header) {
+      this.infoVisible = true;
+      this.infoHeader = header;
+      this.infoTittle = tittle;
     },
   },
   watch: {
@@ -383,21 +472,30 @@ export default {
     password() {
       if (this.errors?.password) this.validateField("password", this.password);
     },
-    countWordsAtOneTime() {
-      if (this.errors?.countWordsAtOneTime)
-        this.validateField("countWordsAtOneTime", this.countWordsAtOneTime);
+    countKnownWordsAtOneTime() {
+      if (this.errors?.countKnownWordsAtOneTime)
+        this.validateField(
+          "countKnownWordsAtOneTime",
+          this.countKnownWordsAtOneTime
+        );
     },
-    countWrongsToRepeat() {
-      if (this.errors?.countWrongsToRepeat)
-        this.validateField("countWrongsToRepeat", this.countWrongsToRepeat);
+    countWrongsToAddToRepeat() {
+      if (this.errors?.countWrongsToAddToRepeat)
+        this.validateField(
+          "countWrongsToAddToRepeat",
+          this.countWrongsToAddToRepeat
+        );
     },
-    maxCountCheck() {
-      if (this.errors?.maxCountCheck)
-        this.validateField("maxCountCheck", this.maxCountCheck);
+    maxCountCheckRelevance() {
+      if (this.errors?.maxCountCheckRelevance)
+        this.validateField(
+          "maxCountCheckRelevance",
+          this.maxCountCheckRelevance
+        );
     },
-    maxDateCheck() {
-      if (this.errors?.maxDateCheck)
-        this.validateField("maxDateCheck", this.maxDateCheck);
+    maxDateCheckRelevance() {
+      if (this.errors?.maxDateCheckRelevance)
+        this.validateField("maxDateCheckRelevance", this.maxDateCheckRelevance);
     },
     regularityToRepeat: {
       handler: function () {

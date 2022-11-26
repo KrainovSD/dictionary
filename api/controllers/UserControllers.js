@@ -46,20 +46,27 @@ export const register = async (req, res) => {
     );
     hash = hash.toString('hex');
 
+    let confirmKey = crypto.randomBytes(128).toString('base64');
+    confirmKey = confirmKey.replace(/\//g, '');
+
     const doc = new User({
       userName: req.body.userName,
       nickName: req.body.nickName,
-      email: req.body.email,
+      email: '',
       hash,
       salt,
       role: 'user',
       dateOfPassword: Date.now(),
-      resetPasswordKey: 'none',
+      resetPasswordKey: '',
       resetPasswordTime: 0,
       confirmed: false,
+      dateOfConfirm: 0,
+      confirmKey: confirmKey,
+      confirmTime: 0,
+      emailToConfirm: req.body.email,
       dateRegistration: Date.now(),
-      avatar: 'none',
-      refreshToken: 'none',
+      avatar: '',
+      refreshToken: '',
       lastLogin: 0,
       statistics: [
         {
@@ -79,7 +86,7 @@ export const register = async (req, res) => {
           countKnownWordsAtOneTime: 50,
           countWrongsToAddToRepeat: 3,
           regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-          maxDateChekRelevance: 45,
+          maxDateCheckRelevance: 45,
           maxCountCheckRelevance: 3,
         },
       ],
@@ -90,12 +97,12 @@ export const register = async (req, res) => {
       from: config.server.postLog,
       to: req.body.email,
       subject: `Confirmation`,
-      text: `follow the link in order to confirm your account http://${config.server.host}:${config.server.port}/confirm/${user._id}`,
-      html: `follow the link in order to confirm your account <a href="http://${config.server.host}:${config.server.port}/confirm/${user._id}">Confirm</a> `,
+      text: `follow the link in order to confirm your account http://${config.server.host}:${config.server.port}/confirm/${user.confirmKey}`,
+      html: `follow the link in order to confirm your account <a href="http://${config.server.host}:${config.server.port}/confirm/${user.confirmKey}">Confirm</a> `,
     };
     await transporter.sendMail(message);
 
-    res.json({
+    return res.json({
       message:
         'Registration has completed successfully. We have sent message to your email. Check message and follow instruction in order to confirm your account',
     });
@@ -109,24 +116,41 @@ export const register = async (req, res) => {
 
 export const confirm = async (req, res) => {
   try {
-    let user = await User.updateOne(
+    let user = await User.findOne({ confirmKey: req.body.key });
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: 'Ключ не прошел проверку подлинности!' });
+
+    if (user._doc.emailToConfirm == '') {
+      return res.status(400).json({
+        message: 'Ключ не прошел проверку подлинности!',
+      });
+    }
+
+    let update = await User.updateOne(
       {
-        _id: req.body.id,
+        confirmKey: req.body.key,
       },
       {
         confirmed: true,
+        email: user._doc.emailToConfirm,
+        emailToConfirm: '',
+        dateOfConfirm: Date.now(),
+        confirmKey: '',
+        confirmTime: 0,
       },
       {
         upsert: false, // Если не будет найдена запись, проигнорирует обновление, если true добавит запись новую запись со значением
       }
     );
-    if (user.modifiedCount == 0) {
-      return res.status(404).json({ message: 'Not Found account' });
+    if (update.modifiedCount == 0) {
+      return res.status(400).json({ message: 'Not Found account' });
     }
-    return res.json({ message: 'Account has been confirmed successfully' });
+    return res.json({ message: 'Email has been confirmed successfully' });
   } catch (err) {
     console.log(err);
-    return res.status(404).json({ message: 'Not Found account' });
+    return res.status(500).json({ message: 'Not Found account' });
   }
 };
 
@@ -165,7 +189,7 @@ export const login = async (req, res) => {
         expiresIn: `${config.server.liveTimeRefreshToken}`,
       }
     );
-    await User.updateOne(
+    let update = await User.updateOne(
       {
         nickName: user.nickName,
       },
@@ -177,6 +201,9 @@ export const login = async (req, res) => {
         upsert: false,
       }
     );
+    if (update.modifiedCount == 0) {
+      return res.status(400).json({ message: `Couldn't login` });
+    }
     const timeExistCookies = getTimeExistCoockies(
       config.server.liveTimeRefreshToken
     );
@@ -188,18 +215,30 @@ export const login = async (req, res) => {
       // sameSite: strict - if UI exist inside domain
       // secure: true - if app use https protocol
     });
+    const accessToken = jwt.sign(
+      {
+        userId: user._id,
+      },
+      secretAccessToken,
+      {
+        expiresIn: `${config.common.liveTimeAccessToken}`,
+      }
+    );
+
     let {
-      _id,
       hash,
       salt,
       refreshToken,
       resetPasswordKey,
       resetPasswordTime,
+      confirmKey,
+      confirmTime,
+      emailToConfirm,
       confirmed,
       ...userData
     } = user._doc;
     userData.email = replaceEmailToStar(userData.email);
-    res.json(userData);
+    return res.json({ user: userData, token: accessToken });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -228,10 +267,10 @@ export const logout = async (req, res) => {
         refreshToken: refreshToken,
       },
       {
-        refreshToken: 'none',
+        refreshToken: '',
       },
       {
-        upset: true,
+        upsert: false,
       }
     );
     if (user.modifiedCount == 0) {
@@ -277,7 +316,7 @@ export const updateAccessToken = async (req, res) => {
     let update = await User.updateOne(
       { refreshToken: refreshTokenFromCoockies },
       { lastLogin: Date.now() },
-      { upset: true }
+      { upsert: false }
     );
     const accessToken = jwt.sign(
       {
@@ -288,7 +327,18 @@ export const updateAccessToken = async (req, res) => {
         expiresIn: `${config.common.liveTimeAccessToken}`,
       }
     );
-    let { _id, hash, salt, refreshToken, ...userData } = user._doc;
+    let {
+      hash,
+      salt,
+      refreshToken,
+      resetPasswordKey,
+      resetPasswordTime,
+      confirmKey,
+      confirmTime,
+      emailToConfirm,
+      confirmed,
+      ...userData
+    } = user._doc;
     userData.email = replaceEmailToStar(userData.email);
     return res.json({
       token: accessToken,
@@ -335,7 +385,7 @@ export const forgotPassword = async (req, res) => {
         resetPasswordTime: resetPasswordTime,
       },
       {
-        upset: true,
+        upsert: false,
       }
     );
     if (update.modifiedCount == 0) {
@@ -396,7 +446,7 @@ export const newPassword = async (req, res) => {
         resetPasswordTime: 0,
         dateOfPassword: Date.now(),
       },
-      { upset: true }
+      { upsert: false }
     );
     if (update.modifiedCount == 0) {
       return res.status(400).json({
@@ -413,7 +463,121 @@ export const newPassword = async (req, res) => {
 };
 
 export const changeInfo = async (req, res) => {
-  console.log(req.userId);
+  try {
+    let field = Object.keys(req.body)?.[0];
+    let newField = req.body;
+    if (
+      field == 'countKnownWordsAtOneTime' ||
+      field == 'countWrongsToAddToRepeat' ||
+      field == 'maxDateCheckRelevance' ||
+      field == 'maxCountCheckRelevance' ||
+      field == 'regularityToRepeat'
+    ) {
+      let user = await User.findOne({ _id: req.userId });
+      if (!user)
+        return res.status(400).json({
+          message: `Couldn't perform the operation with field ${field}`,
+        });
+      let options = user._doc.options;
+      options[0][field] = req.body[field];
+      newField = { options };
+    }
+    if (field == 'password') {
+      let user = await User.findOne({ _id: req.userId });
+      if (!user)
+        return res.status(400).json({
+          message: `Couldn't perform the operation with field ${field}`,
+        });
+      let nickName = user._doc.nickName;
+      let email = req.body[field];
+      if (user._doc.email != email)
+        return res.status(400).json({ message: 'Неверный email!' });
+      let data = {
+        body: {
+          nickName,
+          email,
+        },
+      };
+      return forgotPassword(data, res);
+    }
+    if (field == 'email') {
+      let user = await User.findOne({ _id: req.userId });
+      if (!user)
+        return res.status(400).json({
+          message: `Couldn't perform the operation with field ${field}`,
+        });
+      let email = req.body[field];
+      if (user._doc.email != email)
+        return res.status(400).json({ message: "Email isn't correct!" });
+
+      let dateOfConfirm = user._doc.dateOfConfirm;
+      if (checkSimilarDay(dateOfConfirm)) {
+        return res.status(400).json({
+          message: `You have changed email today!`,
+        });
+      }
+      let confirmKey = crypto.randomBytes(128).toString('base64');
+      confirmKey = confirmKey.replace(/\//g, '');
+      let confirmTime = new Date(Date.now() + 5 * 60000);
+      let update = User.updateOne(
+        { _id: req.userId },
+        {
+          confirmKey,
+          confirmTime,
+        },
+        { upsert: false }
+      );
+      if (update.modifiedCount == 0) {
+        return res.status(400).json({
+          message: `Couldn't perform the operation`,
+        });
+      }
+      const message = {
+        from: config.server.postLog,
+        to: email,
+        subject: `Replace email`,
+        text: `follow the link in order to repalce your email http://${config.server.host}:${config.server.port}/email/${user.confirmKey}`,
+        html: `follow the link in order to repalce your email  <a href="http://${config.server.host}:${config.server.port}/email/${user.confirmKey}">Confirm</a> `,
+      };
+      await transporter.sendMail(message);
+
+      return res.json({
+        message:
+          'We have sent message to your email. Check message and follow instruction in order to replace your email',
+      });
+    }
+
+    let user = await User.findOneAndUpdate({ _id: req.userId }, newField, {
+      new: true,
+      rawResult: true,
+    });
+    if (user.ok != 1)
+      return res.status(400).json({
+        message: `Couldn't perform the operation with field ${field}`,
+      });
+    let {
+      hash,
+      salt,
+      refreshToken,
+      resetPasswordKey,
+      resetPasswordTime,
+      confirmKey,
+      confirmTime,
+      emailToConfirm,
+      confirmed,
+      ...userData
+    } = user.value._doc;
+    userData.email = replaceEmailToStar(userData.email);
+    return res.json({
+      message: `Field ${field} has been successfully changed!`,
+      user: userData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Couldn't perform the operation with field ${field}`,
+    });
+  }
 };
 
 function checkSimilarField(users, reqData) {

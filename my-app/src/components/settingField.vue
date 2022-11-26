@@ -40,12 +40,15 @@
       alt=""
       class="setting__userDataClose"
       v-if="fieldChangin == true"
-      @click="fieldChangin = false"
+      @click="
+        fieldChangin = false;
+        $emit('close', field);
+      "
     />
     <button
       class="setting__userDataReplace"
       v-if="fieldChangin == true"
-      @click="$emit('change', { field: field, fieldData: this.modelValue })"
+      @click="saveData"
     >
       Сохранить
     </button>
@@ -55,11 +58,11 @@
 <script>
 import { nextTick } from "@vue/runtime-core";
 export default {
-  emits: ["edit", "change", "close", "update:modelValue"],
+  emits: ["change", "close", "update:modelValue"],
   props: {
     modelValue: String,
     title: String,
-    data: String,
+    data: [String, Number],
     field: String,
     placeholder: String,
     errors: Object,
@@ -97,9 +100,12 @@ export default {
       this.fieldChangin = true;
       await nextTick();
       let input = this.$refs.input;
-
       this.checkNumber(input);
-      this.$emit("edit", this.field);
+    },
+    async saveData() {
+      this.$emit("change", { field: this.field, fieldData: this.modelValue });
+      await nextTick();
+      if (!this.errors?.[this.field]) this.fieldChangin = false;
     },
   },
 };

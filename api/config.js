@@ -9,7 +9,7 @@ export default {
     postPass: 'bccsxetozucoyfhp',
   },
   common: {
-    liveTimeAccessToken: '2m', // use only m - minutes, h - hours, d - days;
+    liveTimeAccessToken: '10m', // use only m - minutes, h - hours, d - days;
     host: '127.0.0.1',
     port: '8080',
   },

@@ -7,6 +7,8 @@
       this.infoVisiable = false;
       this.infoTittle = '';
       this.infoHeader = '';
+      updateInfo();
+      redirect();
     "
   />
 </template>
@@ -24,7 +26,7 @@ export default {
   },
   mounted() {
     let form = {};
-    form.id = this.$route.params.id;
+    form.key = this.$route.params.key;
     console.log(form);
     this.$api.auth
       .confirm(form)
@@ -34,32 +36,37 @@ export default {
       })
       .catch((err) => {
         if (err.response.status == 400) {
-          let errors = err.response.data;
-          let message = "";
-          Object.values(errors).forEach((err) => {
-            if (message == "") {
-              message = `${err} \n`;
-              return;
-            }
-            message += `${err} \n`;
-          });
-          let responseMessage = message;
-          this.showInfoPopup("Confirm", responseMessage);
+          this.showInfoPopup("Confirm", err.response.data.message);
           return;
         }
         if (err.response.status == 404) {
-          let responseMessage = err.response.data.message;
-          this.showInfoPopup("Confirm", responseMessage);
+          this.showInfoPopup("Confirm", err.response.data.message);
         }
         let responseMessage = "Сервер не отвечает";
         this.showInfoPopup("Confirm", responseMessage);
       });
   },
   methods: {
+    updateInfo() {
+      this.$api.auth
+        .checkAuth()
+        .then((res) => {
+          let user = res.data.user;
+          let token = res.data.token;
+          this.$store.commit("setUserInfo", user);
+          this.$store.commit("setAccessToken", token);
+        })
+        .catch(() => {
+          this.$store.commit("resetAuth");
+        });
+    },
     showInfoPopup(header, tittle) {
       this.infoHeader = header;
       this.infoTittle = tittle;
       this.infoVisiable = true;
+    },
+    redirect() {
+      this.$router.push({ name: "home" });
     },
   },
 };

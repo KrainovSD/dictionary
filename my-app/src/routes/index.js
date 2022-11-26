@@ -33,7 +33,7 @@ const routes = [
       { path: "/docs", name: "documentation", component: docsView },
       { path: "/contacts", name: "contacts", component: contactView },
       { path: "/pass/:key", name: "password", component: newPassword },
-      { path: "/confirm/:id", name: "confirm", component: confirmView },
+      { path: "/confirm/:key", name: "confirm", component: confirmView },
       { path: "/:catchAll(.*)", name: "notFound", component: notFoundPage },
     ],
   },

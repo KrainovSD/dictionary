@@ -6,7 +6,7 @@ export default function (instance, instanceToken) {
     password(data) {
       return instance.post("/password", data);
     },
-    changeInfo(data) {
+    info(data) {
       return instanceToken.post("/info", data);
     },
   };

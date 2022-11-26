@@ -156,16 +156,7 @@ export default {
         })
         .catch((err) => {
           if (err.response.status == 400) {
-            let errors = err.response.data;
-            let message = "";
-            Object.values(errors).forEach((err) => {
-              if (message == "") {
-                message = `${err} \n`;
-                return;
-              }
-              message += `${err} \n`;
-            });
-            this.responseMessage = message;
+            this.responseMessage = err.response.data.message;
             return;
           }
           console.log(err);

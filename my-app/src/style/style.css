@@ -2031,7 +2031,7 @@ body {
 }
 
 .setting {
-  margin: auto;
+  margin: 10.71429rem auto;
   z-index: 2;
   background: linear-gradient(-42deg, #e7fcf5 50%, #fce5f9 50%);
   display: flex;
