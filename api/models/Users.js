@@ -20,9 +20,8 @@ const knownWordsShema = new mongoose.Schema({
   LastReverseRepeat: Number,
   dateOfKnown: Number,
 });
-const categoriesToLeanShema = new mongoose.Schema({
+const categoriesToLearnShema = new mongoose.Schema({
   name: String,
-  id: Number,
   regularityToRepeat: [Number],
   icon: String,
   lastRepeat: Number,
@@ -36,12 +35,12 @@ const categoriesToLeanShema = new mongoose.Schema({
 const wordsToStudyShema = new mongoose.Schema({
   word: String,
   translate: String,
-  transcriprion: String,
+  transcription: String,
   description: String,
   example: [String],
   wrongs: Number,
   irregularVerbs: Boolean,
-  category: Number,
+  category: String,
 });
 const wordsToRepeatShema = new mongoose.Schema({
   word: String,
@@ -95,7 +94,7 @@ const userSchema = new mongoose.Schema(
     lastLogin: { type: Number },
     statistics: [statisticsSchema],
     knownWords: [knownWordsShema],
-    categoriesToLean: [categoriesToLeanShema],
+    categoriesToLearn: [categoriesToLearnShema],
     wordsToStudy: [wordsToStudyShema],
     wordsToRepeat: [wordsToRepeatShema],
     relevance: [relevanceShema],

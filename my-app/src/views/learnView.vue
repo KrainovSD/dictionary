@@ -36,19 +36,18 @@ export default {
       return this.$store.getters.getUserInfo;
     },
     countKnownWords() {
-      console.log();
       if (this.userInfo?.knownWords) return this.userInfo?.knownWords.length;
-      return "Не обраружено";
+      return "Не обнаружено";
     },
     countCategoriesWords() {
       if (this.userInfo?.wordsToStudy)
         return this.userInfo?.wordsToStudy.length;
-      return "Не обраружено";
+      return "Не обнаружено";
     },
     countRepeatWords() {
       if (this.userInfo?.wordsToRepeat)
         return this.userInfo?.wordsToRepeat.length;
-      return "Не обраружено";
+      return "Не обнаружено";
     },
   },
 };

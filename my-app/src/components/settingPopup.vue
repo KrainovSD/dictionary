@@ -2,17 +2,12 @@
   <icon-popup
     v-if="iconPopupVisible == true"
     @close="iconPopupVisible = false"
+    @replace="(payload) => showInfo('New Avatar', payload)"
+    @auth="$emit('noAuth')"
   />
-  <info-popup
-    v-if="infoVisible == true"
-    :infoTittle="infoTittle"
-    :infoHeader="infoHeader"
-    @close="
-      this.infoVisible = false;
-      this.infoTittle = '';
-      this.infoHeader = '';
-    "
-  />
+  <info-popup ref="info" />
+  <confirm-popup ref="confirm" />
+
   <div class="modal__backDrop" ref="backDrop">
     <div class="setting">
       <img
@@ -194,8 +189,20 @@
       <div class="setting__userDataContainer">
         <h1 class="setting__userDataHeader">Резервная копия</h1>
         <div class="setting__backup">
-          <button class="setting__backupButton export">Экспортировать</button>
-          <button class="setting__backupButton import">Импортировать</button>
+          <button class="setting__backupButton export" @click="exportData">
+            Экспортировать
+          </button>
+
+          <input
+            id="import"
+            type="file"
+            class="hidden"
+            @change="sendImportFile"
+            ref="import"
+          />
+          <label for="import" class="setting__backupButton import"
+            >Импортировать</label
+          >
         </div>
       </div>
     </div>
@@ -207,6 +214,7 @@ import iconPopup from "../components/iconPopup.vue";
 import settingField from "../components/settingField.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 import infoPopup from "../components/infoPopup.vue";
+import confirmPopup from "../components/confirmPopup.vue";
 
 export default {
   emits: ["close", "noAuth"],
@@ -216,6 +224,7 @@ export default {
     settingField,
     multipleInputTooltip,
     infoPopup,
+    confirmPopup,
   },
   data() {
     return {
@@ -231,9 +240,6 @@ export default {
       iconPopupVisible: false,
       regularityToRepeatChange: false,
       errors: {},
-      infoVisible: false,
-      infoTittle: "",
-      infoHeader: "",
     };
   },
   computed: {
@@ -286,6 +292,9 @@ export default {
           this.$emit("close");
         }, 300);
       }
+    },
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
     },
     validateField(field, fieldData) {
       if (fieldData.length == 0) {
@@ -438,7 +447,7 @@ export default {
       this.$api.change
         .info(form)
         .then((res) => {
-          this.showInfo(res.data.message, `Change field`);
+          this.showInfo(`Change field`, res.data.message);
           this.$store.commit("setUserInfo", res.data.user);
         })
         .catch((err) => {
@@ -447,16 +456,206 @@ export default {
           }
           if (err.response?.status == 400) {
             let message = err.response.data.message;
-            this.showInfo(message, `Change field`);
+            this.showInfo(`Change field`, message);
             return;
           }
-          this.showInfo(err?.response?.data?.message, `Change field`);
+          this.showInfo(`Change field`, err?.response?.data?.message);
         });
     },
-    showInfo(tittle, header) {
-      this.infoVisible = true;
-      this.infoHeader = header;
-      this.infoTittle = tittle;
+    exportData() {
+      this.$api.change
+        .export()
+        .then((res) => {
+          let userData = res.data.message;
+          let blob = new Blob([userData], { type: "text/plain" });
+          let link = document.createElement("a");
+          link.setAttribute("href", URL.createObjectURL(blob));
+          link.setAttribute("download", "userData.txt");
+          link.click();
+        })
+        .catch((err) => {
+          let message = err?.response?.data?.message || "Сервер не отвечает!";
+          if (err.response?.status == 401) {
+            this.$emit("noAuth");
+          }
+          if (err.response?.status == 400) {
+            this.showInfo(`Export`, message);
+            return;
+          }
+          this.showInfo(`Export`, message);
+        });
+    },
+    async checkImportFile(data) {
+      /* let checkForm = {
+          id: data?._id,
+          knownWords: data?.knownWords,
+          categoriesToLean: data?.categoriesToLean,
+          wordsToStudy: data?.wordsToStudy,
+          wordsToRepeat: data?.wordsToRepeat,
+          relevance: data?.relevance,
+          options: data?.options,
+        };*/
+      let error = false;
+      return new Promise((resolve) => {
+        Object.keys(data).forEach((field) => {
+          if (error) return;
+          switch (field) {
+            case "id": {
+              let id = data[field];
+              if (!id || id?.length == 0 || typeof id != "string") {
+                resolve(false);
+                error = true;
+                return;
+              }
+              break;
+            }
+            case "options": {
+              let options = data[field];
+              if (!options || options?.length != 1) {
+                resolve(false);
+                error = true;
+                return;
+              }
+              options = options[0];
+              if (Object.keys(options)?.length != 5) {
+                resolve(false);
+                error = true;
+                return;
+              }
+              let check = {
+                countKnownWordsAtOneTime: options?.countKnownWordsAtOneTime,
+                countWrongsToAddToRepeat: options?.countWrongsToAddToRepeat,
+                regularityToRepeat: options?.regularityToRepeat,
+                maxDateCheckRelevance: options?.maxDateCheckRelevance,
+                maxCountCheckRelevance: options?.maxCountCheckRelevance,
+              };
+              Object.keys(check).forEach((subField) => {
+                if (error) return;
+                let fieldData = check[subField];
+                switch (subField) {
+                  case "countKnownWordsAtOneTime": {
+                    if (
+                      !fieldData ||
+                      typeof fieldData != "number" ||
+                      fieldData < 20 ||
+                      fieldData > 99
+                    ) {
+                      resolve(false);
+                      error = true;
+                      return;
+                    }
+                    break;
+                  }
+                  case "countWrongsToAddToRepeat": {
+                    if (
+                      !fieldData ||
+                      typeof fieldData != "number" ||
+                      fieldData < 3 ||
+                      fieldData > 9
+                    ) {
+                      resolve(false);
+                      error = true;
+                      return;
+                    }
+                    break;
+                  }
+                  case "maxDateCheckRelevance": {
+                    if (
+                      !fieldData ||
+                      typeof fieldData != "number" ||
+                      fieldData < 10 ||
+                      fieldData > 90
+                    ) {
+                      resolve(false);
+                      error = true;
+                      return;
+                    }
+                    break;
+                  }
+                  case "maxCountCheckRelevance": {
+                    if (
+                      !fieldData ||
+                      typeof fieldData != "number" ||
+                      fieldData < 3 ||
+                      fieldData > 9
+                    ) {
+                      resolve(false);
+                      error = true;
+                      return;
+                    }
+                    break;
+                  }
+                  case "regularityToRepeat": {
+                    if (!fieldData || fieldData?.length != 8) {
+                      resolve(false);
+                      error = true;
+                      return;
+                    }
+                    fieldData.forEach((item) => {
+                      if (error) return;
+                      if (typeof item != "number" || item < 1 || item > 16) {
+                        resolve(false);
+                        error = true;
+                        return;
+                      }
+                    });
+                    break;
+                  }
+                }
+              });
+
+              break;
+            }
+            case "knownWords": {
+              let knownWords = data[field];
+              if (knownWords?.length == 0) return;
+
+              break;
+            }
+          }
+        });
+        resolve(true);
+      });
+    },
+    async sendImportFile(event) {
+      try {
+        let file = event.target.files[0];
+        this.$refs.import.value = null;
+        let type = file.type;
+        let size = file.size;
+        let maxSize = 10 * 1024 * 1024;
+        if (type != "text/plain" || size > maxSize) {
+          this.showInfo("Import", "Неверный формат файла!");
+          return;
+        }
+        let data = await file.text();
+        data = JSON.parse(data);
+        let checkForm = {
+          id: data?._id,
+          knownWords: data?.knownWords,
+          categoriesToLean: data?.categoriesToLean,
+          wordsToStudy: data?.wordsToStudy,
+          wordsToRepeat: data?.wordsToRepeat,
+          relevance: data?.relevance,
+          options: data?.options,
+        };
+        let validation = await this.checkImportFile(checkForm);
+        console.log(validation);
+        if (!validation) {
+          this.showInfo("Import", "Неверный формат файла или данных!");
+          return;
+        }
+        let confirm = await this.$refs.confirm.show(
+          "Import",
+          "Вы уверены что хотите заменить данные об изученных словах? Если вы используете старую резеврную копию, то весь достигнутый с этой даты прогресс будет утерян."
+        );
+        if (!confirm) return;
+        console.log("confirmed");
+      } catch (err) {
+        console.log(err);
+        this.showInfo("Import", "Неверный формат файла или данных!");
+        return;
+      }
     },
   },
   watch: {

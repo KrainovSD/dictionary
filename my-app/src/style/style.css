@@ -254,6 +254,10 @@ body {
   animation: appearPage 0.3s linear;
 }
 
+.hidden {
+  visibility: hidden;
+}
+
 .workplaceContainer {
   max-width: 1240px;
   margin: auto;
@@ -687,6 +691,14 @@ body {
   box-shadow: 0px 1px 8px 0px #000000;
   overflow-y: scroll;
   padding: 0.35714rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.categories__categoryPlaceholder {
+  margin: auto;
+  font-size: 3.57143rem;
+  letter-spacing: 10px;
 }
 
 .categories__startLearn {
@@ -698,6 +710,7 @@ body {
   font-size: 1.14286rem;
   border-radius: 1.42857rem;
   font-family: antique;
+  color: black;
 }
 
 .categories__startButton.normal {
@@ -714,6 +727,13 @@ body {
   border: 1px #86f88f solid;
 }
 
+.categories__startButton.normal.disabled {
+  background-color: #828386;
+  box-shadow: 0px 3px 13px 0px #999b9e;
+  border: 1px solid #828386;
+  color: white;
+}
+
 .categories__startButton.reverse {
   margin: 0 0 0 auto;
 }
@@ -728,9 +748,23 @@ body {
   border: 1px #86f88f solid;
 }
 
+.categories__startButton.reverse.disabled {
+  background-color: #828386;
+  box-shadow: 0px 3px 13px 0px #999b9e;
+  border: 1px solid #828386;
+  color: white;
+}
+
 .categories__startButton.start {
-  background-color: #0c0c0c48;
-  border: 1px gray solid;
+  background-color: #dcfdde;
+  border: 1px #86f88f solid;
+}
+
+.categories__startButton.start.disabled {
+  background-color: #828386;
+  box-shadow: 0px 3px 13px 0px #999b9e;
+  border: 1px solid #828386;
+  color: white;
 }
 
 .CRUDpanel {
@@ -768,6 +802,11 @@ body {
   margin: 0 1.42857rem 0 0;
 }
 
+.CRUDpanel__toolsButton.disabled {
+  background-color: #828386;
+  box-shadow: 0px 3px 13px 0px #999b9e;
+}
+
 .category {
   width: 100%;
   border-radius: 0.14286rem;
@@ -790,6 +829,11 @@ body {
 .category.green {
   background-color: #dcfdde;
   border: 1px #86f88f solid;
+}
+
+.category.selected {
+  border-color: #66afe9;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
 }
 
 .category__icon {
@@ -831,6 +875,14 @@ body {
   min-height: 26.78571rem;
   box-shadow: 0px 1px 8px 0px #000000;
   padding: 0.35714rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.newWords__wordPlaceholder {
+  margin: auto;
+  font-size: 4.28571rem;
+  letter-spacing: 30px;
 }
 
 .newWords__word {
@@ -840,6 +892,11 @@ body {
   width: 100%;
   margin-bottom: 1.42857rem;
   cursor: pointer;
+}
+
+.newWords__word.selected {
+  border-color: #66afe9;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
 }
 
 .newWords__info {
@@ -2130,6 +2187,20 @@ body {
   box-shadow: 0px 3px 13px 0px #C2CEF0;
   color: white;
   font-family: antique;
+  border: 0;
+  cursor: pointer;
+}
+
+.setting__backupButton::file-selector-button {
+  padding: 0.35714rem 0.92857rem;
+  border-radius: 1.42857rem;
+  font-size: 0.85714rem;
+  background-color: #698AFE;
+  box-shadow: 0px 3px 13px 0px #C2CEF0;
+  color: white;
+  font-family: antique;
+  border: 0;
+  cursor: pointer;
 }
 
 .setting__backupButton.export {

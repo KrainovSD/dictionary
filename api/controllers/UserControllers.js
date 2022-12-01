@@ -26,6 +26,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 export const register = async (req, res) => {
   try {
     let users = await User.find({
@@ -77,7 +82,7 @@ export const register = async (req, res) => {
         },
       ],
       knownWords: [],
-      categoriesToLean: [],
+      categoriesToLearn: [],
       wordsToStudy: [],
       wordsToRepeat: [],
       relevance: [],
@@ -124,7 +129,7 @@ export const confirm = async (req, res) => {
 
     if (user._doc.emailToConfirm == '') {
       return res.status(400).json({
-        message: 'Ключ не прошел проверку подлинности!',
+        message: 'Ключ не прошел проверку подлинностиb!',
       });
     }
 
@@ -372,6 +377,11 @@ export const forgotPassword = async (req, res) => {
         message: `You have changed password today!`,
       });
     }
+    if (user.resetPasswordTime > Date.now()) {
+      return res.status(400).json({
+        message: `Вы не завершили попытку смены пароля! Следуйте инструкции на почте!`,
+      });
+    }
 
     let resetPasswordKey = crypto.randomBytes(128).toString('base64');
     resetPasswordKey = resetPasswordKey.replace(/\//g, '');
@@ -462,6 +472,125 @@ export const newPassword = async (req, res) => {
   }
 };
 
+export const changeEmail = async (req, res) => {
+  try {
+    let { password, email, key } = req.body;
+    let user = await User.findOne({ confirmKey: key });
+    if (!user) {
+      return res.status(400).json({
+        message: "Key or password isn't correct or time to reset is up!",
+      });
+    }
+    let reqHash = pbkdf2Sync(
+      password + user.salt,
+      secretPassword + user.salt,
+      iterations,
+      512,
+      'sha512'
+    );
+    reqHash = reqHash.toString('hex');
+
+    if (reqHash != user.hash) {
+      return res.status(400).json({
+        message: "Key or password isn't correct or time to reset is up!",
+      });
+    }
+    if (user.confirmTime < Date.now()) {
+      return res.status(400).json({
+        message: `Key or password isn't correct or time to reset is up`,
+      });
+    }
+    if (user._id != req.userId) {
+      return res.status(400).json({
+        message: `Key or password isn't correct or time to reset is up`,
+      });
+    }
+    if (user.emailToConfirm != '' && user.confirmTime > Date.now()) {
+      return res.status(400).json({
+        message: `Вы уже отправляли заявку на новый Email. Перейдите на почту и проверьте сообщение!`,
+      });
+    }
+    let userEmail = await User.findOne({ email: email });
+    if (userEmail) {
+      return res.status(400).json({
+        message: 'Вы пытаетесь поменять Email на уже действующий!',
+      });
+    }
+
+    let emailToConfirm = email;
+    let confirmKey = crypto.randomBytes(128).toString('base64');
+    confirmKey = confirmKey.replace(/\//g, '');
+    let confirmTime = new Date(Date.now() + 5 * 60000);
+
+    let update = await User.updateOne(
+      { _id: req.userId },
+      {
+        confirmKey: confirmKey,
+        confirmTime: confirmTime,
+        emailToConfirm: emailToConfirm,
+      },
+      { upsert: false }
+    );
+    if (update.modifiedCount == 0) {
+      return res.status(400).json({
+        message: `Couldn't perform the operation`,
+      });
+    }
+    const message = {
+      from: config.server.postLog,
+      to: email,
+      subject: `Replace email`,
+      text: `follow the link in order to repalce your email http://${config.server.host}:${config.server.port}/confirm/${user.confirmKey}`,
+      html: `follow the link in order to repalce your email  <a href="http://${config.server.host}:${config.server.port}/confirm/${user.confirmKey}">Confirm</a> `,
+    };
+    await transporter.sendMail(message);
+
+    return res.json({
+      message:
+        'We have sent message to your email. Check message and follow instruction in order to replace your email',
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Couldn't perform the operation!`,
+    });
+  }
+};
+
+export const changeAvatar = async (req, res) => {
+  try {
+    if (!req?.file) {
+      return res
+        .status(400)
+        .json({ message: "Couldn't perform the operation!" });
+    }
+    let user = await User.findOneAndUpdate(
+      { _id: req.userId },
+      { avatar: req.file.filename },
+      {
+        new: true,
+        rawResult: true,
+      }
+    );
+    if (user.ok != 1)
+      return res.status(400).json({
+        message: `Couldn't perform the operation`,
+      });
+
+    let userData = getUserInfoFromDoc(user.value._doc);
+
+    res.json({
+      message: 'Avatar has been changed successfully!',
+      user: userData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Couldn't perform the operation!`,
+    });
+  }
+};
+
 export const changeInfo = async (req, res) => {
   try {
     let field = Object.keys(req.body)?.[0];
@@ -516,14 +645,20 @@ export const changeInfo = async (req, res) => {
           message: `You have changed email today!`,
         });
       }
+      if (user.confirmTime > Date.now()) {
+        return res.status(400).json({
+          message: `Вы не завершили попытку смены почты! Следуйте инструкции на почте!`,
+        });
+      }
+
       let confirmKey = crypto.randomBytes(128).toString('base64');
       confirmKey = confirmKey.replace(/\//g, '');
       let confirmTime = new Date(Date.now() + 5 * 60000);
-      let update = User.updateOne(
+      let update = await User.updateOne(
         { _id: req.userId },
         {
-          confirmKey,
-          confirmTime,
+          confirmKey: confirmKey,
+          confirmTime: confirmTime,
         },
         { upsert: false }
       );
@@ -546,6 +681,13 @@ export const changeInfo = async (req, res) => {
           'We have sent message to your email. Check message and follow instruction in order to replace your email',
       });
     }
+    if (field == 'nickName') {
+      let user = await User.findOne({ nickName: req.body[field] });
+      if (user)
+        return res.status(400).json({
+          message: `Nickname уже занят!`,
+        });
+    }
 
     let user = await User.findOneAndUpdate({ _id: req.userId }, newField, {
       new: true,
@@ -555,19 +697,8 @@ export const changeInfo = async (req, res) => {
       return res.status(400).json({
         message: `Couldn't perform the operation with field ${field}`,
       });
-    let {
-      hash,
-      salt,
-      refreshToken,
-      resetPasswordKey,
-      resetPasswordTime,
-      confirmKey,
-      confirmTime,
-      emailToConfirm,
-      confirmed,
-      ...userData
-    } = user.value._doc;
-    userData.email = replaceEmailToStar(userData.email);
+
+    let userData = getUserInfoFromDoc(user.value._doc);
     return res.json({
       message: `Field ${field} has been successfully changed!`,
       user: userData,
@@ -576,6 +707,56 @@ export const changeInfo = async (req, res) => {
     console.log(err);
     return res.status(500).json({
       message: `Couldn't perform the operation with field ${field}`,
+    });
+  }
+};
+
+export const exportUserData = async (req, res) => {
+  try {
+    let user = await User.findOne({ _id: req.userId });
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Couldn't perform the operation!" });
+    }
+    let {
+      userName,
+      nickName,
+      email,
+      hash,
+      salt,
+      role,
+      dateOfPassword,
+      resetPasswordKey,
+      resetPasswordTime,
+      confirmed,
+      dateOfConfirm,
+      confirmKey,
+      confirmTime,
+      emailToConfirm,
+      dateRegistration,
+      avatar,
+      refreshToken,
+      lastLogin,
+      statistics,
+      ...userData
+    } = user._doc;
+
+    res.json({ message: JSON.stringify(userData) });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Couldn't perform the operation!`,
+    });
+  }
+};
+
+export const importUserData = async (req, res) => {
+  try {
+    res.json('sosi');
+  } catch (err) {
+    return res.status(500).json({
+      message: `Couldn't perform the operation!`,
     });
   }
 };
@@ -622,20 +803,6 @@ function getTimeExistCoockies(options) {
   }
   return timeExistToken;
 }
-function replaceEmailToStar(email) {
-  let start;
-  let length = email.length;
-  let star = '*';
-  if (length - 8 > 0) start = 5;
-  else if (length - 6 > 0) start = 3;
-  else if (length - 5 > 0) start = 2;
-  else return email;
-  let end = length - 3;
-  for (let i = 1; i < end - start; i++) {
-    star += '*';
-  }
-  return email.replace(email.slice(start, end), star);
-}
 
 function dateFormat(date) {
   date = new Date(date);
@@ -665,4 +832,35 @@ function checkSimilarDay(date) {
     return true;
   }
   return false;
+}
+function getUserInfoFromDoc(doc) {
+  let user = doc;
+  let {
+    hash,
+    salt,
+    refreshToken,
+    resetPasswordKey,
+    resetPasswordTime,
+    confirmKey,
+    confirmTime,
+    emailToConfirm,
+    confirmed,
+    ...userData
+  } = user;
+  userData.email = replaceEmailToStar(userData.email);
+  return userData;
+}
+function replaceEmailToStar(email) {
+  let start;
+  let length = email.length;
+  let star = '*';
+  if (length - 8 > 0) start = 5;
+  else if (length - 6 > 0) start = 3;
+  else if (length - 5 > 0) start = 2;
+  else return email;
+  let end = length - 3;
+  for (let i = 1; i < end - start; i++) {
+    star += '*';
+  }
+  return email.replace(email.slice(start, end), star);
 }

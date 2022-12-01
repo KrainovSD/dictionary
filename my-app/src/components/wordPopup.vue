@@ -1,9 +1,9 @@
 <template>
+  <info-popup ref="info" />
   <category-popup
     v-if="categoryPopupVisible == true"
     categoryPopupType="add"
     @close="categoryPopupVisible = false"
-    @add="addCategory"
   />
   <div class="modal__backDrop" ref="backDrop">
     <div class="wordPopup">
@@ -79,6 +79,7 @@
             fontSize="16"
             :errors="errors"
             placeholder="*Word"
+            @change="translateApi"
           />
         </div>
         <div class="wordPopup__inputContainer">
@@ -192,7 +193,7 @@
             alt=""
             class="wordPopup__addExample"
             @click="addExample"
-            v-if="exampleCount == index && exampleCount < 2"
+            v-if="exampleCount - 1 == index && exampleCount < 3"
           />
           <input
             type="text"
@@ -202,7 +203,7 @@
             :name="`example${index}`"
             autocomplete="off"
             v-model="example[index]"
-            v-if="exampleCount >= index"
+            v-if="exampleCount - 1 >= index"
             :id="`example${index}`"
           />
           <div
@@ -244,16 +245,19 @@ import { nextTick } from "@vue/runtime-core";
 import categoryPopup from "../components/categoryPopup.vue";
 import inputTooltip from "../components/inputTooltip";
 import confirmButton from "../components/confirmButton";
+import infoPopup from "../components/infoPopup";
+
 export default {
   components: {
     categoryPopup,
     inputTooltip,
     confirmButton,
+    infoPopup,
   },
-  emits: ["close", "add", "update"],
+  emits: ["close"],
   props: {
     wordPopupType: String,
-    form: Object,
+    options: Object,
   },
   data() {
     return {
@@ -264,17 +268,40 @@ export default {
       transcription: "",
       description: "",
       example: ["", "", ""],
-      image: "",
+      id: "",
       errors: {},
-      exampleCount: 0,
-      categoryList: {
-        3232323: "Category1",
-        34242424: "Category2",
-      },
+      exampleCount: 1,
       categoryPopupVisible: false,
     };
   },
   mounted() {
+    if (Object.keys(this.options)?.length != 0) {
+      Object.keys(this.options).forEach((key) => {
+        if (key == "transcription")
+          this.$refs.transcription.value = this.options[key];
+        this[key] = this.options[key];
+        (async () => {
+          if (key == "example") {
+            let count = 1;
+            this.options[key].forEach((example, index) => {
+              if (index == 0) return;
+              if (example.length > 0) count++;
+            });
+            this.exampleCount = count;
+            await nextTick();
+            if (count > 1) {
+              for (let i = 2; i <= count; i++) {
+                let id = `example${i - 1}`;
+                let input = document.querySelector(`#${id}`);
+                input.addEventListener("focus", this.selectInput);
+                input.addEventListener("focusout", this.unSelectInput);
+              }
+            }
+          }
+        })();
+      });
+    }
+
     let input = Array.from(document.querySelectorAll("input"));
     let textArea = Array.from(document.querySelectorAll("textarea"));
     let inputs = [...input, ...textArea];
@@ -304,12 +331,43 @@ export default {
     });
   },
   computed: {
+    categoryList() {
+      let categoryList = {};
+      let categories = this.$store.getters.getUserInfo;
+      categories = categories?.categoriesToLearn;
+      if (!categories || categories?.length == 0) return categoryList;
+      categories = categories.filter(
+        (category) => category.startLearn == false
+      );
+      if (categories?.length == 0) return categoryList;
+      categories.forEach((category) => {
+        categoryList[category._id] = category.name;
+      });
+      return categoryList;
+    },
     categoryTitle() {
       if (this.category == "") return "Выберите категорию";
       return this.categoryList[this.category];
     },
   },
   methods: {
+    async translateApi() {
+      try {
+        /*let response = await fetch(
+          `https://speller.yandex.net/services/spellservice.json/checkText?text=${this.word}`
+        );
+        let result = await response.json();
+        console.log(result);
+
+        response = await fetch(
+          `https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key=dict.1.1.20221129T170854Z.af9b2899afb4c061.7c5e69f9944a8a1b7f7b5c16916f21e54e6c34a9&lang=en-ru&text=${this.word}`
+        );
+        result = await response.json();
+        console.log(result);*/
+      } catch (err) {
+        console.log(err);
+      }
+    },
     closePopup() {
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
@@ -384,11 +442,16 @@ export default {
     },
     async addExample() {
       this.exampleCount += 1;
+
       await nextTick();
-      let id = `example${this.exampleCount}`;
+      let id = `example${this.exampleCount - 1}`;
+      console.log(id);
       let input = document.querySelector(`#${id}`);
       input.addEventListener("focus", this.selectInput);
       input.addEventListener("focusout", this.unSelectInput);
+    },
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
     },
     validateForm(form) {
       this.errors = {};
@@ -630,13 +693,35 @@ export default {
 
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
-        this.$emit(type, form);
+        if (type == "add") this.addWord(form);
+        if (type == "update") this.updateWord(form);
         //this.closePopup();
       } else {
         console.log(this.errors);
       }
     },
-    addCategory() {},
+    async addWord(form) {
+      try {
+        let res = await this.$api.words.addWord(form);
+        console.log(res);
+        await this.showInfo("Add Word", res?.data?.message);
+        this.$store.commit("setUserInfo", res?.data?.user);
+        this.closePopup();
+      } catch (err) {
+        this.showInfo("Add Category", err?.response?.data?.message);
+      }
+    },
+    async updateWord(form) {
+      try {
+        form.id = this.id;
+        let res = await this.$api.words.updateWord(form);
+        await this.showInfo("Add Word", res?.data?.message);
+        this.$store.commit("setUserInfo", res?.data?.user);
+        this.closePopup();
+      } catch (err) {
+        this.showInfo("Add Category", err?.response?.data?.message);
+      }
+    },
   },
   watch: {
     word() {

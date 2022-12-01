@@ -1,10 +1,15 @@
 <template>
-  <div class="modal__backDrop" style="z-index: 1000" ref="backDrop">
+  <div
+    class="modal__backDrop"
+    style="z-index: 1000"
+    ref="backDrop"
+    v-if="isVisible"
+  >
     <div class="infoPopup">
-      <h1 class="infoPopup__header">{{ infoHeader }}</h1>
+      <h1 class="infoPopup__header">{{ header }}</h1>
       <div class="infoPopup__line"></div>
       <p class="infoPopup__title">
-        {{ infoTittle }}
+        {{ title }}
       </p>
       <div class="infoPopup__line"></div>
       <div class="infoPopup__confirmContainer">
@@ -18,12 +23,13 @@
 import confirmButton from "../components/confirmButton.vue";
 export default {
   components: { confirmButton },
-  props: {
-    infoTittle: String,
-    infoHeader: String,
-  },
+  infoContoller: null,
   data() {
-    return {};
+    return {
+      title: "",
+      header: "",
+      isVisible: false,
+    };
   },
   methods: {
     closePopup() {
@@ -31,9 +37,23 @@ export default {
         this.$refs.backDrop.classList.toggle("close");
         setTimeout(() => {
           this.$refs.backDrop.classList.toggle("close");
-          this.$emit("close");
+          this.isVisible = false;
+          this.$options.infoContoller.resolve(true);
         }, 300);
       }
+    },
+    show(header, title) {
+      this.title = title;
+      this.header = header;
+      this.isVisible = true;
+      let resolve, reject;
+
+      const infoPromise = new Promise((confirm, cancel) => {
+        resolve = confirm;
+        reject = cancel;
+      });
+      this.$options.infoContoller = { resolve, reject };
+      return infoPromise;
     },
   },
 };

@@ -4,16 +4,7 @@
     @close="forgotPasswordVisible = false"
     @forgot="(payload) => forgot(payload)"
   />
-  <info-popup
-    v-if="infoVisible == true"
-    :infoTittle="infoTittle"
-    :infoHeader="infoHeader"
-    @close="
-      this.infoVisible = false;
-      this.infoTittle = '';
-      this.infoHeader = '';
-    "
-  />
+  <info-popup ref="info" />
   <div class="modal__backDrop" ref="backDrop" style="z-index: 5">
     <div class="sign" :class="signType == 'register' ? 'signUp' : ''">
       <img
@@ -159,9 +150,6 @@ export default {
       errors: {},
       responseMessage: "",
       forgotPasswordVisible: false,
-      infoVisible: false,
-      infoTittle: "",
-      infoHeader: "",
     };
   },
   methods: {
@@ -378,11 +366,9 @@ export default {
         console.log(this.errors);
       }
     },
-    forgot(message) {
-      this.infoVisible = true;
+    async forgot(message) {
       this.forgotPasswordVisible = false;
-      this.infoHeader = "Reset password";
-      this.infoTittle = message;
+      await this.$refs.info.show(message, "Reset password");
     },
   },
   watch: {

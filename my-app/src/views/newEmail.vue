@@ -1,28 +1,28 @@
 <template>
   <info-popup ref="info" />
-  <div class="newPassword">
-    <div class="newPassword__container">
+  <div class="newEmail">
+    <div class="newEmail__container">
       <div class="sign__container">
-        <h1 class="sign__header">Новый пароль</h1>
-        <p class="sign__description">Придумайте свой новый пароль</p>
+        <h1 class="sign__header">Новый Email</h1>
+        <p class="sign__description">Укажите новый email и свой пароль</p>
         <div class="sign__inputIconContainer">
           <input-tooltip-icon
-            v-model="password"
-            type="passwordAdvice"
-            field="password"
-            icon="house-key.png"
-            placeholder="Password"
+            v-model="email"
+            type="text"
+            field="email"
+            icon="email.png"
+            placeholder="Email"
             fontSize="14"
             :errors="errors"
           />
         </div>
         <div class="sign__inputIconContainer">
           <input-tooltip-icon
-            v-model="repeatPassword"
+            v-model="password"
             type="password"
-            field="repeatPassword"
-            icon="padlock.png"
-            placeholder="Repeat Password"
+            field="password"
+            icon="house-key.png"
+            placeholder="Password"
             fontSize="14"
             :errors="errors"
           />
@@ -31,7 +31,7 @@
         <!-- RESPONSE -->
         <p class="sign__infoMessage">{{ responseMessage }}</p>
 
-        <div class="newPassword__confirmContainer">
+        <div class="newEmail__confirmContainer">
           <confirm-button text="Подтвердить" @click="checkData" fontSize="14" />
         </div>
       </div>
@@ -47,8 +47,8 @@ export default {
   components: { inputTooltipIcon, confirmButton, infoPopup },
   data() {
     return {
+      email: "",
       password: "",
-      repeatPassword: "",
       errors: {},
       responseMessage: "",
     };
@@ -60,14 +60,6 @@ export default {
   },
 
   methods: {
-    async showInfo(header, title) {
-      await this.$refs.info.show(header, title);
-      this.updateInfo();
-      this.redirect();
-    },
-    redirect() {
-      this.$router.push({ name: "home" });
-    },
     updateInfo() {
       this.$api.auth
         .checkAuth()
@@ -91,9 +83,13 @@ export default {
               return;
             }
             break;
-          case "repeatPassword":
-            if (!(fieldData === this.password)) {
-              this.errors[field] = "Пароли не совпадают!";
+          case "email":
+            if (
+              !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
+                fieldData
+              )
+            ) {
+              this.errors[field] = "Неверный формат введенного Email!";
               return;
             }
             break;
@@ -113,9 +109,13 @@ export default {
               return;
             }
             break;
-          case "repeatPassword":
-            if (!(fieldData === form.password)) {
-              this.errors[field] = "Пароли не совпадают!";
+          case "email":
+            if (
+              !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
+                fieldData
+              )
+            ) {
+              this.errors[field] = "Неверный формат введенного Email!";
               return;
             }
             break;
@@ -126,22 +126,31 @@ export default {
       this.responseMessage = "";
       let form = {
         password: this.password,
-        repeatPassword: this.repeatPassword,
+        email: this.email,
       };
 
       this.validateForm(form);
 
       if (Object.keys(this.errors).length === 0) {
-        this.sendData({ password: form.password, key: this.key });
+        this.sendData({
+          password: form.password,
+          email: form.email,
+          key: this.key,
+        });
       } else {
         console.log(this.errors);
       }
     },
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+      this.updateInfo();
+      this.redirect();
+    },
     sendData(form) {
       this.$api.change
-        .password(form)
+        .email(form)
         .then((res) => {
-          this.showInfo("New Password", res.data.message);
+          this.showInfo("New Email", res.data.message);
         })
         .catch((err) => {
           if (err.response.status == 400) {
@@ -152,30 +161,33 @@ export default {
           this.responseMessage = "Сервер не отвечает";
         });
     },
+    redirect() {
+      this.$router.push({ name: "home" });
+    },
   },
   watch: {
     password() {
       this.validateField("password", this.password);
     },
-    repeatPassword() {
-      this.validateField("repeatPassword", this.repeatPassword);
+    email() {
+      this.validateField("email", this.email);
     },
   },
 };
 </script>
 
 <style>
-.newPassword {
+.newEmail {
   display: flex;
 }
-.newPassword__container {
+.newEmail__container {
   margin: 50px auto;
   background: linear-gradient(-42deg, #e7fcf5 50%, #fce5f9 50%);
   display: flex;
   flex-direction: column;
   width: 345px;
 }
-.newPassword__confirmContainer {
+.newEmail__confirmContainer {
   margin-top: 16px;
 }
 </style>

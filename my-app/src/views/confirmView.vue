@@ -1,16 +1,5 @@
 <template>
-  <info-popup
-    v-if="infoVisiable == true"
-    :infoTittle="infoTittle"
-    :infoHeader="infoHeader"
-    @close="
-      this.infoVisiable = false;
-      this.infoTittle = '';
-      this.infoHeader = '';
-      updateInfo();
-      redirect();
-    "
-  />
+  <info-popup ref="info" />
 </template>
 
 <script>
@@ -60,10 +49,10 @@ export default {
           this.$store.commit("resetAuth");
         });
     },
-    showInfoPopup(header, tittle) {
-      this.infoHeader = header;
-      this.infoTittle = tittle;
-      this.infoVisiable = true;
+    async showInfoPopup(header, title) {
+      await this.$refs.info.show(header, title);
+      this.updateInfo();
+      this.redirect();
     },
     redirect() {
       this.$router.push({ name: "home" });

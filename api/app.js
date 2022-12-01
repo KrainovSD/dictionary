@@ -23,14 +23,14 @@ mongoose.connection.on('recconect', () => {
 mongoose.connection.on('close', () => {
   console.log('DB close connect');
 });
-
-app.listen(config.server.port, config.server.host, (err) => {
+const port = process.env.PORT || config.server.port;
+app.listen(port, config.server.host, (err) => {
   if (err) {
     console.log(err);
     logger(err, 'start server');
   }
   console.log(
-    `Server has started on port ${config.server.port} and host ${config.server.host}`
+    `Server has started on port ${port} and host ${config.server.host}`
   );
 });
 /* ONLY FOR DEV!!!!!!!!!!! */
@@ -45,29 +45,40 @@ app.use((request, response, next) => {
   next();
 });
 
-import { UserController } from './controllers/index.js';
+import { UserController, WordController } from './controllers/index.js';
 import {
-  loginValidation,
   registerValidation,
+  loginValidation,
+  confirmValidation,
   forgotPasswordValidation,
   newPasswordValidation,
   infoValidation,
+  newEmailValidation,
+  importDataValidation,
+  categoryValidation,
+  wordValidation,
 } from './validations.js';
 import {
   handleValidationErrors,
   checkAuth,
   reqLogger,
+  upload,
 } from './untils/index.js';
 import logger from './logger.js';
 app.use(reqLogger);
-
+/* AUTH */
 app.post(
   '/register',
   registerValidation,
   handleValidationErrors,
   UserController.register
 );
-app.post('/confirm', UserController.confirm);
+app.post(
+  '/confirm',
+  confirmValidation,
+  handleValidationErrors,
+  UserController.confirm
+);
 app.post(
   '/login',
   loginValidation,
@@ -76,6 +87,7 @@ app.post(
 );
 app.post('/logout', UserController.logout);
 app.post('/tokens', UserController.updateAccessToken);
+/* USER INFO  */
 app.post(
   '/forgot',
   forgotPasswordValidation,
@@ -89,17 +101,55 @@ app.post(
   UserController.newPassword
 );
 app.post(
+  '/email',
+  checkAuth,
+  newEmailValidation,
+  handleValidationErrors,
+  UserController.changeEmail
+);
+app.post(
   '/info',
   checkAuth,
   infoValidation,
   handleValidationErrors,
   UserController.changeInfo
 );
+app.post(
+  '/avatar',
+  checkAuth,
+  upload.single('avatar'),
+  UserController.changeAvatar
+);
+
+app.post('/export', checkAuth, UserController.exportUserData);
+app.post(
+  '/import',
+  checkAuth,
+  importDataValidation,
+  handleValidationErrors,
+  UserController.importUserData
+);
+/* WORDS */
+app.post(
+  '/category',
+  checkAuth,
+  categoryValidation,
+  handleValidationErrors,
+  WordController.addCategory
+);
+app.post(
+  '/word',
+  checkAuth,
+  wordValidation,
+  handleValidationErrors,
+  WordController.addWord
+);
+
+app.post('/startLearnCategory', checkAuth, WordController.startLearnCategory);
 
 process.on('uncaughtException', (err) => {
   console.log(err);
   logger(err, 'uncaughtException');
-  //res.status(500).json({message: err});
   process.exit(1);
 }); // some logging mechanisam // .... process.exit(1); // terminates process });
 
@@ -107,80 +157,3 @@ process.on('uncaughtException', (err) => {
 POST — создание ресурса
 PUT — обновление ресурса
 DELETE — удаление ресурса */
-
-/*
-users: {
-iserid: string,
-userName: string,
-nickName: string,
-email: string,
-hash: string,
-salt: string,
-role: string,
-registration: string,
-avatar: src, 
-token: string, 
-statistics:{
-    startLearning: string,
-    lastLearning: string,
-    bestStreak: string,
-}
-en:{
-    here all below
-}
-knownWorlds: {
-    word:{
-        translate: string,
-        transcript: string,
-        image: string,
-        description: string,
-        example: [of string],
-        lastRepeat: string,
-        lastReverseRepeat: string,
-        dateOfCreation: string
-    }
-}
-categories: {
-    nameCategory: {
-        regularityToRepeat:[of string],
-        deleteAfterLearning: boolean,
-        nextRepeat: string,
-        lastRepeat: string,?
-        storyRepeat:[of string]
-
-    }
-}
-wordsOfCategories:{
-    word:{
-        translate: string,
-        transcript: string,
-        image: string,
-        description: string,
-        example: [of string],
-        categories: [of string],
-        dateOfCreation: string,
-    }
-}
-repeatWords: {
-    words:{
-        word:{
-            translate: string,
-            transcript: string,
-            image: string,
-            description: string,
-            example: [of string],
-            nextRepeat: string,
-            lastRepeat: string,?
-            storyRepeat:[of string]
-
-        }
-    }
-    options: {
-        automaticallyAddToRepeat: boolean,
-        regularityToRepeat: [of string]
-        }
-    }
-}
-
-
-*/

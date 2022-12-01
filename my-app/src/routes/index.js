@@ -11,6 +11,7 @@ import relevanceView from "../views/relevanceView";
 import newPassword from "../views/newPassword";
 import notFoundPage from "../views/notFoundPage";
 import confirmView from "../views/confirmView";
+import newEmail from "../views/newEmail";
 
 const routes = [
   {
@@ -34,6 +35,7 @@ const routes = [
       { path: "/contacts", name: "contacts", component: contactView },
       { path: "/pass/:key", name: "password", component: newPassword },
       { path: "/confirm/:key", name: "confirm", component: confirmView },
+      { path: "/email/:key", name: "email", component: newEmail },
       { path: "/:catchAll(.*)", name: "notFound", component: notFoundPage },
     ],
   },

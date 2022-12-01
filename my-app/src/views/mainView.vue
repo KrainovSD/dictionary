@@ -6,16 +6,7 @@
     @switch="this.signType = 'register'"
     @register="(payload) => register(payload)"
   />
-  <info-popup
-    v-if="infoVisible == true"
-    :infoTittle="infoTittle"
-    :infoHeader="infoHeader"
-    @close="
-      this.infoVisible = false;
-      this.infoTittle = '';
-      this.infoHeader = '';
-    "
-  />
+  <info-popup ref="info" />
   <setting-popup
     v-if="settingPopupVisible == true"
     @close="
@@ -108,9 +99,6 @@ export default {
       signVisible: false,
       signType: "",
       userMenuVisible: false,
-      infoVisible: false,
-      infoTittle: "",
-      infoHeader: "",
       settingPopupVisible: false,
     };
   },
@@ -173,31 +161,24 @@ export default {
         this.signType = "register";
       }
     },
-    showInfoPopup(header, tittle) {
-      this.infoHeader = header;
-      this.infoTittle = tittle;
-      this.infoVisible = true;
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
     },
     register(payload) {
-      this.showInfoPopup("Регистрация", payload);
+      this.showInfo("Регистрация", payload);
       this.signVisible = false;
     },
     logout() {
       this.$api.auth
         .logout()
         .then((res) => {
-          this.showInfoPopup("Logout", res.data.message);
+          this.showInfo("Logout", res.data.message);
           this.$store.commit("resetAuth");
         })
         .catch((err) => {
-          this.showInfoPopup("Logout", err.response.data.message);
+          this.showInfo("Logout", err.response.data.message);
           this.$store.commit("resetAuth");
         });
-    },
-    showInfo(tittle, header) {
-      this.infoVisible = true;
-      this.infoHeader = header;
-      this.infoTittle = tittle;
     },
     noAuth() {
       this.settingPopupVisible = false;

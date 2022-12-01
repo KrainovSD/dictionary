@@ -1,4 +1,5 @@
 <template>
+  <info-popup ref="info" />
   <div class="modal__backDrop" style="z-index: 4" ref="backDrop">
     <category-icon
       v-if="addIconVisible == true"
@@ -62,7 +63,7 @@
           <div
             class="categoryPopup__helper"
             v-if="tooltip == true"
-            :tooltip="'Укажите шаблон регулярности повторения слов в выбранной категории. Общее количество повторений равняется 12-ти. Максимальный интервал между повторениями 16 дней.'"
+            :tooltip="'Укажите шаблон регулярности повторения слов в выбранной категории. Общее количество повторений равняется 12-ти. Максимальный интервал между повторениями 16 дней. Ниже представлен наиболее удобный вариант для хорошего запоминания блока слов (можно изменить).'"
           ></div>
         </div>
 
@@ -108,21 +109,39 @@ import inputTooltip from "../components/inputTooltip.vue";
 import confirmButton from "../components/confirmButton.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 import categoryIcon from "../components/categoryIcon.vue";
+import infoPopup from "../components/infoPopup.vue";
 export default {
   components: {
     inputTooltip,
     confirmButton,
     multipleInputTooltip,
     categoryIcon,
+    infoPopup,
   },
+  emits: ["close"],
   props: {
     categoryPopupType: String,
+    options: Object,
   },
   data() {
     return {
       name: "",
       icon: "",
-      regularityToRepeat: ["", "", "", "", "", "", "", "", "", "", "", ""],
+      regularityToRepeat: [
+        "2",
+        "2",
+        "2",
+        "2",
+        "4",
+        "4",
+        "4",
+        "4",
+        "8",
+        "8",
+        "16",
+        "16",
+      ],
+      id: "",
       errors: {},
       tooltip: false,
       addIconVisible: false,
@@ -139,7 +158,9 @@ export default {
         }, 300);
       }
     },
-
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+    },
     validateForm(form) {
       this.errors = {};
       Object.keys(form).forEach((key) => {
@@ -157,9 +178,9 @@ export default {
         }
         switch (key) {
           case "name": {
-            if (form[key].length > 20) {
+            if (form[key].length > 20 || form[key].length < 5) {
               this.errors[key] =
-                "Имя категории должно быть не длиннее 30-ти символов!";
+                "Имя категории должно быть не длиннее 20-ти символов или короче 5!";
             }
             if (!/^[A-Za-zА-Яа-я0-9\- ]+$/.test(form[key])) {
               this.errors[key] =
@@ -209,9 +230,9 @@ export default {
         }
         switch (field) {
           case "name": {
-            if (fieldData.length > 20) {
+            if (fieldData.length > 20 || fieldData.length < 5) {
               this.errors[field] =
-                "Имя категории должно быть не длиннее 30-ти символов!";
+                "Имя категории должно быть не длиннее 20-ти символов или короче 5!";
               return;
             }
             if (!/^[A-Za-zА-Яа-я0-9\- ]+$/.test(fieldData)) {
@@ -260,10 +281,34 @@ export default {
       };
 
       this.validateForm(form);
+      form.regularityToRepeat = this.regularityToRepeat.map((x) => +x);
+
       if (Object.keys(this.errors).length === 0) {
-        this.$emit(type, form);
+        if (type == "add") this.addCategory(form);
+        if (type == "update") this.updateCaregory(form);
       } else {
         console.log(this.errors);
+      }
+    },
+    async addCategory(form) {
+      try {
+        let res = await this.$api.words.addCategory(form);
+        await this.showInfo("Add Category", res.data.message);
+        this.$store.commit("setUserInfo", res.data.user);
+        this.closePopup();
+      } catch (err) {
+        this.showInfo("Add Category", err.response.data.message);
+      }
+    },
+    async updateCaregory(form) {
+      try {
+        form.id = this.id;
+        let res = await this.$api.words.updateCategory(form);
+        await this.showInfo("Update Category", res.data.message);
+        this.$store.commit("setUserInfo", res.data.user);
+        this.closePopup();
+      } catch (err) {
+        this.showInfo("Update Category", err.response.data.message);
       }
     },
   },
