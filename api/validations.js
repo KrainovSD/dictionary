@@ -340,6 +340,7 @@ export const wordValidation = [
       'Слово или словосочетание может состоять только из букв английского алфавита, пробела и дефиса!'
     ),
   body('category')
+    .optional()
     .trim()
     .not()
     .isEmpty({ ignore_whitespace: true })
@@ -348,6 +349,7 @@ export const wordValidation = [
     .withMessage('У категории неверный тип данных!'),
   body('translate')
     .trim()
+    .toLowerCase()
     .not()
     .isEmpty({ ignore_whitespace: true })
     .withMessage('Перевод не должен быть пустым!')

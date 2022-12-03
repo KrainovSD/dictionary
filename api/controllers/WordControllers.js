@@ -1,6 +1,66 @@
 import config from '../config.js';
 
 import User from '../models/Users.js';
+/* 
+1. StartLearnCategory: 
+- не активная категория
+- есть слова, хотябы одно
+2. addCategory: 
+- не повторяющееся имя
+3. addWord: 
+- не активная категория
+- не повторяющиеся слово
+4. updateCategory:
+- не активная категория
+- не менять имя на то которое есть
+5. updateWord:
+- не менять имя на то, которое есть
+*/
+
+export const startLearnCategory = async (req, res) => {
+  try {
+    let { id } = req.body;
+
+    if (!id || typeof id != 'string' || id.trim()?.length == 0) {
+      return res
+        .status(400)
+        .json({ message: `Не удалось выполнить операцию!` });
+    }
+    let user = await User.findOne({
+      _id: req.userId,
+      'wordsToStudy.category': id,
+    });
+    if (!user) {
+      return res.status(400).json({
+        message: `В категории нет слов!`,
+      });
+    }
+
+    user = await User.findOneAndUpdate(
+      {
+        _id: req.userId,
+        'categoriesToLearn._id': id,
+      },
+      {
+        $set: {
+          'categoriesToLearn.$.startLearn': true,
+        },
+      },
+      { new: true, rawResult: true }
+    );
+    console.log(user);
+    if (user.ok == 0) {
+      return res.status(400).json({ message: `Не удалось выполнить операцию` });
+    }
+    let userData = getUserInfoFromDoc(user.value._doc);
+    res.json({ message: 'Операция успешно выполнена!', user: userData });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
 
 export const addCategory = async (req, res) => {
   try {
@@ -12,7 +72,7 @@ export const addCategory = async (req, res) => {
     if (user) {
       return res
         .status(400)
-        .json({ message: `Такое имя уже есть у другой категории!` });
+        .json({ message: `Такое имя категории уже существует!` });
     }
 
     let newCategory = {
@@ -34,17 +94,19 @@ export const addCategory = async (req, res) => {
     );
     if (user.ok == 0)
       return res.status(400).json({
-        message: `Couldn't perform add new Category`,
+        message: `Не удалось выполнить операцию!`,
       });
     let userData = getUserInfoFromDoc(user.value._doc);
 
-    res.json({ message: 'Новая категория успешно добавлена', user: userData });
+    res.json({ message: 'Операция успешно выполнена!', user: userData });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
-      message: `Couldn't add new category!`,
+      message: `Не удалось выполнить операцию!`,
     });
   }
 };
+
 export const addWord = async (req, res) => {
   try {
     let { category, word, translate, transcription, description, example } =
@@ -56,25 +118,24 @@ export const addWord = async (req, res) => {
     console.log();
     if (!user) {
       return res.status(400).json({
-        message: "Couldn't perform to add new word!",
+        message: `Не удалось выполнить операцию!`,
       });
     }
-    let categories = user.categoriesToLearn;
-    categories = categories.filter((item) => item._id == category);
-    if (categories?.length == 0 || categories?.[0]?.startLearn == true) {
+    let statusCategory = user.categoriesToLearn.filter(
+      (item) => item._id == category
+    );
+    if (
+      statusCategory?.length == 0 ||
+      statusCategory?.[0]?.startLearn == true
+    ) {
       return res.status(400).json({
-        message: `Couldn't perform to add new word becouse для этой категории было начато обучение!`,
+        message: `Категория, в которую вы пытаетесь добавить слово, уже поставлена на изучение!`,
       });
     }
-    user = await User.findOne({
-      _id: req.userId,
-      'wordsToStudy.word': word,
-    });
-    console.log(user);
-    if (user) {
+    let hasWord = user.wordsToStudy.filter((word) => word.word == word);
+    if (hasWord?.length != 0) {
       return res.status(400).json({
-        message:
-          "Couldn't perform to add new word becouse такое слово уже есть!",
+        message: `Такое слово уже добавлено!`,
       });
     }
 
@@ -98,37 +159,51 @@ export const addWord = async (req, res) => {
     );
     if (user.ok == 0)
       return res.status(400).json({
-        message: `Couldn't perform to add new word`,
+        message: `Не удалось выполнить операцию!`,
       });
     let userData = getUserInfoFromDoc(user.value._doc);
-    res.json({ message: 'Новое слово успешно добавлено', user: userData });
+    res.json({ message: 'Операция успешно выполнена!', user: userData });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
-      message: `Couldn't add new word!`,
+      message: `Не удалось выполнить операцию!`,
     });
   }
 };
-export const startLearnCategory = async (req, res) => {
-  try {
-    let { id } = req.body;
 
-    if (!id || typeof id != 'string' || id.trim()?.length == 0) {
-      return res
-        .status(400)
-        .json({ message: `Couldn't perform the operation!` });
-    }
-    let user = await User.findOne({
-      _id: req.userId,
-      'wordsToStudy.category': id,
-    });
+export const updateCategory = async (req, res) => {
+  try {
+    let { id, name, icon, regularityToRepeat } = req.body;
+    let user = await User.findOne(
+      {
+        _id: req.userId,
+      },
+      {
+        categoriesToLearn: {
+          $elemMatch: { $and: [{ name: name }, { id: id }] },
+        },
+      }
+    );
+    console.log(user);
     if (!user) {
       return res
         .status(400)
-        .json({
-          message: `Couldn't perform the operation, потому что нет слов в категории!`,
-        });
+        .json({ message: `Не удалось выполнить операцию!` });
     }
+
+    /*
+    let statusCategory = user.categoriesToLearn.filter((item) => item._id == id);
+    if (statusCategory?.length == 0 || statusCategory?.[0]?.startLearn == true) {
+      return res.status(400).json({
+        message: `Категория уже поставлена на изучение!`,
+      });
+    }
+    let similarName = user.categoriesToLearn.filter((item) => item.name == name);
+    if (similarName?.length != 0 && similarName?.[0]?._id != id) {
+      return res.status(400).json({
+        message: `Такое имя категории уже существует!`,
+      });
+    }*/
 
     user = await User.findOneAndUpdate(
       {
@@ -137,22 +212,136 @@ export const startLearnCategory = async (req, res) => {
       },
       {
         $set: {
-          'categoriesToLearn.$.startLearn': true,
+          'categoriesToLearn.$.name': name,
+          'categoriesToLearn.$.icon': icon,
+          'categoriesToLearn.$.regularityToRepeat': regularityToRepeat,
         },
+      },
+      { new: true, rawResult: true }
+    );
+    if (user.ok == 0) {
+      return res
+        .status(400)
+        .json({ message: `Не удалось выполнить операцию!` });
+    }
+    let userData = getUserInfoFromDoc(user.value._doc);
+    res.json({ message: 'Операция успешно выполнена!', user: userData });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+
+export const updateWord = async (req, res) => {
+  try {
+    let { id, word, translate, transcription, description, example } = req.body;
+    let irregularVerbs = checkIrregularVerbs(word);
+    let hasWord = await User.findOne(
+      {
+        _id: req.userId,
+      },
+      { wordsToStudy: { $elemMatch: { word: word } } }
+    );
+
+    if (
+      hasWord?.wordsToStudy?.length > 0 &&
+      hasWord?.wordsToStudy?.[0]?._id != id
+    ) {
+      return res.status(400).json({
+        message: `Такое слово уже добавлено!`,
+      });
+    }
+
+    let user = await User.findOneAndUpdate(
+      { _id: req.userId, 'wordsToStudy._id': id },
+      {
+        $set: {
+          'wordsToStudy.$.word': word,
+          'wordsToStudy.$.translate': translate,
+          'wordsToStudy.$.transcription': transcription,
+          'wordsToStudy.$.description': description,
+          'wordsToStudy.$.example': example,
+          'wordsToStudy.$.irregularVerbs': irregularVerbs,
+        },
+      },
+      { new: true, rawResult: true }
+    );
+    if (user.ok == 0) {
+      return res
+        .status(400)
+        .json({ message: `Не удалось выполнить операцию!` });
+    }
+    let userData = getUserInfoFromDoc(user.value._doc);
+    res.json({ message: 'Операция успешно выполнена!', user: userData });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+
+export const deleteCategory = async (req, res) => {
+  try {
+    let { id } = req.params;
+
+    if (!id || typeof id != 'string' || id.trim()?.length == 0) {
+      return res
+        .status(400)
+        .json({ message: `Не удалось выполнить операцию!` });
+    }
+
+    let user = await User.findOneAndUpdate(
+      { _id: req.userId, 'categoriesToLearn._id': id },
+      {
+        $pull: { categoriesToLearn: { _id: id } },
+      },
+      { new: true, rawResult: true }
+    );
+    if (user.ok == 0) {
+      return res.status(400).json({
+        message: `Не удалось выполнить операцию!`,
+      });
+    }
+    let userData = getUserInfoFromDoc(user.value._doc);
+    return res.json({ message: 'Операция успешно выполнена!', user: userData });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+export const deleteWord = async (req, res) => {
+  try {
+    let { id } = req.params;
+
+    if (!id || typeof id != 'string' || id.trim()?.length == 0) {
+      return res
+        .status(400)
+        .json({ message: `Не удалось выполнить операцию!` });
+    }
+    let user = await User.findOneAndUpdate(
+      { _id: req.userId, 'wordsToStudy._id': id },
+      {
+        $pull: { wordsToStudy: { _id: id } },
       },
       { new: true, rawResult: true }
     );
     console.log(user);
     if (user.ok == 0) {
-      return res
-        .status(400)
-        .json({ message: `Couldn't perform the operation!` });
+      return res.status(400).json({
+        message: `Не удалось выполнить операцию!`,
+      });
     }
     let userData = getUserInfoFromDoc(user.value._doc);
-    res.json({ message: 'sosi', user: userData });
+    return res.json({ message: 'Операция успешно выполнена!', user: userData });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
-      message: `Couldn't perform the operation!`,
+      message: `Не удалось выполнить операцию!`,
     });
   }
 };
@@ -166,6 +355,7 @@ function checkIrregularVerbs(word) {
 function getUserInfoFromDoc(doc) {
   let user = doc;
   let {
+    _id,
     hash,
     salt,
     refreshToken,

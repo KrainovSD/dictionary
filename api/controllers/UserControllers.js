@@ -230,19 +230,7 @@ export const login = async (req, res) => {
       }
     );
 
-    let {
-      hash,
-      salt,
-      refreshToken,
-      resetPasswordKey,
-      resetPasswordTime,
-      confirmKey,
-      confirmTime,
-      emailToConfirm,
-      confirmed,
-      ...userData
-    } = user._doc;
-    userData.email = replaceEmailToStar(userData.email);
+    let userData = getUserInfoFromDoc(user._doc);
     return res.json({ user: userData, token: accessToken });
   } catch (err) {
     console.log(err);
@@ -332,19 +320,7 @@ export const updateAccessToken = async (req, res) => {
         expiresIn: `${config.common.liveTimeAccessToken}`,
       }
     );
-    let {
-      hash,
-      salt,
-      refreshToken,
-      resetPasswordKey,
-      resetPasswordTime,
-      confirmKey,
-      confirmTime,
-      emailToConfirm,
-      confirmed,
-      ...userData
-    } = user._doc;
-    userData.email = replaceEmailToStar(userData.email);
+    let userData = getUserInfoFromDoc(user._doc);
     return res.json({
       token: accessToken,
       user: userData,
@@ -693,7 +669,7 @@ export const changeInfo = async (req, res) => {
       new: true,
       rawResult: true,
     });
-    if (user.ok != 1)
+    if (user.ok == 0)
       return res.status(400).json({
         message: `Couldn't perform the operation with field ${field}`,
       });
@@ -720,6 +696,7 @@ export const exportUserData = async (req, res) => {
         .json({ message: "Couldn't perform the operation!" });
     }
     let {
+      _id,
       userName,
       nickName,
       email,
@@ -836,6 +813,7 @@ function checkSimilarDay(date) {
 function getUserInfoFromDoc(doc) {
   let user = doc;
   let {
+    _id,
     hash,
     salt,
     refreshToken,

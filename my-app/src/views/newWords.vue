@@ -17,6 +17,7 @@
     @close="learnCardVisible = false"
   />
   <info-popup ref="info" />
+  <confirm-popup ref="confirm" />
   <div class="learnPlace__container">
     <div class="categories">
       <div class="CRUDpanel">
@@ -38,6 +39,7 @@
           class="CRUDpanel__toolsButton delete"
           :class="!isHaveCategory ? 'disabled' : ''"
           :disabled="!isHaveCategory ? true : false"
+          @click="auth ? deleteCategory() : offlineDeleteCategory()"
         >
           Удалить
         </button>
@@ -45,7 +47,10 @@
       <div class="categories__list" @click.self="currentSelectedCategory = {}">
         <div
           class="categories__categoryPlaceholder"
-          v-if="userInfo?.categoriesToLearn?.length == 0"
+          v-if="
+            userInfo?.categoriesToLearn?.length == 0 ||
+            !userInfo?.categoriesToLearn
+          "
         >
           Categories
         </div>
@@ -65,7 +70,7 @@
             :key="index"
             @click="
               currentSelectedCategory =
-                currentSelectedCategory == item ? {} : item
+                currentSelectedCategory?._id == item?._id ? {} : item
             "
           >
             <img :src="categoryIcon(item.icon)" alt="" class="category__icon" />
@@ -97,7 +102,7 @@
               ? true
               : false
           "
-          @click="startLearnCategory"
+          @click="auth ? startLearnCategory() : offlineStartLearnCategory()"
         >
           Начать учить
         </button>
@@ -145,6 +150,7 @@
           :disabled="
             Object.keys(currentSelectedWord)?.length == 0 ? true : false
           "
+          @click="auth ? deleteWord() : offlineDeleteWord()"
         >
           Удалить
         </button>
@@ -156,11 +162,13 @@
         <div v-if="wordsList?.length != 0">
           <div
             class="newWords__word"
-            :class="currentSelectedWord == item ? 'selected' : ''"
+            :class="currentSelectedWord._id == item._id ? 'selected' : ''"
             v-for="(item, index) in wordsList"
             :key="index"
+            :id="item._id"
             @click="
-              currentSelectedWord = currentSelectedWord == item ? {} : item
+              currentSelectedWord =
+                currentSelectedWord._id == item._id ? {} : item
             "
           >
             <div class="newWords__info">
@@ -184,7 +192,7 @@
         </div>
       </div>
       <p class="newWords__nameCategory">
-        Selected category: {{ selectedCaregory }}
+        Выбранная категория: {{ selectedCaregory }}
       </p>
     </div>
   </div>
@@ -196,6 +204,8 @@ import wordPopup from "../components/wordPopup";
 import learnCard from "../components/learnCard";
 import searchPanel from "../components/searchPanel";
 import infoPopup from "../components/infoPopup";
+import confirmPopup from "../components/confirmPopup";
+import { nextTick } from "@vue/runtime-core";
 export default {
   components: {
     categoryPopup,
@@ -203,6 +213,7 @@ export default {
     learnCard,
     searchPanel,
     infoPopup,
+    confirmPopup,
   },
   data() {
     return {
@@ -220,11 +231,20 @@ export default {
     };
   },
   computed: {
+    auth() {
+      return this.$store.getters.getAuth;
+    },
     userInfo() {
-      return this.$store.getters.getUserInfo;
+      let userInfo = this.$store.getters.getUserInfo;
+      if (Object.keys(userInfo)?.length == 0 || this?.auth == false) {
+        userInfo = this.getUserInfoFromLocalStorage();
+      }
+      console.log(userInfo);
+      return userInfo;
     },
     selectedCaregory() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0) return "None";
+      if (Object.keys(this.currentSelectedCategory)?.length == 0)
+        return "не выбрана";
       return this.currentSelectedCategory?.name;
     },
     isActiveCategory() {
@@ -270,6 +290,74 @@ export default {
     },
   },
   methods: {
+    makeID() {
+      let result = "";
+      let characters = "abcdef0123456789";
+      let charactersLength = characters.length;
+      for (let i = 0; i < 24; i++) {
+        result += characters.charAt(
+          Math.floor(Math.random() * charactersLength)
+        );
+      }
+      return result;
+    },
+    getUserInfoFromLocalStorage() {
+      try {
+        let userInfo = {};
+        let info = JSON.parse(localStorage.getItem("userInfo"));
+        if (typeof info != "object" && info != null)
+          throw new Error("Данные повреждены");
+        if (info != null) userInfo = info;
+        else {
+          userInfo = {
+            knownWords: [],
+            wordsToStudy: [],
+            wordsToRepeat: [],
+            relevance: [],
+            options: [
+              {
+                countKnownWordsAtOneTime: 50,
+                countWrongsToAddToRepeat: 3,
+                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+                maxDateCheckRelevance: 45,
+                maxCountCheckRelevance: 3,
+              },
+            ],
+            categoriesToLearn: [],
+          };
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        return userInfo;
+      } catch (err) {
+        console.log(err);
+        (async () => {
+          await nextTick();
+          this.showInfo(
+            "Пользовательские данные",
+            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
+          );
+        })();
+        localStorage.clear();
+        let userInfo = {
+          knownWords: [],
+          wordsToStudy: [],
+          wordsToRepeat: [],
+          relevance: [],
+          options: [
+            {
+              countKnownWordsAtOneTime: 50,
+              countWrongsToAddToRepeat: 3,
+              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+              maxDateCheckRelevance: 45,
+              maxCountCheckRelevance: 3,
+            },
+          ],
+          categoriesToLearn: [],
+        };
+        localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        return userInfo;
+      }
+    },
     categoryIcon(icon) {
       return require(`../assets/category/${icon}.png`);
     },
@@ -295,6 +383,10 @@ export default {
     async showInfo(header, title) {
       await this.$refs.info.show(header, title);
     },
+    async showConfirm(header, title) {
+      let confirm = await this.$refs.confirm.show(header, title);
+      return confirm;
+    },
     startLearn(type) {
       this.learnType = type;
       this.learnCardVisible = true;
@@ -319,16 +411,46 @@ export default {
     },
     openCategoryPopup(type) {
       this.categoryPopupOptions = {};
-      if (type == "update") {
-        if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
-        this.categoryPopupOptions.id = this.currentSelectedCategory?._id;
-        this.categoryPopupOptions.name = this.currentSelectedCategory?.name;
-        this.categoryPopupOptions.icon = this.currentSelectedCategory?.icon;
-        this.categoryPopupOptions.regularityToRepeat =
-          this.currentSelectedCategory?.regularityToRepeat;
-      }
+      if (type == "update")
+        this.categoryPopupOptions = this.currentSelectedCategory;
       this.categoryPopupVisible = true;
       this.categoryPopupType = type;
+    },
+    async offlineStartLearnCategory() {
+      if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
+      let id = this.currentSelectedCategory?._id;
+      let confirm = await this.showConfirm(
+        "Изменение статуса категории",
+        "Вы уверены, что хотите начать изучать категорию? Если вы измените статус, вы больше не сможете редактировать категорию и добавлять в нее новые слова!"
+      );
+      if (!confirm) return;
+      let userInfo = this.userInfo;
+      let categoriesToLearn = this.userInfo?.categoriesToLearn;
+
+      let countWords = this.userInfo?.wordsToStudy.filter(
+        (item) => item.category == id
+      );
+      if (countWords?.length == 0) {
+        await this.showInfo(
+          "Изменение статуса категории",
+          "В категории нет слов!"
+        );
+        return;
+      }
+
+      let index = categoriesToLearn.findIndex((item) => item._id == id);
+      categoriesToLearn[index].startLearn = true;
+      this.currentSelectedCategory = categoriesToLearn[index];
+
+      userInfo.categoriesToLearn = categoriesToLearn;
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.$store.commit("resetAuth");
+
+      await this.showInfo(
+        "Изменение статуса категории",
+        "Операция успешно выполнена!"
+      );
+      return;
     },
     async startLearnCategory() {
       try {
@@ -336,11 +458,90 @@ export default {
         let form = {
           id: this.currentSelectedCategory?._id,
         };
+        let confirm = await this.showConfirm(
+          "Изменение статуса категории",
+          "Вы уверены, что хотите начать изучать категорию? Если вы измените статус, вы больше не сможете редактировать категорию и добавлять в нее новые слова!"
+        );
+        if (!confirm) return;
         let res = await this.$api.words.startLearnCategory(form);
         this.$store.commit("setUserInfo", res?.data?.user);
-        this.showInfo("Change category status", res?.data?.message);
+        this.showInfo("Изменения статуса категории", res?.data?.message);
+        this.currentSelectedCategory = {};
       } catch (err) {
-        this.showInfo("Change category status", err?.response?.data?.message);
+        this.showInfo(
+          "Изменения статуса категории",
+          err?.response?.data?.message
+        );
+      }
+    },
+    async offlineDeleteCategory() {
+      if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
+      let id = this.currentSelectedCategory?._id;
+      let confirm = await this.showConfirm(
+        "Удаление категории",
+        "Вы уверены, что хотите удалить выбранную категорию?"
+      );
+      if (!confirm) return;
+      let userInfo = this.userInfo;
+      let categoriesToLearn = this.userInfo?.categoriesToLearn;
+      categoriesToLearn = categoriesToLearn.filter((item) => item._id != id);
+      userInfo.categoriesToLearn = categoriesToLearn;
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.$store.commit("resetAuth");
+
+      await this.showInfo("Удаление категории", "Операция успешно выполнена!");
+      return;
+    },
+    async offlineDeleteWord() {
+      if (Object.keys(this.currentSelectedWord)?.length == 0) return;
+      let id = this.currentSelectedWord?._id;
+      let confirm = await this.showConfirm(
+        "Удаление слова",
+        "Вы уверены, что хотите удалить выбранное слово?"
+      );
+      if (!confirm) return;
+      let userInfo = this.userInfo;
+      let wordsToStudy = this.userInfo?.wordsToStudy;
+      wordsToStudy = wordsToStudy.filter((item) => item._id != id);
+      console.log(wordsToStudy);
+      userInfo.wordsToStudy = wordsToStudy;
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.$store.commit("resetAuth");
+      await this.showInfo("Удаление слова", "Операция успешно выполнена!");
+      return;
+    },
+
+    async deleteCategory() {
+      try {
+        if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
+        let id = this.currentSelectedCategory?._id;
+        let confirm = await this.showConfirm(
+          "Удаление категории",
+          "Вы уверены, что хотите удалить выбранную категорию?"
+        );
+        if (!confirm) return;
+        let res = await this.$api.words.deleteCategory(id);
+        this.$store.commit("setUserInfo", res.data.user);
+        await this.showInfo("Удаление категории", res.data.message);
+      } catch (err) {
+        this.showInfo("Удаление категории", err.response.data.message);
+      }
+    },
+    async deleteWord() {
+      try {
+        if (Object.keys(this.currentSelectedWord)?.length == 0) return;
+        let id = this.currentSelectedWord?._id;
+
+        let confirm = await this.showConfirm(
+          "Удаление слова",
+          "Вы уверены, что хотите удалить выбранное слово?"
+        );
+        if (!confirm) return;
+        let res = await this.$api.words.deleteWord(id);
+        this.$store.commit("setUserInfo", res.data.user);
+        await this.showInfo("Удаление слова", res.data.message);
+      } catch (err) {
+        this.showInfo("Удаление слова", err.response.data.message);
       }
     },
   },

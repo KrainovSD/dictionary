@@ -7,7 +7,7 @@ export default function (instance, instanceToken) {
       return instanceToken.put("/category", data);
     },
     deleteCategory(data) {
-      return instanceToken.delete("/category", data);
+      return instanceToken.delete(`/category/${data}`);
     },
     addWord(data) {
       return instanceToken.post("/word", data);
@@ -16,7 +16,7 @@ export default function (instance, instanceToken) {
       return instanceToken.put("/word", data);
     },
     deleteWord(data) {
-      return instanceToken.delete("/word", data);
+      return instanceToken.delete(`/word/${data}`);
     },
     startLearnCategory(data) {
       return instanceToken.post("/startLearnCategory", data);

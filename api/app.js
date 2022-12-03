@@ -137,6 +137,14 @@ app.post(
   handleValidationErrors,
   WordController.addCategory
 );
+app.put(
+  '/category',
+  checkAuth,
+  categoryValidation,
+  handleValidationErrors,
+  WordController.updateCategory
+);
+app.delete('/category/:id', checkAuth, WordController.deleteCategory);
 app.post(
   '/word',
   checkAuth,
@@ -144,6 +152,14 @@ app.post(
   handleValidationErrors,
   WordController.addWord
 );
+app.put(
+  '/word',
+  checkAuth,
+  wordValidation,
+  handleValidationErrors,
+  WordController.updateWord
+);
+app.delete('/word/:id', checkAuth, WordController.deleteWord);
 
 app.post('/startLearnCategory', checkAuth, WordController.startLearnCategory);
 

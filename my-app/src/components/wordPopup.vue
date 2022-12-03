@@ -331,9 +331,16 @@ export default {
     });
   },
   computed: {
+    userInfo() {
+      let userInfo = this.$store.getters.getUserInfo;
+      if (Object.keys(userInfo)?.length == 0 || this?.auth == false) {
+        userInfo = this.getUserInfoFromLocalStorage();
+      }
+      return userInfo;
+    },
     categoryList() {
       let categoryList = {};
-      let categories = this.$store.getters.getUserInfo;
+      let categories = this.userInfo;
       categories = categories?.categoriesToLearn;
       if (!categories || categories?.length == 0) return categoryList;
       categories = categories.filter(
@@ -351,6 +358,80 @@ export default {
     },
   },
   methods: {
+    checkIrregularVerbs(word) {
+      if (!/--/g.test(word)) return false;
+      let words = word.split("--");
+      if (words.length != 3) return false;
+      return true;
+    },
+    makeID() {
+      let result = "";
+      let characters = "abcdef0123456789";
+      let charactersLength = characters.length;
+      for (let i = 0; i < 24; i++) {
+        result += characters.charAt(
+          Math.floor(Math.random() * charactersLength)
+        );
+      }
+      return result;
+    },
+    getUserInfoFromLocalStorage() {
+      try {
+        let userInfo = {};
+        let info = JSON.parse(localStorage.getItem("userInfo"));
+        if (typeof info != "object" && info != null)
+          throw new Error("Данные повреждены");
+        if (info != null) userInfo = info;
+        else {
+          userInfo = {
+            knownWords: [],
+            wordsToStudy: [],
+            wordsToRepeat: [],
+            relevance: [],
+            options: [
+              {
+                countKnownWordsAtOneTime: 50,
+                countWrongsToAddToRepeat: 3,
+                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+                maxDateCheckRelevance: 45,
+                maxCountCheckRelevance: 3,
+              },
+            ],
+            categoriesToLearn: [],
+          };
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        return userInfo;
+      } catch (err) {
+        console.log(err);
+        (async () => {
+          await nextTick();
+          this.showInfo(
+            "Пользовательские данные",
+            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
+          );
+        })();
+        localStorage.clear();
+        let userInfo = {
+          knownWords: [],
+          wordsToStudy: [],
+          wordsToRepeat: [],
+          relevance: [],
+          options: [
+            {
+              countKnownWordsAtOneTime: 50,
+              countWrongsToAddToRepeat: 3,
+              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+              maxDateCheckRelevance: 45,
+              maxCountCheckRelevance: 3,
+            },
+          ],
+          categoriesToLearn: [],
+        };
+        localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        return userInfo;
+      }
+    },
     async translateApi() {
       try {
         /*let response = await fetch(
@@ -693,6 +774,11 @@ export default {
 
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
+        if (!this.$store.getters.getAuth) {
+          if (type == "add") this.offlineAddWord(form);
+          if (type == "update") this.offlineUpdateWord(form);
+          return;
+        }
         if (type == "add") this.addWord(form);
         if (type == "update") this.updateWord(form);
         //this.closePopup();
@@ -700,26 +786,97 @@ export default {
         console.log(this.errors);
       }
     },
+    async offlineAddWord(form) {
+      let { category, word, translate, transcription, description, example } =
+        form;
+      let irregularVerbs = this.checkIrregularVerbs(word);
+      let userInfo = this.userInfo;
+      let wordsToStudy = userInfo?.wordsToStudy;
+      let statusCategory = userInfo?.categoriesToLearn;
+      statusCategory = statusCategory.filter((item) => item._id == category);
+      if (statusCategory == 0 || statusCategory?.[0]?.startLearn == true) {
+        await this.showInfo(
+          "Добавление слова",
+          "Категория, в которую вы пытаетесь добавить слово, уже поставлена на изучение!"
+        );
+        return;
+      }
+      let hasWord = wordsToStudy.filter((item) => item.word == word);
+      if (hasWord?.length != 0) {
+        await this.showInfo("Добавление слова", "Такое слово уже добавлено!");
+        return;
+      }
+      let newWord = {
+        word: word,
+        translate: translate,
+        transcription: transcription,
+        description: description,
+        example: example,
+        wrongs: 0,
+        irregularVerbs: irregularVerbs,
+        category: category,
+        _id: this.makeID(),
+      };
+      wordsToStudy.push(newWord);
+      userInfo.wordsToStudy = wordsToStudy;
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.$store.commit("resetAuth");
+      await this.showInfo("Добавление слова", "Операция успешно выполнена!");
+      this.closePopup();
+    },
+    async offlineUpdateWord(form) {
+      let { word, translate, transcription, description, example } = form;
+      let irregularVerbs = this.checkIrregularVerbs(word);
+      let userInfo = this.userInfo;
+      let wordsToStudy = userInfo?.wordsToStudy;
+      let hasWord = wordsToStudy.filter((item) => item.word == word);
+      if (hasWord?.length != 0 && hasWord?.[0]?._id != this.id) {
+        await this.showInfo(
+          "Редактирование слова",
+          "Такое слово уже добавлено!"
+        );
+        return;
+      }
+
+      let index = wordsToStudy.findIndex((item) => item._id == this.id);
+      wordsToStudy[index].word = word;
+      wordsToStudy[index].translate = translate;
+      wordsToStudy[index].transcription = transcription;
+      wordsToStudy[index].description = description;
+      wordsToStudy[index].example = example;
+      wordsToStudy[index].irregularVerbs = irregularVerbs;
+
+      userInfo.wordsToStudy = wordsToStudy;
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.$store.commit("resetAuth");
+      await this.showInfo(
+        "Редактирование слова",
+        "Операция успешно выполнена!"
+      );
+      this.closePopup();
+      return;
+    },
     async addWord(form) {
       try {
         let res = await this.$api.words.addWord(form);
         console.log(res);
-        await this.showInfo("Add Word", res?.data?.message);
+        await this.showInfo("Добавление слова", res?.data?.message);
         this.$store.commit("setUserInfo", res?.data?.user);
         this.closePopup();
       } catch (err) {
-        this.showInfo("Add Category", err?.response?.data?.message);
+        this.showInfo("Добавление слова", err?.response?.data?.message);
       }
     },
     async updateWord(form) {
       try {
         form.id = this.id;
+        delete form.category;
         let res = await this.$api.words.updateWord(form);
-        await this.showInfo("Add Word", res?.data?.message);
+        await this.showInfo("Редактирование слова", res?.data?.message);
         this.$store.commit("setUserInfo", res?.data?.user);
         this.closePopup();
       } catch (err) {
-        this.showInfo("Add Category", err?.response?.data?.message);
+        this.showInfo("Редактирование слова", err?.response?.data?.message);
       }
     },
   },
