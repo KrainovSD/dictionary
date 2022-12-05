@@ -58,7 +58,7 @@ const wordsToRepeatShema = new mongoose.Schema({
 });
 const relevanceShema = new mongoose.Schema({
   word: String,
-  dataOfCreation: Number,
+  dateOfCreation: Number,
   dateOfDetected: [Number],
 });
 const optionsShema = new mongoose.Schema(

@@ -57,6 +57,7 @@ import {
   importDataValidation,
   categoryValidation,
   wordValidation,
+  relevanceValidation,
 } from './validations.js';
 import {
   handleValidationErrors,
@@ -65,6 +66,7 @@ import {
   upload,
 } from './untils/index.js';
 import logger from './logger.js';
+import handleValidatorErrors from './untils/handleValidatorErrors.js';
 app.use(reqLogger);
 /* AUTH */
 app.post(
@@ -160,8 +162,14 @@ app.put(
   WordController.updateWord
 );
 app.delete('/word/:id', checkAuth, WordController.deleteWord);
-
 app.post('/startLearnCategory', checkAuth, WordController.startLearnCategory);
+app.post(
+  '/relevance',
+  checkAuth,
+  relevanceValidation,
+  handleValidationErrors,
+  WordController.addRelevance
+);
 
 process.on('uncaughtException', (err) => {
   console.log(err);

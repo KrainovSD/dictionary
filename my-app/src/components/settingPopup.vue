@@ -261,7 +261,7 @@ export default {
         this.userInfo?.avatar != "" &&
         Object.keys(this.userInfo).length > 0
       ) {
-        return require(`../assets/avatar/${this.userInfo._id}/${this.userInfo.avatar}`);
+        return require(`../assets/avatar/${this.userInfo.nickName}/${this.userInfo.avatar}`);
       }
       return require("../assets/avatar.png");
     },
@@ -630,27 +630,29 @@ export default {
         }
         let data = await file.text();
         data = JSON.parse(data);
-        let checkForm = {
+        /*let checkForm = {
           id: data?._id,
           knownWords: data?.knownWords,
-          categoriesToLean: data?.categoriesToLean,
+          categoriesToLean: data?.categoriesToLearn,
           wordsToStudy: data?.wordsToStudy,
           wordsToRepeat: data?.wordsToRepeat,
           relevance: data?.relevance,
           options: data?.options,
         };
-        let validation = await this.checkImportFile(checkForm);
+        console.log(data);*/
+        /*let validation = await this.checkImportFile(checkForm);
         console.log(validation);
         if (!validation) {
           this.showInfo("Import", "Неверный формат файла или данных!");
           return;
-        }
+        }*/
         let confirm = await this.$refs.confirm.show(
           "Import",
           "Вы уверены что хотите заменить данные об изученных словах? Если вы используете старую резеврную копию, то весь достигнутый с этой даты прогресс будет утерян."
         );
         if (!confirm) return;
         console.log("confirmed");
+        localStorage.setItem("userInfo", JSON.stringify(data));
       } catch (err) {
         console.log(err);
         this.showInfo("Import", "Неверный формат файла или данных!");

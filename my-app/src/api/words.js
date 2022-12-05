@@ -21,5 +21,8 @@ export default function (instance, instanceToken) {
     startLearnCategory(data) {
       return instanceToken.post("/startLearnCategory", data);
     },
+    addRelevance(data) {
+      return instanceToken.post("/relevance", data);
+    },
   };
 }

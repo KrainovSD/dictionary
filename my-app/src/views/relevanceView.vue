@@ -2,10 +2,11 @@
   <word-popup
     v-if="wordPopupVisible == true"
     @close="wordPopupVisible = false"
-    @add="addWord"
     wordPopupType="add"
-    :form="{ word: currentSelectWord }"
+    :options="{ word: currentSelectedWord?.word }"
   />
+  <info-popup ref="info" />
+  <confirm-popup ref="confirm" />
 
   <div class="relevance appear">
     <div style="display: flex">
@@ -21,14 +22,27 @@
         />
       </div>
       <div class="relevance__newInput">
-        <p class="relevance__inputItem red">Glock - 1 (3)</p>
-        <p class="relevance__inputItem green">Glock - 1 (3)</p>
-        <p class="relevance__inputItem">Glock - 1 (3)</p>
+        <p
+          class="relevance__inputItem"
+          v-for="(item, index) in currentAddedWords"
+          :key="index"
+          :class="[
+            item?.totalCountMeets == 1 ? 'green' : '',
+            item?.countMeetsPerDays >=
+            userInfo?.options?.[0]?.maxCountCheckRelevance
+              ? 'red'
+              : '',
+          ]"
+        >
+          {{ item.word }} - {{ item.countMeetsPerDays }} ({{
+            item.totalCountMeets
+          }})
+        </p>
       </div>
     </div>
     <div style="display: flex">
       <div style="display: flex; flex-direction: column; width: 45%">
-        <button class="relevance__confirmInput" @click="addInput">
+        <button class="relevance__confirmInput" @click="checkInput">
           Внести
         </button>
         <p class="relevance__info">
@@ -47,8 +61,20 @@
         <button
           class="relevance__confirmAddWord"
           @click="wordPopupVisible = true"
+          :class="
+            currentSelectedWord.countMeetsPerDays >=
+            userInfo?.options?.[0]?.maxCountCheckRelevance
+              ? ''
+              : 'disabled'
+          "
+          :disabled="
+            currentSelectedWord.countMeetsPerDays >=
+            userInfo?.options?.[0]?.maxCountCheckRelevance
+              ? false
+              : true
+          "
         >
-          Добавить слово!
+          Добавить слово на изучение
         </button>
       </div>
       <div
@@ -71,17 +97,28 @@
           </div>
         </div>
 
-        <div class="relevance__list">
+        <div class="relevance__list" @click.self="currentSelectedWord = []">
           <p
             class="relevance__word"
-            id="Flex"
-            @click="selectWord"
-            :class="currentSelectWord == 'Flex' ? '_select' : ''"
+            :class="[
+              item?.countMeetsPerDays >=
+              userInfo?.options?.[0]?.maxCountCheckRelevance
+                ? 'red'
+                : '',
+              currentSelectedWord?._id == item?._id ? '_select' : '',
+            ]"
+            :id="item._id"
+            v-for="(item, index) in wordsList"
+            :key="index"
+            @click="
+              currentSelectedWord =
+                currentSelectedWord?._id == item?._id ? [] : item
+            "
           >
-            Flex - 1 (2)
+            {{ item.word }} - {{ item.countMeetsPerDays }} ({{
+              item.totalCountMeets
+            }})
           </p>
-          <p class="relevance__word red">Flex - 1 (2)</p>
-          <p class="relevance__word">Flex - 1 (2)</p>
         </div>
       </div>
     </div>
@@ -93,12 +130,17 @@ import wordPopup from "../components/wordPopup.vue";
 import slideFilter from "../components/slideFilter.vue";
 import searchPanel from "../components/searchPanel.vue";
 import inputTooltip from "../components/inputTooltip.vue";
+import infoPopup from "../components/infoPopup.vue";
+import confirmPopup from "../components/confirmPopup.vue";
+import { nextTick } from "@vue/runtime-core";
 export default {
   components: {
     wordPopup,
     slideFilter,
     searchPanel,
     inputTooltip,
+    infoPopup,
+    confirmPopup,
   },
   data() {
     return {
@@ -114,17 +156,170 @@ export default {
         countPerBirthUp: "По общему количеству встреч (по возрастанию)",
         countPerBirthDown: "По общему количеству встреч (по убыванию)",
       },
-      currentSelectWord: "",
+      currentSelectedWord: [],
+      currentAddedWords: [],
       wordPopupVisible: false,
       categoryPopupVisible: false,
     };
   },
-
-  methods: {
-    selectWord(event) {
-      let word = event.target.id;
-      this.currentSelectWord = word;
+  computed: {
+    userInfo() {
+      let userInfo = this.$store.getters.getUserInfo;
+      if (Object.keys(userInfo)?.length == 0) {
+        userInfo = this.getUserInfoFromLocalStorage();
+      }
+      //console.log(userInfo);
+      return userInfo;
     },
+    auth() {
+      return this.$store.getters.getAuth;
+    },
+    wordsList() {
+      let relevance = this.userInfo?.relevance;
+      let wordsList = relevance.map((item) => {
+        let millisecondsToDays = 1000 * 60 * 60 * 24;
+        let maxDateCheckRelevance =
+          this.userInfo?.options?.[0]?.maxDateCheckRelevance;
+        let now = Date.now() / millisecondsToDays;
+        let dateOfDetected = item?.dateOfDetected;
+
+        let totalCountMeets = dateOfDetected?.length;
+
+        let countMeetsPerDays = dateOfDetected.filter(
+          (date) => date / millisecondsToDays >= now - maxDateCheckRelevance
+        );
+        countMeetsPerDays = countMeetsPerDays?.length;
+
+        return {
+          _id: item._id,
+          word: item.word,
+          dateOfCreation: item.word,
+          dateOfDetected,
+          totalCountMeets,
+          countMeetsPerDays,
+        };
+      });
+      if (this.search != "") {
+        let reg = new RegExp(this.search);
+        wordsList = wordsList.filter((item) => reg.test(item.word));
+      }
+      wordsList = wordsList.sort(this.filterWordsList(this.filter));
+      return wordsList;
+    },
+  },
+  methods: {
+    makeID() {
+      let result = "";
+      let characters = "abcdef0123456789";
+      let charactersLength = characters.length;
+      for (let i = 0; i < 24; i++) {
+        result += characters.charAt(
+          Math.floor(Math.random() * charactersLength)
+        );
+      }
+      return result;
+    },
+    getUserInfoFromLocalStorage() {
+      try {
+        let userInfo = {};
+        let info = JSON.parse(localStorage.getItem("userInfo"));
+        if (typeof info != "object" && info != null)
+          throw new Error("Данные повреждены");
+        if (info != null) userInfo = info;
+        else {
+          userInfo = {
+            knownWords: [],
+            wordsToStudy: [],
+            wordsToRepeat: [],
+            relevance: [],
+            options: [
+              {
+                countKnownWordsAtOneTime: 50,
+                countWrongsToAddToRepeat: 3,
+                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+                maxDateCheckRelevance: 45,
+                maxCountCheckRelevance: 3,
+              },
+            ],
+            categoriesToLearn: [],
+          };
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        return userInfo;
+      } catch (err) {
+        console.log(err);
+        (async () => {
+          await nextTick();
+          this.showInfo(
+            "Пользовательские данные",
+            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
+          );
+        })();
+        localStorage.clear();
+        let userInfo = {
+          knownWords: [],
+          wordsToStudy: [],
+          wordsToRepeat: [],
+          relevance: [],
+          options: [
+            {
+              countKnownWordsAtOneTime: 50,
+              countWrongsToAddToRepeat: 3,
+              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+              maxDateCheckRelevance: 45,
+              maxCountCheckRelevance: 3,
+            },
+          ],
+          categoriesToLearn: [],
+        };
+        localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        return userInfo;
+      }
+    },
+    filterWordsList(typeFilter) {
+      let functions = {
+        letterUp: function (a, b) {
+          if (a.word < b.word) return -1;
+          if (a.word > b.word) return 1;
+          return 0;
+        },
+        letterDown: function (a, b) {
+          if (a.word > b.word) return -1;
+          if (a.word < b.word) return 1;
+          return 0;
+        },
+        countPerMonthUp: function (a, b) {
+          if (a.countMeetsPerDays < b.countMeetsPerDays) return -1;
+          if (a.countMeetsPerDays > b.countMeetsPerDays) return 1;
+          return 0;
+        },
+        countPerMonthDown: function (a, b) {
+          if (a.countMeetsPerDays > b.countMeetsPerDays) return -1;
+          if (a.countMeetsPerDays < b.countMeetsPerDays) return 1;
+          return 0;
+        },
+        countPerBirthUp: function (a, b) {
+          if (a.totalCountMeets < b.totalCountMeets) return -1;
+          if (a.totalCountMeets > b.totalCountMeets) return 1;
+          return 0;
+        },
+        countPerBirthDown: function (a, b) {
+          if (a.totalCountMeets > b.totalCountMeets) return -1;
+          if (a.totalCountMeets < b.totalCountMeets) return 1;
+          return 0;
+        },
+      };
+      return functions[typeFilter];
+    },
+
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+    },
+    async showConfirm(header, title) {
+      let confirm = await this.$refs.confirm.show(header, title);
+      return confirm;
+    },
+
     validateInput(field, input) {
       if (input == "") {
         this.errors[field] = "Заполните поле!";
@@ -145,19 +340,161 @@ export default {
       }
       delete this.errors[field];
     },
-    addInput() {
+    checkInput() {
       this.validateInput("input", this.input);
-      if (this.errors?.input == "") {
-        let words = this.input.split(/[,;]/);
-        console.log(this.input, words);
-        words = words.filter((el) => el.trim() != "");
-        words = words.map((el) => {
-          return el.trim();
-        });
-        console.log(words);
+      if (this.errors?.input) return;
+
+      let words = this.input.split(/[,;]/);
+      words = words.filter((el) => el.trim() != "");
+      words = words.map((el) => {
+        return el.trim();
+      });
+      words = [...new Set(words)];
+      if (words?.length == 0) {
+        this.showInfo(
+          "Добавление слов в актуализатор",
+          "Нет ни одного слова для добавления!"
+        );
+        this.input = "";
+        return;
+      }
+      if (!this.auth) {
+        this.offlineAddWords(words);
+        return;
+      }
+      this.addWords(words);
+    },
+    async offlineAddWords(words) {
+      let confirm = await this.showConfirm(
+        "Добавление слов в актуализатор",
+        `Вы уверены, что хотите добавить следующие слова: ${words.join(", ")}?`
+      );
+      if (!confirm) return;
+      let userInfo = this.userInfo;
+      /*  Делаем из массива объектов массив только слов */
+      let knownWords = Object.values(userInfo?.knownWords).map(
+        (item) => item.word
+      );
+      let wordsToStudy = Object.values(userInfo?.wordsToStudy).map(
+        (item) => item.word
+      );
+      /* Находим уже имеюшиеся слова, которые добавлять не нужно*/
+      let alreadyHaveWords = words.filter(
+        (item) => knownWords.includes(item) || wordsToStudy.includes(item)
+      );
+      /* Находим уже имеющиеся в актуализаторе слова */
+      let oldMeets = userInfo?.relevance.filter(
+        (item) => words.includes(item.word) && !alreadyHaveWords.includes(item)
+      );
+      console.log(oldMeets);
+      /* Находим оставшиеся слова, которых нигде нет */
+      words = words.filter(
+        (item) =>
+          !Object.values(oldMeets)
+            .map((oldMeet) => oldMeet.word)
+            .includes(item) && !alreadyHaveWords.includes(item)
+      );
+
+      let newRelevance = userInfo?.relevance;
+      /* Добавляем слова которых нигде нет*/
+      for (let item of words) {
+        let newWord = {
+          _id: this.makeID(),
+          word: item,
+          dateOfCreation: Date.now(),
+          dateOfDetected: [Date.now()],
+        };
+        newRelevance.push(newWord);
+      }
+      /* Обновляем дату детекта уже имеющихся в актуализаторе слов */
+      for (let item of oldMeets) {
+        let index = newRelevance.findIndex((word) => word._id == item._id);
+        newRelevance?.[index]?.dateOfDetected.push(Date.now());
+      }
+      /*Получаем и записываем актуальный объект со всеми словами*/
+      userInfo.relevance = newRelevance;
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.$store.commit("resetAuth");
+
+      /* Формируем сообщение */
+      let message = "Операция успешно завершена! ";
+      if (words?.length > 0)
+        message += `Новые слова, которые были добавлены: ${words.join(", ")}. `;
+      if (oldMeets?.length > 0)
+        message += `Слова с которыми вы уже встречались: ${Object.values(
+          oldMeets
+        )
+          .map((item) => item.word)
+          .join(", ")}. `;
+      if (alreadyHaveWords?.length > 0)
+        message += `Слова, которые не были добавлены, так как вы уже изучили/учите их: ${alreadyHaveWords.join(
+          ", "
+        )}. `;
+
+      /* Приводим массив объектов к общему виду */
+      words = words.map((item) => {
+        return {
+          word: item,
+          dateOfCreation: Date.now(),
+          dateOfDetected: [Date.now()],
+          totalCountMeets: 1,
+          countMeetsPerDays: 1,
+        };
+      });
+      oldMeets = oldMeets.map((item) => {
+        let millisecondsToDays = 1000 * 60 * 60 * 24;
+        let maxDateCheckRelevance =
+          userInfo?.options?.[0]?.maxDateCheckRelevance;
+        let now = Date.now() / millisecondsToDays;
+        let dateOfDetected = item?.dateOfDetected;
+        dateOfDetected.push(Date.now());
+
+        let totalCountMeets = dateOfDetected?.length;
+        let countMeetsPerDays = dateOfDetected.filter(
+          (date) => date / millisecondsToDays >= now - maxDateCheckRelevance
+        );
+        countMeetsPerDays = countMeetsPerDays?.length;
+
+        return {
+          word: item.word,
+          dateOfCreation: item.dateOfCreation,
+          dateOfDetected,
+          totalCountMeets,
+          countMeetsPerDays,
+        };
+      });
+      console.log(oldMeets);
+      words = [...words, ...oldMeets];
+      this.currentAddedWords = [...words];
+      await this.showInfo("Добавление слов в актуализатор", message);
+      return;
+    },
+    async addWords(words) {
+      try {
+        let confirm = await this.showConfirm(
+          "Добавление слов в актуализатор",
+          `Вы уверены, что хотите добавить следующие слова: ${words.join(
+            ", "
+          )}?`
+        );
+        if (!confirm) return;
+        let res = await this.$api.words.addRelevance({ words });
+        console.log(res);
+        this.$store.commit("setUserInfo", res?.data?.user);
+        this.currentAddedWords = [...res?.data?.words];
+        await this.showInfo(
+          "Добавление слов в актуализатор",
+          res?.data?.message
+        );
+        this.input = "";
+      } catch (err) {
+        console.log(err);
+        this.showInfo(
+          "Добавление слов в актуализатор",
+          err?.response?.data?.message
+        );
       }
     },
-    addWord() {},
   },
   watch: {
     input() {

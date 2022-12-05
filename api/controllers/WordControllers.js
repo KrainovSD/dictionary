@@ -1,3 +1,4 @@
+import { signedCookies } from 'cookie-parser';
 import config from '../config.js';
 
 import User from '../models/Users.js';
@@ -346,6 +347,159 @@ export const deleteWord = async (req, res) => {
   }
 };
 
+export const addRelevance = async (req, res) => {
+  try {
+    let { words } = req.body;
+    words = [...new Set(words)];
+    /* Достаем из базы информацию о всех типах слов */
+    let user = await User.findOne(
+      { _id: req.userId },
+      'knownWords wordsToStudy relevance'
+    );
+    if (!user)
+      return res.status(400).json({
+        message: `Не удалось выполнить операцию!`,
+      });
+    /*  Делаем из массива объектов массив только слов */
+    let knownWords = Object.values(user?.knownWords).map((item) => item.word);
+    let wordsToStudy = Object.values(user?.wordsToStudy).map(
+      (item) => item.word
+    );
+    /* Находим уже имеюшиеся слова, которые добавлять не нужно*/
+    let alreadyHaveWords = words.filter(
+      (item) => knownWords.includes(item) || wordsToStudy.includes(item)
+    );
+    /* Находим уже имеющиеся в актуализаторе слова */
+    let oldMeets = user?.relevance.filter(
+      (item) => words.includes(item.word) && !alreadyHaveWords.includes(item)
+    );
+    /* Находим оставшиеся слова, которых нигде нет */
+    words = words.filter(
+      (item) =>
+        !Object.values(oldMeets)
+          .map((oldMeet) => oldMeet.word)
+          .includes(item) && !alreadyHaveWords.includes(item)
+    );
+    /* Добавляем слова которых нигде нет*/
+
+    let error = false;
+    for (let item of words) {
+      if (error) return;
+      let result = await addNewRelevance(item, req.userId);
+      if (!result) error = true;
+    }
+    /* Обновляем дату детекта уже имеющихся в актуализаторе слов */
+    for (let item of oldMeets) {
+      if (error) return;
+      let result = await addOldRelevance(item._id, req.userId);
+      if (!result) error = true;
+    }
+
+    /*Проверяем успешно ли добавились все слова */
+    if (error)
+      return res.status(400).json({
+        message: `Не удалось выполнить операцию!`,
+      });
+    /*Получаем актуальный объект со всеми словами*/
+    user = await User.findOne({ _id: req.userId });
+    let userData = getUserInfoFromDoc(user._doc);
+    /* Формируем сообщение */
+    let message = 'Операция успешно завершена! ';
+    if (words?.length > 0)
+      message += `Новые слова, которые были добавлены: ${words.join(', ')}. `;
+    if (oldMeets?.length > 0)
+      message += `Слова с которыми вы уже встречались: ${Object.values(oldMeets)
+        .map((item) => item.word)
+        .join(', ')}. `;
+    if (alreadyHaveWords?.length > 0)
+      message += `Слова, которые не были добавлены, так как вы уже изучили/учите их: ${alreadyHaveWords.join(
+        ', '
+      )}. `;
+    /* Приводим массив объектов к общему виду */
+    words = words.map((item) => {
+      return {
+        word: item,
+        dateOfCreation: Date.now(),
+        dateOfDetected: [Date.now()],
+        totalCountMeets: 1,
+        countMeetsPerDays: 1,
+      };
+    });
+    oldMeets = oldMeets.map((item) => {
+      let millisecondsToDays = 1000 * 60 * 60 * 24;
+      let maxDateCheckRelevance = userData?.options?.[0]?.maxDateCheckRelevance;
+      let now = Date.now() / millisecondsToDays;
+      let dateOfDetected = item?.dateOfDetected;
+      dateOfDetected.push(Date.now());
+
+      let totalCountMeets = dateOfDetected?.length;
+      let countMeetsPerDays = dateOfDetected.filter(
+        (date) => date / millisecondsToDays >= now - maxDateCheckRelevance
+      );
+      countMeetsPerDays = countMeetsPerDays?.length;
+
+      return {
+        word: item.word,
+        dateOfCreation: item.dateOfCreation,
+        dateOfDetected,
+        totalCountMeets,
+        countMeetsPerDays,
+      };
+    });
+    words = [...words, ...oldMeets];
+    res.json({
+      message,
+      user: userData,
+      words,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+
+async function addNewRelevance(word, userID) {
+  try {
+    let newRelevance = {
+      word,
+      dateOfCreation: Date.now(),
+      dateOfDetected: [Date.now()],
+    };
+
+    let user = await User.updateOne(
+      { _id: userID },
+      {
+        $push: { relevance: newRelevance },
+      },
+      { upsert: false }
+    );
+    if (user.modifiedCount == 0) return false;
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function addOldRelevance(id, userID) {
+  try {
+    let user = await User.updateOne(
+      { _id: userID, 'relevance._id': id },
+      {
+        $push: {
+          'relevance.$.dateOfDetected': Date.now(),
+        },
+      },
+      { upsert: false }
+    );
+    if (user.modifiedCount == 0) return false;
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
 function checkIrregularVerbs(word) {
   if (!/--/g.test(word)) return false;
   let words = word.split('--');

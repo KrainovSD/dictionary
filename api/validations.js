@@ -412,6 +412,28 @@ export const wordValidation = [
     return true;
   }),
 ];
+export const relevanceValidation = [
+  body('words.*')
+    .trim()
+    .toLowerCase()
+    .isString()
+    .withMessage('Неверный тип данных!')
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Слово не должно быть пустым!')
+    .isLength({ max: 50 })
+    .withMessage(
+      'Длина слова или словосочетания не должна превышать более 50 символов!'
+    )
+    .matches(/^[a-zA-Z\- ]+$/)
+    .withMessage(
+      'Слово или словосочетание может состоять только из букв английского алфавита, пробела и дефиса!'
+    ),
+  body('words').custom((value) => {
+    if (value?.length == 0) throw new Error('Нет ни одного слова!');
+    return true;
+  }),
+];
 
 export const postCreateValidation = [
   body('title', 'Введите заголовок статьи').isLength({ min: 3 }).isString(),
