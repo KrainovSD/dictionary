@@ -265,6 +265,44 @@ export const newEmailValidation = [
 
 export const importDataValidation = [];
 
+export const messageValidation = [
+  body('userName')
+    .trim()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Имя пользователя не должно быть пустым!')
+    .isString()
+    .withMessage('У Имя пользователя неверный тип данных!')
+    .matches(/^[А-Яа-яA-Za-z]+$/)
+    .withMessage(
+      'При заполнении имени разрешено использовать только буквы английского и русского алфавита!'
+    ),
+  body('email')
+    .trim()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Email не должен быть пустым!')
+    .isString()
+    .withMessage('У Email неверный тип данных!')
+    .matches(
+      /^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/
+    )
+    .withMessage('Неверный формат Email!'),
+  body('message')
+    .trim()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Сообщение не должно быть пустым!')
+    .isString()
+    .withMessage('У сообщения неверный тип данных!')
+    .matches(/^[А-Яа-яA-Za-z0-9 \-:!?.,]+$/)
+    .withMessage(
+      'При заполнении сообщения разрешено использовать только буквы английского, русского алфавита, цифры и знаки препинания!'
+    )
+    .isLength({ max: 600 })
+    .withMessage('Длина сообщения не должна превышать 600 символов!'),
+];
+
 /* WORDS  */
 
 export const categoryValidation = [

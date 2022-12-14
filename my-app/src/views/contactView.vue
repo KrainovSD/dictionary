@@ -1,4 +1,5 @@
 <template>
+  <info-popup ref="info" />
   <div class="contact appear">
     <p class="contact__info">
       Вы можете оставить отзыв или внести предложение по улучшению работы
@@ -37,7 +38,7 @@
           <div class="mailer__confirmContainer">
             <confirm-button
               text="Отправить"
-              @click="sendMessage"
+              @click="validateMessage"
               fontSize="15px"
             />
           </div>
@@ -76,10 +77,12 @@
 <script>
 import inputTooltip from "../components/inputTooltip.vue";
 import confirmButton from "../components/confirmButton.vue";
+import infoPopup from "../components/infoPopup.vue";
 export default {
   components: {
     inputTooltip,
     confirmButton,
+    infoPopup,
   },
   data() {
     return {
@@ -91,9 +94,11 @@ export default {
   },
 
   methods: {
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+    },
     validateForm(form) {
       this.errors = {};
-      console.log(form);
       Object.keys(form).forEach((field) => {
         let fieldData = form[field];
         if (fieldData == "") {
@@ -199,8 +204,7 @@ export default {
         delete this.errors[field];
       }
     },
-
-    sendMessage() {
+    validateMessage() {
       let form = {
         userName: this.userName,
         email: this.email,
@@ -210,9 +214,28 @@ export default {
       this.validateForm(form);
 
       if (Object.keys(this.errors).length === 0) {
-        //api
-      } else {
-        console.log(this.errors);
+        this.sendMessage(form);
+      }
+    },
+    async sendMessage(form) {
+      try {
+        let res = await this.$api.message(form);
+        let message = res?.data?.message;
+        await this.showInfo("Отправка сообщения", message);
+
+        this.userName = "";
+        this.email = "";
+        this.message = "";
+      } catch (err) {
+        console.log(err);
+        if (err.response?.status == 401) {
+          this.showInfo(
+            "Отправка сообщения",
+            "Отправка сообщения доступна только для зарегистрированных пользователей!"
+          );
+        }
+        let message = err?.response?.data?.message;
+        this.showInfo("Отправка сообщения", message);
       }
     },
   },

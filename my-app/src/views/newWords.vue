@@ -39,7 +39,7 @@
           class="CRUDpanel__toolsButton delete"
           :class="!isHaveCategory ? 'disabled' : ''"
           :disabled="!isHaveCategory ? true : false"
-          @click="auth ? deleteCategory() : offlineDeleteCategory()"
+          @click="deleteCategory()"
         >
           Удалить
         </button>
@@ -66,7 +66,7 @@
               isSelectedCategory(item._id),
             ]"
             :id="item._id"
-            v-for="(item, index) in userInfo?.categoriesToLearn"
+            v-for="(item, index) in categoriesList"
             :key="index"
             @click="
               currentSelectedCategory =
@@ -93,16 +93,20 @@
         <button
           class="categories__startButton start"
           :class="
-            isActiveCategory || !isHaveCategory || wordsList?.length == 0
+            isActiveCategory ||
+            !isHaveCategory ||
+            wordsList?.length < $options.countWordsToActiveCategory
               ? 'disabled'
               : ''
           "
           :disabled="
-            isActiveCategory || !isHaveCategory || wordsList?.length == 0
+            isActiveCategory ||
+            !isHaveCategory ||
+            wordsList?.length < $options.countWordsToActiveCategory
               ? true
               : false
           "
-          @click="auth ? startLearnCategory() : offlineStartLearnCategory()"
+          @click="startLearnCategory()"
         >
           Начать учить
         </button>
@@ -150,7 +154,7 @@
           :disabled="
             Object.keys(currentSelectedWord)?.length == 0 ? true : false
           "
-          @click="auth ? deleteWord() : offlineDeleteWord()"
+          @click="deleteWord()"
         >
           Удалить
         </button>
@@ -207,6 +211,7 @@ import infoPopup from "../components/infoPopup";
 import confirmPopup from "../components/confirmPopup";
 import { nextTick } from "@vue/runtime-core";
 export default {
+  countWordsToActiveCategory: 2,
   components: {
     categoryPopup,
     wordPopup,
@@ -230,17 +235,25 @@ export default {
       learnType: "standart",
     };
   },
+
   computed: {
-    auth() {
-      return this.$store.getters.getAuth;
-    },
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
-      if (Object.keys(userInfo)?.length == 0 || this?.auth == false) {
+      if (Object.keys(userInfo)?.length == 0) {
         userInfo = this.getUserInfoFromLocalStorage();
       }
-      console.log(userInfo);
+      //console.log(userInfo);
       return userInfo;
+    },
+    categoriesList() {
+      let categories = this?.userInfo?.categoriesToLearn;
+      categories = categories.filter((item) => item?.offline != "delete");
+      categories = categories.sort((a, b) => {
+        if (a.name < b.name) return -1;
+        if (a.name > b.name) return 1;
+        return 0;
+      });
+      return categories;
     },
     selectedCaregory() {
       if (Object.keys(this.currentSelectedCategory)?.length == 0)
@@ -257,17 +270,35 @@ export default {
       return true;
     },
     wordsList() {
-      let wordsList = [];
-      let words = this?.userInfo?.wordsToStudy;
+      /* Сделать сортировку по алфавиту или даже сортировку в целом */
+      let wordsList = this?.userInfo?.wordsToStudy;
       if (
-        Object.keys(this.currentSelectedCategory)?.length == 0 ||
-        !words ||
-        words?.length == 0
+        !wordsList ||
+        wordsList?.length == 0 ||
+        (Object.keys(this.currentSelectedCategory)?.length == 0 &&
+          this.search?.length == 0)
       )
-        return wordsList;
-      wordsList = words.filter(
-        (word) => word.category == this.currentSelectedCategory?._id
-      );
+        return [];
+      wordsList = wordsList.filter((item) => item?.offline != "delete");
+      /* sort */
+      wordsList = wordsList.sort((a, b) => {
+        if (a.word < b.word) return -1;
+        if (a.word > b.word) return 1;
+        return 0;
+      });
+      /* filter */
+      if (this.search?.length != 0 && this.search != "*") {
+        let reg = new RegExp(this.search);
+        wordsList = wordsList.filter(
+          (item) => reg.test(item.word) || reg.test(item.translate)
+        );
+      }
+      /* category */
+      if (Object.keys(this.currentSelectedCategory)?.length != 0)
+        wordsList = wordsList.filter(
+          (word) => word.category == this.currentSelectedCategory?._id
+        );
+
       return wordsList;
     },
     standartModeButtonColor() {
@@ -290,17 +321,6 @@ export default {
     },
   },
   methods: {
-    makeID() {
-      let result = "";
-      let characters = "abcdef0123456789";
-      let charactersLength = characters.length;
-      for (let i = 0; i < 24; i++) {
-        result += characters.charAt(
-          Math.floor(Math.random() * charactersLength)
-        );
-      }
-      return result;
-    },
     getUserInfoFromLocalStorage() {
       try {
         let userInfo = {};
@@ -365,7 +385,9 @@ export default {
       let wordsList = [];
       let words = this?.userInfo?.wordsToStudy;
       if (!words || words?.length == 0) return wordsList.length;
-      wordsList = words.filter((word) => word.category == id);
+      wordsList = words.filter(
+        (word) => word.category == id && word?.offline != "delete"
+      );
       return wordsList.length;
     },
     categoryColor(nextRepeat, nextReverseRepeat, startLearn) {
@@ -416,42 +438,6 @@ export default {
       this.categoryPopupVisible = true;
       this.categoryPopupType = type;
     },
-    async offlineStartLearnCategory() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
-      let id = this.currentSelectedCategory?._id;
-      let confirm = await this.showConfirm(
-        "Изменение статуса категории",
-        "Вы уверены, что хотите начать изучать категорию? Если вы измените статус, вы больше не сможете редактировать категорию и добавлять в нее новые слова!"
-      );
-      if (!confirm) return;
-      let userInfo = this.userInfo;
-      let categoriesToLearn = this.userInfo?.categoriesToLearn;
-
-      let countWords = this.userInfo?.wordsToStudy.filter(
-        (item) => item.category == id
-      );
-      if (countWords?.length == 0) {
-        await this.showInfo(
-          "Изменение статуса категории",
-          "В категории нет слов!"
-        );
-        return;
-      }
-
-      let index = categoriesToLearn.findIndex((item) => item._id == id);
-      categoriesToLearn[index].startLearn = true;
-      this.currentSelectedCategory = categoriesToLearn[index];
-
-      userInfo.categoriesToLearn = categoriesToLearn;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      this.$store.commit("resetAuth");
-
-      await this.showInfo(
-        "Изменение статуса категории",
-        "Операция успешно выполнена!"
-      );
-      return;
-    },
     async startLearnCategory() {
       try {
         if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
@@ -463,68 +449,47 @@ export default {
           "Вы уверены, что хотите начать изучать категорию? Если вы измените статус, вы больше не сможете редактировать категорию и добавлять в нее новые слова!"
         );
         if (!confirm) return;
-        let res = await this.$api.words.startLearnCategory(form);
-        this.$store.commit("setUserInfo", res?.data?.user);
-        this.showInfo("Изменения статуса категории", res?.data?.message);
+
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.startLearnCategory(form)
+          : this.$api.offWords.startLearnCategory(form);
+
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Изменения статуса категории", message);
         this.currentSelectedCategory = {};
       } catch (err) {
-        this.showInfo(
-          "Изменения статуса категории",
-          err?.response?.data?.message
-        );
+        let message = err?.response?.data?.message || err?.message;
+        this.showInfo("Изменения статуса категории", message);
       }
     },
-    async offlineDeleteCategory() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
-      let id = this.currentSelectedCategory?._id;
-      let confirm = await this.showConfirm(
-        "Удаление категории",
-        "Вы уверены, что хотите удалить выбранную категорию?"
-      );
-      if (!confirm) return;
-      let userInfo = this.userInfo;
-      let categoriesToLearn = this.userInfo?.categoriesToLearn;
-      categoriesToLearn = categoriesToLearn.filter((item) => item._id != id);
-      userInfo.categoriesToLearn = categoriesToLearn;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      this.$store.commit("resetAuth");
-
-      await this.showInfo("Удаление категории", "Операция успешно выполнена!");
-      return;
-    },
-    async offlineDeleteWord() {
-      if (Object.keys(this.currentSelectedWord)?.length == 0) return;
-      let id = this.currentSelectedWord?._id;
-      let confirm = await this.showConfirm(
-        "Удаление слова",
-        "Вы уверены, что хотите удалить выбранное слово?"
-      );
-      if (!confirm) return;
-      let userInfo = this.userInfo;
-      let wordsToStudy = this.userInfo?.wordsToStudy;
-      wordsToStudy = wordsToStudy.filter((item) => item._id != id);
-      console.log(wordsToStudy);
-      userInfo.wordsToStudy = wordsToStudy;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      this.$store.commit("resetAuth");
-      await this.showInfo("Удаление слова", "Операция успешно выполнена!");
-      return;
-    },
-
     async deleteCategory() {
       try {
         if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
         let id = this.currentSelectedCategory?._id;
         let confirm = await this.showConfirm(
           "Удаление категории",
-          "Вы уверены, что хотите удалить выбранную категорию?"
+          "Вы уверены, что хотите удалить выбранную категорию? Весь прогресс изучения слов из категории будет утерян, а слова будут удалены!"
         );
         if (!confirm) return;
-        let res = await this.$api.words.deleteCategory(id);
-        this.$store.commit("setUserInfo", res.data.user);
-        await this.showInfo("Удаление категории", res.data.message);
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.deleteCategory(id)
+          : this.$api.offWords.deleteCategory(id);
+
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Удаление категории", message);
       } catch (err) {
-        this.showInfo("Удаление категории", err.response.data.message);
+        let message = err?.response?.data?.message || err?.message;
+        this.showInfo("Удаление категории", message);
       }
     },
     async deleteWord() {
@@ -537,11 +502,20 @@ export default {
           "Вы уверены, что хотите удалить выбранное слово?"
         );
         if (!confirm) return;
-        let res = await this.$api.words.deleteWord(id);
-        this.$store.commit("setUserInfo", res.data.user);
-        await this.showInfo("Удаление слова", res.data.message);
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.deleteWord(id)
+          : this.$api.offWords.deleteWord(id);
+
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Удаление слова", message);
       } catch (err) {
-        this.showInfo("Удаление слова", err.response.data.message);
+        let message = err?.response?.data?.message || err?.message;
+        this.showInfo("Удаление слова", message);
       }
     },
   },

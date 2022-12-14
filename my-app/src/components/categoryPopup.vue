@@ -110,7 +110,6 @@ import confirmButton from "../components/confirmButton.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 import categoryIcon from "../components/categoryIcon.vue";
 import infoPopup from "../components/infoPopup.vue";
-import { nextTick } from "@vue/runtime-core";
 export default {
   components: {
     inputTooltip,
@@ -159,85 +158,8 @@ export default {
       });
     }
   },
-  computed: {
-    userInfo() {
-      let userInfo = this.$store.getters.getUserInfo;
-      if (Object.keys(userInfo)?.length == 0 || this?.auth == false) {
-        userInfo = this.getUserInfoFromLocalStorage();
-      }
-      return userInfo;
-    },
-  },
 
   methods: {
-    makeID() {
-      let result = "";
-      let characters = "abcdef0123456789";
-      let charactersLength = characters.length;
-      for (let i = 0; i < 24; i++) {
-        result += characters.charAt(
-          Math.floor(Math.random() * charactersLength)
-        );
-      }
-      return result;
-    },
-    getUserInfoFromLocalStorage() {
-      try {
-        let userInfo = {};
-        let info = JSON.parse(localStorage.getItem("userInfo"));
-        if (typeof info != "object" && info != null)
-          throw new Error("Данные повреждены");
-        if (info != null) userInfo = info;
-        else {
-          userInfo = {
-            knownWords: [],
-            wordsToStudy: [],
-            wordsToRepeat: [],
-            relevance: [],
-            options: [
-              {
-                countKnownWordsAtOneTime: 50,
-                countWrongsToAddToRepeat: 3,
-                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-                maxDateCheckRelevance: 45,
-                maxCountCheckRelevance: 3,
-              },
-            ],
-            categoriesToLearn: [],
-          };
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        }
-        return userInfo;
-      } catch (err) {
-        console.log(err);
-        (async () => {
-          await nextTick();
-          this.showInfo(
-            "Пользовательские данные",
-            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
-          );
-        })();
-        localStorage.clear();
-        let userInfo = {
-          knownWords: [],
-          wordsToStudy: [],
-          wordsToRepeat: [],
-          relevance: [],
-          options: [
-            {
-              countKnownWordsAtOneTime: 50,
-              countWrongsToAddToRepeat: 3,
-              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-              maxDateCheckRelevance: 45,
-              maxCountCheckRelevance: 3,
-            },
-          ],
-          categoriesToLearn: [],
-        };
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        return userInfo;
-      }
-    },
     closePopup() {
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
@@ -373,115 +295,47 @@ export default {
       form.regularityToRepeat = this.regularityToRepeat.map((x) => +x);
 
       if (Object.keys(this.errors).length === 0) {
-        if (!this.$store.getters.getAuth) {
-          if (type == "add") this.offlineAddCategory(form);
-          if (type == "update") this.offlineUpdateCategory(form);
-          return;
-        }
         if (type == "add") this.addCategory(form);
         if (type == "update") this.updateCaregory(form);
-      } else {
-        console.log(this.errors);
       }
-    },
-    async offlineAddCategory(form) {
-      let { name, icon, regularityToRepeat } = form;
-      let userInfo = this.userInfo;
-      let categoriesToLearn = userInfo?.categoriesToLearn;
-      let similarName = categoriesToLearn.filter(
-        (category) => category.name == name
-      );
-      if (similarName?.length > 0) {
-        await this.showInfo(
-          "Добавление категории",
-          "Такое имя категории уже существует!"
-        );
-        return;
-      }
-      let newCategory = {
-        name: name,
-        regularityToRepeat: regularityToRepeat,
-        icon: icon,
-        lastRepeat: 0,
-        lastReverseRepeat: 0,
-        nextRepeat: 0,
-        nextReverseRepeat: 0,
-        historyOfRepeat: [],
-        countOfRepeat: 0,
-        startLearn: false,
-        _id: this.makeID(),
-      };
-      categoriesToLearn.push(newCategory);
-      userInfo.categoriesToLearn = categoriesToLearn;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      this.$store.commit("resetAuth");
-
-      await this.showInfo(
-        "Добавление категории",
-        "Операция успешно выполнена!"
-      );
-      this.closePopup();
-      return;
-    },
-    async offlineUpdateCategory(form) {
-      let { name, icon, regularityToRepeat } = form;
-      let userInfo = this.userInfo;
-      let categoriesToLearn = this.userInfo?.categoriesToLearn;
-      let statusCategory = categoriesToLearn.filter(
-        (item) => item._id == this.id
-      );
-      if (statusCategory == 0 || statusCategory?.[0]?.startLearn == true) {
-        await this.showInfo(
-          "Редактирование категории",
-          "Категория уже поставлена на изучение!"
-        );
-        return;
-      }
-      let similarName = categoriesToLearn.filter(
-        (category) => category.name == name
-      );
-      if (similarName?.length > 0 && similarName?.[0]?._id != this.id) {
-        await this.showInfo(
-          "Редактирование категории",
-          "Такое имя категории уже существует!"
-        );
-        return;
-      }
-
-      let index = categoriesToLearn.findIndex((item) => item._id == this.id);
-      categoriesToLearn[index].name = name;
-      categoriesToLearn[index].icon = icon;
-      categoriesToLearn[index].regularityToRepeat = regularityToRepeat;
-
-      userInfo.categoriesToLearn = categoriesToLearn;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      this.$store.commit("resetAuth");
-      await this.showInfo(
-        "Редактирование категории",
-        "Операция успешно выполнена!"
-      );
-      this.closePopup();
-      return;
     },
     async addCategory(form) {
       try {
-        let res = await this.$api.words.addCategory(form);
-        await this.showInfo("Добавление категории", res.data.message);
-        this.$store.commit("setUserInfo", res.data.user);
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.addCategory(form)
+          : this.$api.offWords.addCategory(form);
+
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Добавление категории", message);
         this.closePopup();
       } catch (err) {
-        this.showInfo("Добавление категории", err.response.data.message);
+        let message = err?.response?.data?.message || err?.message;
+        this.showInfo("Добавление категории", message);
       }
     },
     async updateCaregory(form) {
       try {
         form.id = this.id;
-        let res = await this.$api.words.updateCategory(form);
-        await this.showInfo("Редактирование категории", res.data.message);
-        this.$store.commit("setUserInfo", res.data.user);
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.updateCategory(form)
+          : this.$api.offWords.updateCategory(form);
+
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Редактирование категории", message);
         this.closePopup();
       } catch (err) {
-        this.showInfo("Редактирование категории", err.response.data.message);
+        let message = err?.response?.data?.message || err?.message;
+        this.showInfo("Редактирование категории", message);
       }
     },
   },

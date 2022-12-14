@@ -738,6 +738,26 @@ export const importUserData = async (req, res) => {
   }
 };
 
+export const message = async (req, res) => {
+  try {
+    let { userName, email, message } = req.body;
+    const messagePost = {
+      from: config.server.postLog,
+      to: config.server.postLog,
+      subject: `${userName}'s message`,
+      text: `${message}. Адресс для связи: ${email}`,
+      html: `${message}. Адресс для связи: ${email}`,
+    };
+    await transporter.sendMail(messagePost);
+    res.json({ message: 'Операция выполнена успешно!' });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+
 function checkSimilarField(users, reqData) {
   let similarEmail = false;
   let similarNickName = false;

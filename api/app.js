@@ -58,6 +58,7 @@ import {
   categoryValidation,
   wordValidation,
   relevanceValidation,
+  messageValidation,
 } from './validations.js';
 import {
   handleValidationErrors,
@@ -66,7 +67,6 @@ import {
   upload,
 } from './untils/index.js';
 import logger from './logger.js';
-import handleValidatorErrors from './untils/handleValidatorErrors.js';
 app.use(reqLogger);
 /* AUTH */
 app.post(
@@ -130,6 +130,14 @@ app.post(
   importDataValidation,
   handleValidationErrors,
   UserController.importUserData
+);
+/* MESSAGE */
+app.post(
+  '/message',
+  checkAuth,
+  messageValidation,
+  handleValidationErrors,
+  UserController.message
 );
 /* WORDS */
 app.post(

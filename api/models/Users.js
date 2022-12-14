@@ -15,7 +15,7 @@ const knownWordsShema = new mongoose.Schema({
   description: String,
   example: [String],
   wrongs: Number,
-  irregularVerbs: Boolean,
+  irregularVerb: Boolean,
   lastRepeat: Number,
   LastReverseRepeat: Number,
   dateOfKnown: Number,
@@ -29,7 +29,9 @@ const categoriesToLearnShema = new mongoose.Schema({
   nextRepeat: Number,
   nextReverseRepeat: Number,
   historyOfRepeat: [Number],
+  historyOfReverseRepeat: [Number],
   countOfRepeat: Number,
+  countOfReverseRepeat: Number,
   startLearn: Boolean,
 });
 const wordsToStudyShema = new mongoose.Schema({
@@ -39,7 +41,7 @@ const wordsToStudyShema = new mongoose.Schema({
   description: String,
   example: [String],
   wrongs: Number,
-  irregularVerbs: Boolean,
+  irregularVerb: Boolean,
   category: String,
 });
 const wordsToRepeatShema = new mongoose.Schema({
@@ -48,18 +50,21 @@ const wordsToRepeatShema = new mongoose.Schema({
   transcriprion: String,
   description: String,
   example: [String],
-  irregularVerbs: Boolean,
+  irregularVerb: Boolean,
   lastRepeat: Number,
   lastReverseRepeat: Number,
   nextRepeat: Number,
   nextReverseRepeat: Number,
   historyOfRepeat: [Number],
+  historyOfReverseRepeat: [Number],
   countOfRepeat: Number,
+  countOfReverseRepeat: Number,
 });
 const relevanceShema = new mongoose.Schema({
   word: String,
   dateOfCreation: Number,
   dateOfDetected: [Number],
+  irregularVerb: Boolean,
 });
 const optionsShema = new mongoose.Schema(
   {

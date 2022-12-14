@@ -27,27 +27,104 @@
 </template>
 
 <script>
+import { nextTick } from "@vue/runtime-core";
 export default {
   data() {
     return {};
   },
   computed: {
     userInfo() {
-      return this.$store.getters.getUserInfo;
+      let userInfo = this.$store.getters.getUserInfo;
+      if (Object.keys(userInfo)?.length == 0) {
+        userInfo = this.getUserInfoFromLocalStorage();
+      }
+      return userInfo;
     },
     countKnownWords() {
-      if (this.userInfo?.knownWords) return this.userInfo?.knownWords.length;
+      if (this.userInfo?.knownWords) {
+        let words = this.userInfo.knownWords.filter(
+          (item) => item?.offline != "delete"
+        );
+        return words.length;
+      }
       return "Не обнаружено";
     },
     countCategoriesWords() {
-      if (this.userInfo?.wordsToStudy)
-        return this.userInfo?.wordsToStudy.length;
+      if (this.userInfo?.wordsToStudy) {
+        let words = this.userInfo.wordsToStudy.filter(
+          (item) => item?.offline != "delete"
+        );
+        return words.length;
+      }
       return "Не обнаружено";
     },
     countRepeatWords() {
-      if (this.userInfo?.wordsToRepeat)
-        return this.userInfo?.wordsToRepeat.length;
+      if (this.userInfo?.wordsToRepeat) {
+        let words = this.userInfo.wordsToRepeat.filter(
+          (item) => item?.offline != "delete"
+        );
+        return words.length;
+      }
       return "Не обнаружено";
+    },
+  },
+  methods: {
+    getUserInfoFromLocalStorage() {
+      try {
+        let userInfo = {};
+        let info = JSON.parse(localStorage.getItem("userInfo"));
+        if (typeof info != "object" && info != null)
+          throw new Error("Данные повреждены");
+        if (info != null) userInfo = info;
+        else {
+          userInfo = {
+            knownWords: [],
+            wordsToStudy: [],
+            wordsToRepeat: [],
+            relevance: [],
+            options: [
+              {
+                countKnownWordsAtOneTime: 50,
+                countWrongsToAddToRepeat: 3,
+                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+                maxDateCheckRelevance: 45,
+                maxCountCheckRelevance: 3,
+              },
+            ],
+            categoriesToLearn: [],
+          };
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        return userInfo;
+      } catch (err) {
+        console.log(err);
+        (async () => {
+          await nextTick();
+          this.showInfo(
+            "Пользовательские данные",
+            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
+          );
+        })();
+        localStorage.clear();
+        let userInfo = {
+          knownWords: [],
+          wordsToStudy: [],
+          wordsToRepeat: [],
+          relevance: [],
+          options: [
+            {
+              countKnownWordsAtOneTime: 50,
+              countWrongsToAddToRepeat: 3,
+              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+              maxDateCheckRelevance: 45,
+              maxCountCheckRelevance: 3,
+            },
+          ],
+          categoriesToLearn: [],
+        };
+        localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        return userInfo;
+      }
     },
   },
 };

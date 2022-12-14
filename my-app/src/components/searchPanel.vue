@@ -14,6 +14,7 @@
       v-if="searching == true"
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
+      @keydown="validateInput"
     />
   </div>
 </template>
@@ -47,6 +48,10 @@ export default {
       search.classList.toggle("_close");
       this.searching = true;
       icon.style.width = `24px`;
+    },
+    validateInput(event) {
+      let reg = /[a-zA-ZА-Яа-я *,-]/;
+      if (!reg.test(event.key)) event.preventDefault();
     },
   },
 };

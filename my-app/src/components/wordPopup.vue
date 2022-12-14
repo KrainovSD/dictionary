@@ -1,5 +1,6 @@
 <template>
   <info-popup ref="info" />
+  <confirm-popup ref="confirm" />
   <category-popup
     v-if="categoryPopupVisible == true"
     categoryPopupType="add"
@@ -246,6 +247,7 @@ import categoryPopup from "../components/categoryPopup.vue";
 import inputTooltip from "../components/inputTooltip";
 import confirmButton from "../components/confirmButton";
 import infoPopup from "../components/infoPopup";
+import confirmPopup from "../components/confirmPopup";
 
 export default {
   components: {
@@ -253,6 +255,7 @@ export default {
     inputTooltip,
     confirmButton,
     infoPopup,
+    confirmPopup,
   },
   emits: ["close"],
   props: {
@@ -333,7 +336,7 @@ export default {
   computed: {
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
-      if (Object.keys(userInfo)?.length == 0 || this?.auth == false) {
+      if (Object.keys(userInfo)?.length == 0) {
         userInfo = this.getUserInfoFromLocalStorage();
       }
       return userInfo;
@@ -358,23 +361,6 @@ export default {
     },
   },
   methods: {
-    checkIrregularVerbs(word) {
-      if (!/--/g.test(word)) return false;
-      let words = word.split("--");
-      if (words.length != 3) return false;
-      return true;
-    },
-    makeID() {
-      let result = "";
-      let characters = "abcdef0123456789";
-      let charactersLength = characters.length;
-      for (let i = 0; i < 24; i++) {
-        result += characters.charAt(
-          Math.floor(Math.random() * charactersLength)
-        );
-      }
-      return result;
-    },
     getUserInfoFromLocalStorage() {
       try {
         let userInfo = {};
@@ -533,6 +519,10 @@ export default {
     },
     async showInfo(header, title) {
       await this.$refs.info.show(header, title);
+    },
+    async showConfirm(header, title) {
+      let res = await this.$refs.confirm.show(header, title);
+      return res;
     },
     validateForm(form) {
       this.errors = {};
@@ -774,109 +764,73 @@ export default {
 
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
-        if (!this.$store.getters.getAuth) {
-          if (type == "add") this.offlineAddWord(form);
-          if (type == "update") this.offlineUpdateWord(form);
-          return;
-        }
         if (type == "add") this.addWord(form);
         if (type == "update") this.updateWord(form);
-        //this.closePopup();
-      } else {
-        console.log(this.errors);
       }
-    },
-    async offlineAddWord(form) {
-      let { category, word, translate, transcription, description, example } =
-        form;
-      let irregularVerbs = this.checkIrregularVerbs(word);
-      let userInfo = this.userInfo;
-      let wordsToStudy = userInfo?.wordsToStudy;
-      let statusCategory = userInfo?.categoriesToLearn;
-      statusCategory = statusCategory.filter((item) => item._id == category);
-      if (statusCategory == 0 || statusCategory?.[0]?.startLearn == true) {
-        await this.showInfo(
-          "Добавление слова",
-          "Категория, в которую вы пытаетесь добавить слово, уже поставлена на изучение!"
-        );
-        return;
-      }
-      let hasWord = wordsToStudy.filter((item) => item.word == word);
-      if (hasWord?.length != 0) {
-        await this.showInfo("Добавление слова", "Такое слово уже добавлено!");
-        return;
-      }
-      let newWord = {
-        word: word,
-        translate: translate,
-        transcription: transcription,
-        description: description,
-        example: example,
-        wrongs: 0,
-        irregularVerbs: irregularVerbs,
-        category: category,
-        _id: this.makeID(),
-      };
-      wordsToStudy.push(newWord);
-      userInfo.wordsToStudy = wordsToStudy;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      this.$store.commit("resetAuth");
-      await this.showInfo("Добавление слова", "Операция успешно выполнена!");
-      this.closePopup();
-    },
-    async offlineUpdateWord(form) {
-      let { word, translate, transcription, description, example } = form;
-      let irregularVerbs = this.checkIrregularVerbs(word);
-      let userInfo = this.userInfo;
-      let wordsToStudy = userInfo?.wordsToStudy;
-      let hasWord = wordsToStudy.filter((item) => item.word == word);
-      if (hasWord?.length != 0 && hasWord?.[0]?._id != this.id) {
-        await this.showInfo(
-          "Редактирование слова",
-          "Такое слово уже добавлено!"
-        );
-        return;
-      }
-
-      let index = wordsToStudy.findIndex((item) => item._id == this.id);
-      wordsToStudy[index].word = word;
-      wordsToStudy[index].translate = translate;
-      wordsToStudy[index].transcription = transcription;
-      wordsToStudy[index].description = description;
-      wordsToStudy[index].example = example;
-      wordsToStudy[index].irregularVerbs = irregularVerbs;
-
-      userInfo.wordsToStudy = wordsToStudy;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      this.$store.commit("resetAuth");
-      await this.showInfo(
-        "Редактирование слова",
-        "Операция успешно выполнена!"
-      );
-      this.closePopup();
-      return;
     },
     async addWord(form) {
       try {
-        let res = await this.$api.words.addWord(form);
-        console.log(res);
-        await this.showInfo("Добавление слова", res?.data?.message);
-        this.$store.commit("setUserInfo", res?.data?.user);
+        let hasRelevance = this.userInfo?.relevance.filter((relevanceItem) => {
+          if (relevanceItem.irregularVerb == false)
+            return (
+              relevanceItem.word == form.word &&
+              relevanceItem?.offline != "delete"
+            );
+          let irregularVerbs = relevanceItem.word.split("--");
+          irregularVerbs = irregularVerbs.map((item) =>
+            item.toLowerCase().trim()
+          );
+          return (
+            irregularVerbs.includes(form.word) &&
+            relevanceItem?.offline != "delete"
+          );
+        });
+        if (hasRelevance?.length != 0) {
+          let confirm = await this.showConfirm(
+            "Добавление слова",
+            "Такое слово находится в Актуализаторе и при добавлении будет удалено из него. Продолжить операцию?"
+          );
+          if (!confirm) return;
+        }
+
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.addWord(form)
+          : this.$api.offWords.addWord(form);
+
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Добавление слова", message);
+
         this.closePopup();
       } catch (err) {
-        this.showInfo("Добавление слова", err?.response?.data?.message);
+        let message = err?.response?.data?.message || err?.message;
+        this.showInfo("Добавление слова", message);
       }
     },
     async updateWord(form) {
       try {
         form.id = this.id;
         delete form.category;
-        let res = await this.$api.words.updateWord(form);
-        await this.showInfo("Редактирование слова", res?.data?.message);
-        this.$store.commit("setUserInfo", res?.data?.user);
+
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.updateWord(form)
+          : this.$api.offWords.updateWord(form);
+
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Редактирование слова", message);
         this.closePopup();
       } catch (err) {
-        this.showInfo("Редактирование слова", err?.response?.data?.message);
+        let message = err?.response?.data?.message || err?.message;
+        this.showInfo("Редактирование слова", message);
       }
     },
   },

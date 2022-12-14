@@ -17,44 +17,55 @@ import User from '../models/Users.js';
 5. updateWord:
 - не менять имя на то, которое есть
 */
+const countWordsToActiveCategory = 2;
 
 export const startLearnCategory = async (req, res) => {
   try {
     let { id } = req.body;
-
     if (!id || typeof id != 'string' || id.trim()?.length == 0) {
       return res
         .status(400)
         .json({ message: `Не удалось выполнить операцию!` });
     }
-    let user = await User.findOne({
-      _id: req.userId,
-      'wordsToStudy.category': id,
-    });
-    if (!user) {
-      return res.status(400).json({
-        message: `В категории нет слов!`,
-      });
-    }
+    let user = await getUserInfo(req.userId, 'wordsToStudy categoriesToLearn');
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: `Не удалось выполнить операцию!` });
 
-    user = await User.findOneAndUpdate(
-      {
-        _id: req.userId,
-        'categoriesToLearn._id': id,
-      },
-      {
-        $set: {
-          'categoriesToLearn.$.startLearn': true,
-        },
-      },
-      { new: true, rawResult: true }
+    let index = user.categoriesToLearn.findIndex((item) => item._id == id);
+    if (index == -1)
+      return res.status(400).json({
+        message: `Категории не существует!`,
+      });
+
+    let hasWordsInCategories = isHasWordsInCategories(id, user);
+    if (!hasWordsInCategories)
+      return res.status(400).json({
+        message: `В категории меньше ${countWordsToActiveCategory} слов!`,
+      });
+
+    let activeCategory = isActiveCategory(id, user);
+    if (activeCategory)
+      return res
+        .status(400)
+        .json({ message: `Категория уже поставлена на обучение!` });
+
+    let changeFields = {
+      startLearn: true,
+    };
+    let userInfo = await setElement(
+      'categoriesToLearn',
+      id,
+      changeFields,
+      req.userId
     );
-    console.log(user);
-    if (user.ok == 0) {
-      return res.status(400).json({ message: `Не удалось выполнить операцию` });
-    }
-    let userData = getUserInfoFromDoc(user.value._doc);
-    res.json({ message: 'Операция успешно выполнена!', user: userData });
+    if (!userInfo)
+      return res
+        .status(400)
+        .json({ message: `Не удалось выполнить операцию!` });
+
+    res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -85,21 +96,23 @@ export const addCategory = async (req, res) => {
       nextRepeat: 0,
       nextReverseRepeat: 0,
       historyOfRepeat: [],
+      historyOfReverseRepeat: [],
       countOfRepeat: 0,
+      countOfReverseRepeat: 0,
       startLearn: false,
     };
-    user = await User.findOneAndUpdate(
-      { _id: req.userId },
-      { $push: { categoriesToLearn: newCategory } },
-      { new: true, rawResult: true }
+
+    let userInfo = await pushNewElement(
+      'categoriesToLearn',
+      newCategory,
+      req.userId
     );
-    if (user.ok == 0)
+    if (!userInfo)
       return res.status(400).json({
         message: `Не удалось выполнить операцию!`,
       });
-    let userData = getUserInfoFromDoc(user.value._doc);
 
-    res.json({ message: 'Операция успешно выполнена!', user: userData });
+    res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -112,58 +125,66 @@ export const addWord = async (req, res) => {
   try {
     let { category, word, translate, transcription, description, example } =
       req.body;
-    let irregularVerbs = checkIrregularVerbs(word);
-    let user = await User.findOne({
-      _id: req.userId,
-    });
-    console.log();
+    let irregularVerb = checkIrregularVerb(word);
+    if (irregularVerb) {
+      word = fixIrregularVerb(word);
+    }
+
+    let user = await getUserInfo(
+      req.userId,
+      'categoriesToLearn knownWords wordsToStudy relevance'
+    );
     if (!user) {
       return res.status(400).json({
         message: `Не удалось выполнить операцию!`,
       });
     }
-    let statusCategory = user.categoriesToLearn.filter(
-      (item) => item._id == category
-    );
-    if (
-      statusCategory?.length == 0 ||
-      statusCategory?.[0]?.startLearn == true
-    ) {
+
+    let statusCategory = isActiveCategory(category, user);
+    if (statusCategory) {
       return res.status(400).json({
         message: `Категория, в которую вы пытаетесь добавить слово, уже поставлена на изучение!`,
       });
     }
-    let hasWord = user.wordsToStudy.filter((word) => word.word == word);
-    if (hasWord?.length != 0) {
+    let hasWord = isAlreadyHasWord(word, null, user);
+    if (hasWord) {
       return res.status(400).json({
-        message: `Такое слово уже добавлено!`,
+        message: 'Такое слово уже на изучении или изучено!',
       });
     }
+    let hasRelevance = isHasRelevance(word, user);
+    if (hasRelevance) {
+      let relevanceID = hasRelevance?.[0]?._id;
+      let resultDelete = await pullElement(
+        'relevance',
+        relevanceID,
+        req.userId
+      );
+      if (!resultDelete) {
+        return res.status(400).json({
+          message: `Не удалось выполнить операцию!`,
+        });
+      }
+    }
 
-    let newWords = {
+    let newWord = {
       word: word,
       translate: translate,
       transcription: transcription,
       description: description,
       example: example,
       wrongs: 0,
-      irregularVerbs: irregularVerbs,
+      irregularVerb: irregularVerb,
       category: category,
     };
 
-    user = await User.findOneAndUpdate(
-      { _id: req.userId },
-      {
-        $push: { wordsToStudy: newWords },
-      },
-      { new: true, rawResult: true }
-    );
-    if (user.ok == 0)
+    let resultPush = await pushNewElement('wordsToStudy', newWord, req.userId);
+    if (!resultPush)
       return res.status(400).json({
         message: `Не удалось выполнить операцию!`,
       });
-    let userData = getUserInfoFromDoc(user.value._doc);
-    res.json({ message: 'Операция успешно выполнена!', user: userData });
+
+    res.json({ message: 'Операция успешно выполнена!', user: resultPush });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -175,58 +196,45 @@ export const addWord = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     let { id, name, icon, regularityToRepeat } = req.body;
-    let user = await User.findOne(
-      {
-        _id: req.userId,
-      },
-      {
-        categoriesToLearn: {
-          $elemMatch: { $and: [{ name: name }, { id: id }] },
-        },
-      }
-    );
-    console.log(user);
-    if (!user) {
+    let user = await getUserInfo(req.userId, 'categoriesToLearn');
+    if (!user)
       return res
         .status(400)
         .json({ message: `Не удалось выполнить операцию!` });
-    }
 
-    /*
-    let statusCategory = user.categoriesToLearn.filter((item) => item._id == id);
-    if (statusCategory?.length == 0 || statusCategory?.[0]?.startLearn == true) {
+    let activeCategory = isActiveCategory(id, user);
+    if (activeCategory)
       return res.status(400).json({
         message: `Категория уже поставлена на изучение!`,
       });
-    }
-    let similarName = user.categoriesToLearn.filter((item) => item.name == name);
-    if (similarName?.length != 0 && similarName?.[0]?._id != id) {
+    let hasCategory = isHasCategory(name, id, user);
+    if (hasCategory)
       return res.status(400).json({
         message: `Такое имя категории уже существует!`,
       });
-    }*/
+    hasCategory = isHasCategory(name, null, user);
+    if (!hasCategory)
+      return res.status(400).json({
+        message: `Категории не существует!`,
+      });
 
-    user = await User.findOneAndUpdate(
-      {
-        _id: req.userId,
-        'categoriesToLearn._id': id,
-      },
-      {
-        $set: {
-          'categoriesToLearn.$.name': name,
-          'categoriesToLearn.$.icon': icon,
-          'categoriesToLearn.$.regularityToRepeat': regularityToRepeat,
-        },
-      },
-      { new: true, rawResult: true }
+    let changeFields = {
+      name,
+      icon,
+      regularityToRepeat,
+    };
+    let userInfo = await setElement(
+      'categoriesToLearn',
+      id,
+      changeFields,
+      req.userId
     );
-    if (user.ok == 0) {
+    if (!userInfo)
       return res
         .status(400)
         .json({ message: `Не удалось выполнить операцию!` });
-    }
-    let userData = getUserInfoFromDoc(user.value._doc);
-    res.json({ message: 'Операция успешно выполнена!', user: userData });
+
+    res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -238,44 +246,56 @@ export const updateCategory = async (req, res) => {
 export const updateWord = async (req, res) => {
   try {
     let { id, word, translate, transcription, description, example } = req.body;
-    let irregularVerbs = checkIrregularVerbs(word);
-    let hasWord = await User.findOne(
-      {
-        _id: req.userId,
-      },
-      { wordsToStudy: { $elemMatch: { word: word } } }
-    );
+    let irregularVerb = checkIrregularVerb(word);
+    if (irregularVerb) word = fixIrregularVerb(word);
 
-    if (
-      hasWord?.wordsToStudy?.length > 0 &&
-      hasWord?.wordsToStudy?.[0]?._id != id
-    ) {
+    let user = await getUserInfo(
+      req.userId,
+      'wordsToStudy knownWords relevance'
+    );
+    if (!user) {
       return res.status(400).json({
-        message: `Такое слово уже добавлено!`,
+        message: `Не удалось выполнить операцию!`,
       });
     }
 
-    let user = await User.findOneAndUpdate(
-      { _id: req.userId, 'wordsToStudy._id': id },
-      {
-        $set: {
-          'wordsToStudy.$.word': word,
-          'wordsToStudy.$.translate': translate,
-          'wordsToStudy.$.transcription': transcription,
-          'wordsToStudy.$.description': description,
-          'wordsToStudy.$.example': example,
-          'wordsToStudy.$.irregularVerbs': irregularVerbs,
-        },
-      },
-      { new: true, rawResult: true }
+    let hasWord = isAlreadyHasWord(word, id, user);
+    if (hasWord)
+      return res.status(400).json({
+        message: `Такое слово уже добавлено!`,
+      });
+    hasWord = isAlreadyHasWord(word, null, user);
+    if (!hasWord)
+      return res.status(400).json({
+        message: `Слова не существует!`,
+      });
+    let hasRelevance = isHasRelevance(word, user);
+    if (hasRelevance)
+      return res.status(400).json({
+        message: 'Такое слово находится в Актуализаторе!',
+      });
+
+    let changeFields = {
+      word,
+      translate,
+      transcription,
+      description,
+      example,
+      irregularVerb,
+    };
+    let userInfo = await setElement(
+      'wordsToStudy',
+      id,
+      changeFields,
+      req.userId
     );
-    if (user.ok == 0) {
+
+    if (!userInfo)
       return res
         .status(400)
         .json({ message: `Не удалось выполнить операцию!` });
-    }
-    let userData = getUserInfoFromDoc(user.value._doc);
-    res.json({ message: 'Операция успешно выполнена!', user: userData });
+
+    res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -288,26 +308,41 @@ export const deleteCategory = async (req, res) => {
   try {
     let { id } = req.params;
 
-    if (!id || typeof id != 'string' || id.trim()?.length == 0) {
+    if (!id || typeof id != 'string' || id.trim()?.length == 0)
+      return res.status(400).json({ message: `Неверный тип ID!` });
+
+    let user = await getUserInfo(req.userId, 'wordsToStudy categoriesToLearn');
+    if (!user)
       return res
         .status(400)
         .json({ message: `Не удалось выполнить операцию!` });
-    }
-
-    let user = await User.findOneAndUpdate(
-      { _id: req.userId, 'categoriesToLearn._id': id },
-      {
-        $pull: { categoriesToLearn: { _id: id } },
-      },
-      { new: true, rawResult: true }
+    let wordsInCategory = user.wordsToStudy.filter(
+      (item) => item.category == id
     );
-    if (user.ok == 0) {
+    wordsInCategory = user.wordsToStudy.map((item) => item._id);
+
+    let index = user.categoriesToLearn.findIndex((item) => item._id == id);
+    if (index == -1)
+      return res.status(400).json({
+        message: `Категории не существует!`,
+      });
+
+    let userInfo = await pullElement('categoriesToLearn', id, req.userId);
+    if (!userInfo)
       return res.status(400).json({
         message: `Не удалось выполнить операцию!`,
       });
-    }
-    let userData = getUserInfoFromDoc(user.value._doc);
-    return res.json({ message: 'Операция успешно выполнена!', user: userData });
+
+    userInfo = await multiPullElement(
+      'wordsToStudy',
+      wordsInCategory,
+      req.userId
+    );
+    if (!userInfo)
+      return res.status(400).json({
+        message: `Не удалось выполнить операцию!`,
+      });
+    return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -320,25 +355,27 @@ export const deleteWord = async (req, res) => {
     let { id } = req.params;
 
     if (!id || typeof id != 'string' || id.trim()?.length == 0) {
+      return res.status(400).json({ message: `Неверный тип ID!` });
+    }
+    let user = await getUserInfo(req.userId, 'wordsToStudy');
+    if (!user)
       return res
         .status(400)
         .json({ message: `Не удалось выполнить операцию!` });
-    }
-    let user = await User.findOneAndUpdate(
-      { _id: req.userId, 'wordsToStudy._id': id },
-      {
-        $pull: { wordsToStudy: { _id: id } },
-      },
-      { new: true, rawResult: true }
-    );
-    console.log(user);
-    if (user.ok == 0) {
+
+    let index = user.wordsToStudy.findIndex((item) => item._id == id);
+    if (index == -1)
+      return res.status(400).json({
+        message: `Слова не существует!`,
+      });
+
+    let userInfo = await pullElement('wordsToStudy', id, req.userId);
+    if (!userInfo)
       return res.status(400).json({
         message: `Не удалось выполнить операцию!`,
       });
-    }
-    let userData = getUserInfoFromDoc(user.value._doc);
-    return res.json({ message: 'Операция успешно выполнена!', user: userData });
+
+    return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -352,105 +389,119 @@ export const addRelevance = async (req, res) => {
     let { words } = req.body;
     words = [...new Set(words)];
     /* Достаем из базы информацию о всех типах слов */
-    let user = await User.findOne(
-      { _id: req.userId },
+    let user = await getUserInfo(
+      req.userId,
       'knownWords wordsToStudy relevance'
     );
     if (!user)
       return res.status(400).json({
         message: `Не удалось выполнить операцию!`,
       });
-    /*  Делаем из массива объектов массив только слов */
-    let knownWords = Object.values(user?.knownWords).map((item) => item.word);
-    let wordsToStudy = Object.values(user?.wordsToStudy).map(
-      (item) => item.word
-    );
+
     /* Находим уже имеюшиеся слова, которые добавлять не нужно*/
-    let alreadyHaveWords = words.filter(
-      (item) => knownWords.includes(item) || wordsToStudy.includes(item)
-    );
+    let hasWords = words.filter((item) => {
+      let isHasWord = isAlreadyHasWord(item, null, user);
+      if (!isHasWord) return false;
+      return true;
+    });
     /* Находим уже имеющиеся в актуализаторе слова */
-    let oldMeets = user?.relevance.filter(
-      (item) => words.includes(item.word) && !alreadyHaveWords.includes(item)
-    );
+    let hasRelevances = words.filter((item) => {
+      let hasRelevance = isHasRelevance(item, user);
+      if (!hasRelevance) return false;
+      return true;
+    });
+
     /* Находим оставшиеся слова, которых нигде нет */
-    words = words.filter(
-      (item) =>
-        !Object.values(oldMeets)
-          .map((oldMeet) => oldMeet.word)
-          .includes(item) && !alreadyHaveWords.includes(item)
+    let newWords = words.filter(
+      (item) => !hasWords.includes(item) && !hasRelevances.includes(item)
     );
     /* Добавляем слова которых нигде нет*/
-
-    let error = false;
-    for (let item of words) {
-      if (error) return;
-      let result = await addNewRelevance(item, req.userId);
-      if (!result) error = true;
-    }
-    /* Обновляем дату детекта уже имеющихся в актуализаторе слов */
-    for (let item of oldMeets) {
-      if (error) return;
-      let result = await addOldRelevance(item._id, req.userId);
-      if (!result) error = true;
-    }
-
-    /*Проверяем успешно ли добавились все слова */
-    if (error)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
-    /*Получаем актуальный объект со всеми словами*/
-    user = await User.findOne({ _id: req.userId });
-    let userData = getUserInfoFromDoc(user._doc);
-    /* Формируем сообщение */
-    let message = 'Операция успешно завершена! ';
-    if (words?.length > 0)
-      message += `Новые слова, которые были добавлены: ${words.join(', ')}. `;
-    if (oldMeets?.length > 0)
-      message += `Слова с которыми вы уже встречались: ${Object.values(oldMeets)
-        .map((item) => item.word)
-        .join(', ')}. `;
-    if (alreadyHaveWords?.length > 0)
-      message += `Слова, которые не были добавлены, так как вы уже изучили/учите их: ${alreadyHaveWords.join(
-        ', '
-      )}. `;
-    /* Приводим массив объектов к общему виду */
-    words = words.map((item) => {
+    let newRelevances = newWords.map((item) => {
+      let word = item;
+      let irregularVerb = checkIrregularVerb(word);
+      if (irregularVerb) {
+        let word = fixIrregularVerb(word);
+      }
       return {
-        word: item,
+        word,
         dateOfCreation: Date.now(),
         dateOfDetected: [Date.now()],
+        irregularVerb,
+      };
+    });
+    if (newRelevances?.length > 0) {
+      let pushNewRelevances = await multiPushNewElement(
+        'relevance',
+        newRelevances,
+        req.userId
+      );
+      if (!pushNewRelevances)
+        return res.status(400).json({
+          message: `Не удалось выполнить операцию!`,
+        });
+    }
+    /* Обновляем дату детекта уже имеющихся в актуализаторе слов */
+    if (hasRelevances?.length > 0) {
+      let setOldRelevances = await multiSetOldRelevances(
+        hasRelevances,
+        req.userId
+      );
+      if (!setOldRelevances)
+        return res.status(400).json({
+          message: `Не удалось выполнить операцию!`,
+        });
+    }
+
+    /* Формируем сообщение */
+    let message = 'Операция успешно завершена! ';
+    if (newWords?.length > 0)
+      message += `Новые слова, которые были добавлены: ${newWords.join(
+        ', '
+      )}. `;
+    if (hasRelevances?.length > 0)
+      message += `Слова с которыми вы уже встречались: ${hasRelevances.join(
+        ', '
+      )}. `;
+    if (hasWords?.length > 0)
+      message += `Слова, которые не были добавлены, так как вы уже изучили/учите их: ${hasWords.join(
+        ', '
+      )}. `;
+    /*Получаем актуальный объект со всеми словами*/
+    user = await User.findOne({ _id: req.userId });
+    let userInfo = getUserInfoFromDoc(user._doc);
+    /* Приводим массив объектов к общему виду */
+    newWords = newWords.map((item) => {
+      return {
+        word: item,
         totalCountMeets: 1,
         countMeetsPerDays: 1,
       };
     });
-    oldMeets = oldMeets.map((item) => {
+    hasRelevances = hasRelevances.map((oldRelevance) => {
       let millisecondsToDays = 1000 * 60 * 60 * 24;
-      let maxDateCheckRelevance = userData?.options?.[0]?.maxDateCheckRelevance;
       let now = Date.now() / millisecondsToDays;
-      let dateOfDetected = item?.dateOfDetected;
-      dateOfDetected.push(Date.now());
 
-      let totalCountMeets = dateOfDetected?.length;
-      let countMeetsPerDays = dateOfDetected.filter(
+      let word = user?.relevance.filter((item) => item.word == oldRelevance)[0];
+      let totalCountMeets = word?.dateOfDetected?.length;
+
+      let maxDateCheckRelevance = user?.options?.[0]?.maxDateCheckRelevance;
+      let countMeetsPerDays = word?.dateOfDetected.filter(
         (date) => date / millisecondsToDays >= now - maxDateCheckRelevance
       );
       countMeetsPerDays = countMeetsPerDays?.length;
 
       return {
-        word: item.word,
-        dateOfCreation: item.dateOfCreation,
-        dateOfDetected,
+        word: oldRelevance,
         totalCountMeets,
         countMeetsPerDays,
       };
     });
-    words = [...words, ...oldMeets];
+    let addedWords = [...newWords, ...hasRelevances];
+
     res.json({
       message,
-      user: userData,
-      words,
+      user: userInfo,
+      words: addedWords,
     });
   } catch (err) {
     console.log(err);
@@ -460,52 +511,174 @@ export const addRelevance = async (req, res) => {
   }
 };
 
-async function addNewRelevance(word, userID) {
+/* MONGO OPERATION */
+async function getUserInfo(userID, showFields = '') {
   try {
-    let newRelevance = {
-      word,
-      dateOfCreation: Date.now(),
-      dateOfDetected: [Date.now()],
-    };
-
-    let user = await User.updateOne(
-      { _id: userID },
+    let user = await User.findOne(
       {
-        $push: { relevance: newRelevance },
+        _id: userID,
       },
-      { upsert: false }
+      `${showFields}`
     );
-    if (user.modifiedCount == 0) return false;
-    return true;
+    if (!user) return false;
+    return user._doc;
   } catch (err) {
     console.log(err);
     return false;
   }
 }
-async function addOldRelevance(id, userID) {
+async function pushNewElement(field, newElement, userID) {
   try {
-    let user = await User.updateOne(
-      { _id: userID, 'relevance._id': id },
-      {
+    let query = { _id: userID };
+    let action = { $push: { [`${field}`]: newElement } };
+    let option = { new: true, rawResult: true };
+
+    let user = await User.findOneAndUpdate(query, action, option);
+    if (user.ok == 0) return false;
+    let userInfo = getUserInfoFromDoc(user.value._doc);
+    return userInfo;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function multiPushNewElement(field, newElements, userID) {
+  try {
+    let query = { _id: userID };
+    let action = {
+      $push: {
+        [`${field}`]: {
+          $each: newElements,
+        },
+      },
+    };
+    let option = { new: true, rawResult: true };
+
+    let user = await User.findOneAndUpdate(query, action, option);
+    if (user.ok == 0) return false;
+    let userInfo = getUserInfoFromDoc(user.value._doc);
+    return userInfo;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function pullElement(field, elementID, userID) {
+  try {
+    let query = { _id: userID };
+    let action = { $pull: { [field]: { _id: elementID } } };
+    let option = { new: true, rawResult: true };
+
+    let user = await User.findOneAndUpdate(query, action, option);
+
+    if (user.ok == 0) {
+      return false;
+    }
+    let userInfo = getUserInfoFromDoc(user.value._doc);
+    return userInfo;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function multiPullElement(field, elementsID, userID) {
+  try {
+    let query = { _id: userID };
+    let action = {
+      $pull: {
+        [field]: { _id: { $in: elementsID } },
+      },
+    };
+    let option = { new: true, rawResult: true };
+
+    let user = await User.findOneAndUpdate(query, action, option);
+    if (user.ok == 0) {
+      return false;
+    }
+    let userInfo = getUserInfoFromDoc(user.value._doc);
+    return userInfo;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function setElement(field, elementID, changeFields, userID) {
+  try {
+    let setOption = {};
+    Object.keys(changeFields).forEach((key) => {
+      setOption[`${field}.$.${key}`] = changeFields[key];
+    });
+
+    let query = { _id: userID, [`${field}._id`]: elementID };
+    let action = { $set: setOption };
+    let option = { new: true, rawResult: true };
+
+    let user = await User.findOneAndUpdate(query, action, option);
+    if (user.ok == 0) {
+      return false;
+    }
+    let userInfo = getUserInfoFromDoc(user.value._doc);
+    return userInfo;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+// [{elementID: 'dsdsd', changeFields: { name: 'role'}}, ]
+async function multiSetElement(field, multiSetOptions, userID) {
+  try {
+    let success = true;
+    for (let multiSetOption of multiSetOptions) {
+      if (!success) return;
+      let setOption = {};
+      for (let key in multiSetOption?.changeFields) {
+        setOption[`${field}.$.${key}`] = multiSetOption?.changeFields[key];
+      }
+      console.log(setOption);
+      let query = { _id: userID, [`${field}._id`]: multiSetOption?.elementID };
+      let action = { $set: setOption };
+      let option = { upsert: false };
+
+      let user = await User.updateOne(query, action, option);
+      if (user.modifiedCount == 0) {
+        success = false;
+      }
+    }
+    if (success) {
+      success = await User.findOne({ _id: userID });
+      success = getUserInfoFromDoc(success._doc);
+    }
+    return success;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+/* RELEVANCE OPERATION */
+async function multiSetOldRelevances(words, userID) {
+  try {
+    let success = true;
+    for (let word of words) {
+      if (!success) return;
+      let query = { _id: userID, 'relevance.word': word };
+      let action = {
         $push: {
           'relevance.$.dateOfDetected': Date.now(),
         },
-      },
-      { upsert: false }
-    );
-    if (user.modifiedCount == 0) return false;
-    return true;
+      };
+      let option = { upsert: false };
+
+      let user = await User.updateOne(query, action, option);
+      if (user.modifiedCount == 0) success = false;
+    }
+    return success;
   } catch (err) {
     console.log(err);
     return false;
   }
 }
-function checkIrregularVerbs(word) {
-  if (!/--/g.test(word)) return false;
-  let words = word.split('--');
-  if (words.length != 3) return false;
-  return true;
-}
+
+/* GET ALLOWED FIELDS */
 function getUserInfoFromDoc(doc) {
   let user = doc;
   let {
@@ -537,4 +710,66 @@ function replaceEmailToStar(email) {
     star += '*';
   }
   return email.replace(email.slice(start, end), star);
+}
+
+/* VALIDATION */
+function checkIrregularVerb(word) {
+  if (!/--/g.test(word)) return false;
+  let words = word.split('--');
+  if (words.length != 3) return false;
+  return true;
+}
+function fixIrregularVerb(word) {
+  let irregularVerbs = word.split('--');
+  irregularVerbs = irregularVerbs.map((item) => item.trim().toLowerCase());
+  return irregularVerbs.join('--');
+}
+function isAlreadyHasWord(word, id, userInfo) {
+  let allWords = [...userInfo.wordsToStudy, ...userInfo.knownWords];
+  let hasWord = allWords.filter((wordItem) => {
+    if (wordItem.irregularVerb == false)
+      return wordItem.word == word && wordItem._id != id;
+    let irregularVerbs = wordItem.word.split('--');
+    irregularVerbs = irregularVerbs.map((item) => item.toLowerCase().trim());
+    return irregularVerbs.includes(word) && wordItem._id != id;
+  });
+  if (hasWord?.length != 0) {
+    return true;
+  }
+  return false;
+}
+function isHasRelevance(word, userInfo) {
+  let hasRelevance = userInfo?.relevance.filter((relevanceItem) => {
+    if (relevanceItem.irregularVerb == false) return relevanceItem.word == word;
+    let irregularVerbs = relevanceItem.word.split('--');
+    irregularVerbs = irregularVerbs.map((item) => item.toLowerCase().trim());
+    return irregularVerbs.includes(word);
+  });
+  if (hasRelevance?.length != 0) {
+    return hasRelevance;
+  }
+  return false;
+}
+function isActiveCategory(id, userInfo) {
+  let statusCategory = userInfo.categoriesToLearn.filter(
+    (item) => item._id == id
+  );
+  if (statusCategory?.[0]?.startLearn == true) {
+    return true;
+  }
+  return false;
+}
+function isHasWordsInCategories(id, userInfo) {
+  let hasWordsInCategories = userInfo?.wordsToStudy.filter(
+    (item) => item.category == id
+  );
+  if (hasWordsInCategories.length < countWordsToActiveCategory) return false;
+  return true;
+}
+function isHasCategory(name, id, userInfo) {
+  let hasCategory = userInfo?.categoriesToLearn.filter(
+    (item) => item.name == name && item._id != id
+  );
+  if (hasCategory.length == 0) return false;
+  return true;
 }
