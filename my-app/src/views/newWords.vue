@@ -12,9 +12,9 @@
     @close="this.categoryPopupVisible = false"
   />
   <learn-card
-    :learnType="learnType"
-    v-if="learnCardVisible == true"
-    @close="learnCardVisible = false"
+    v-if="cardVisible == true"
+    ref="learnCard"
+    @close="cardVisible = false"
   />
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
@@ -84,7 +84,7 @@
       <div class="categories__startLearn">
         <button
           class="categories__startButton normal"
-          @click="startLearn('standart')"
+          @click="startLearn('learn')"
           :class="[standartModeButtonColor, isActiveCategory ? '' : 'disabled']"
           :disabled="isActiveCategory ? false : true"
         >
@@ -112,7 +112,7 @@
         </button>
         <button
           class="categories__startButton reverse"
-          @click="startLearn('reverse')"
+          @click="startLearn('reLearn')"
           :class="[reverseModeButtonColor, isActiveCategory ? '' : 'disabled']"
           :disabled="isActiveCategory ? false : true"
         >
@@ -231,8 +231,7 @@ export default {
       wordPopupOptions: {},
       categoryPopupOptions: {},
       search: "",
-      learnCardVisible: false,
-      learnType: "standart",
+      cardVisible: false,
     };
   },
 
@@ -409,10 +408,6 @@ export default {
       let confirm = await this.$refs.confirm.show(header, title);
       return confirm;
     },
-    startLearn(type) {
-      this.learnType = type;
-      this.learnCardVisible = true;
-    },
     openWordPopup(type) {
       this.wordPopupOptions = {};
       if (Object.keys(this.currentSelectedCategory)?.length > 0)
@@ -517,6 +512,15 @@ export default {
         let message = err?.response?.data?.message || err?.message;
         this.showInfo("Удаление слова", message);
       }
+    },
+    async startLearn(type) {
+      let categoryID = this.currentSelectedCategory._id;
+      let words = this.userInfo.wordsToStudy.filter(
+        (item) => item.category == categoryID
+      );
+      this.cardVisible = true;
+      await nextTick();
+      this.$refs.learnCard.start(type, words, categoryID);
     },
   },
   watch: {

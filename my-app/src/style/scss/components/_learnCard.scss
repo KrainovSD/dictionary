@@ -53,44 +53,41 @@
         font-size: rem(18);
     }
 
-    &__input {
-        width: 45%;
-        border-radius: rem(3);
-        box-shadow: 0px 0px 4px 0px #ffffff;
-        background-color: white;
-        border: 1px solid white;
-        transition: all 0.3s ease;
-        font-size: rem(18);
-        padding: rem(8) rem(5);
+    &__try {
         margin: 0 auto;
-
-        &:focus {
-            border-color: #66afe9;
-            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
-        }
-
-        &._error {
-            border-color: #e96666;
-            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(233, 102, 102, .6);
-        }
+        font-weight: bold;
+        font-size: rem(16);
     }
+
+    &__input {
+        width: 55%;
+        margin: rem(8) auto;
+
+    }
+
 
     &__confirmContainer {
         margin: rem(13) auto 0;
-        width: 30%;
+        width: 35%;
     }
 
 
     &__optionContainer {
-        display: flex;
-        flex-direction: column;
-        padding: rem(20);
+        padding-top: rem(60);
+        padding-bottom: rem(10);
+        max-width: 410px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: rem(100);
+        row-gap: rem(15);
+        column-gap: rem(15);
     }
 
     &__optionItem {
-        padding: rem(20);
+        word-wrap: break-word;
+        display: flex;
         justify-content: center;
-        font-family: Dreamcast;
+        align-items: center;
         position: relative;
         background-color: white;
         border-radius: rem(3);
@@ -107,12 +104,23 @@
             outline: 1px solid rgba(#6092ff, .5);
         }
 
-        &.left {
-            margin: rem(10) auto 0 0;
+        &._wrong {
+            animation-name: shake;
+            animation-duration: 0.5s;
+            border-color: #e96666;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),
+                0 0 8px rgba(233, 102, 102, 0.6);
+            background-color: rgba(206, 14, 14, 0.527)
         }
 
-        &.right {
-            margin: rem(10) 0 0 auto;
+        &._correct {
+            animation-name: clickButtonHeader;
+            animation-duration: 0.5s;
+
+            border-color: green;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),
+                0 0 8px rgba(1, 85, 1, 0.568);
+            background-color: rgba(18, 212, 18, 0.404);
         }
 
     }
@@ -124,6 +132,9 @@
         flex-direction: column;
         margin: auto 0 0 0;
 
+        &.reverse {
+            min-height: rem(340);
+        }
     }
 
     &__answer {

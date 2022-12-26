@@ -1,4 +1,5 @@
-import config from './config.js';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: 'config.env' });
 import express from 'express';
 const app = express();
 app.use(express.json()); // req.body only for application/json
@@ -8,7 +9,7 @@ app.use(cookieParser()); // req.cookies
 
 import mongoose from 'mongoose';
 mongoose
-  .connect(`mongodb://${config.server.dbHost}/${config.server.dbName}`)
+  .connect(`mongodb://${process.env.DB_HOST}/${process.env.DB_HOST}`)
   .then(() => console.log('server has connected to MongoDB'))
   .catch((err) => {
     console.log(err);
@@ -23,27 +24,28 @@ mongoose.connection.on('recconect', () => {
 mongoose.connection.on('close', () => {
   console.log('DB close connect');
 });
-const port = process.env.PORT || config.server.port;
-app.listen(port, config.server.host, (err) => {
+const port = process.env.PORT || 3000;
+const host = process.env.HOST;
+app.listen(port, host, (err) => {
   if (err) {
     console.log(err);
     logger(err, 'start server');
   }
-  console.log(
-    `Server has started on port ${port} and host ${config.server.host}`
-  );
+  console.log(`Server has started on port ${port} and host ${host}`);
 });
-/* ONLY FOR DEV!!!!!!!!!!! */
-app.use((request, response, next) => {
-  //res.set('Access-Control-Allow-Credentials', 'true') - разрешение на куки
-  response.header({
-    'Access-Control-Allow-Origin': 'http://127.0.0.1:8080',
-    'Access-Control-Allow-Methods': 'DELETE,GET,POST,PUT',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    'Access-Control-Allow-Credentials': 'true',
+
+if (!process.env.PRODUCTION) {
+  app.use((request, response, next) => {
+    //res.set('Access-Control-Allow-Credentials', 'true') - разрешение на куки
+    response.header({
+      'Access-Control-Allow-Origin': 'http://127.0.0.1:8080',
+      'Access-Control-Allow-Methods': 'DELETE,GET,POST,PUT',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+      'Access-Control-Allow-Credentials': 'true',
+    });
+    next();
   });
-  next();
-});
+}
 
 import { UserController, WordController } from './controllers/index.js';
 import {
@@ -87,7 +89,7 @@ app.post(
   handleValidationErrors,
   UserController.login
 );
-app.post('/logout', UserController.logout);
+app.post('/logout', checkAuth, UserController.logout);
 app.post('/tokens', UserController.updateAccessToken);
 /* USER INFO  */
 app.post(

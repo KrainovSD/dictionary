@@ -24,5 +24,23 @@ export default function (instance, instanceToken) {
     addRelevance(data) {
       return instanceToken.post("/relevance", data);
     },
+    pushLearnAnswers(data) {
+      return instanceToken.post("/test", data);
+    },
+    pushReLearnAnswers(data) {
+      return instanceToken.post("/test", data);
+    },
+    pushKnownAnswers(data) {
+      return instanceToken.post("/test", data);
+    },
+    pushReKnownAnswers(data) {
+      return instanceToken.post("/test", data);
+    },
+    pushRepeatAnswers(data) {
+      return instanceToken.post("/test", data);
+    },
+    pushReRepeatAnswers(data) {
+      return instanceToken.post("/test", data);
+    },
   };
 }

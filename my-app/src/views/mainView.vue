@@ -18,12 +18,7 @@
 
   <div class="header">
     <div class="headerContainer">
-      <img
-        src="@/assets/KrainovLogo.png"
-        alt=""
-        class="header__logo"
-        @click="testToken"
-      />
+      <img src="@/assets/KrainovLogo.png" alt="" class="header__logo" />
       <div class="header__titles">
         <router-link :to="{ name: 'home' }" class="header__title">
           Главная</router-link
@@ -86,13 +81,12 @@
 import signForm from "../components/signForm.vue";
 import infoPopup from "../components/infoPopup";
 import settingPopup from "../components/settingPopup.vue";
-//import signTest from "../components/signTest.vue";
+
 export default {
   components: {
     infoPopup,
     signForm,
     settingPopup,
-    //signTest,
   },
   data() {
     return {
@@ -172,11 +166,11 @@ export default {
       this.$api.auth
         .logout()
         .then((res) => {
-          this.showInfo("Logout", res.data.message);
+          this.showInfo("Выход из системы", res.data.message);
           this.$store.commit("resetAuth");
         })
         .catch((err) => {
-          this.showInfo("Logout", err.response.data.message);
+          this.showInfo("Выход из системы", err.response.data.message);
           this.$store.commit("resetAuth");
         });
     },

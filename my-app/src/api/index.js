@@ -10,7 +10,7 @@ const message = function (data) {
 };
 
 export default {
-  auth: authorization(instance),
+  auth: authorization(instance, instanceToken),
   change: changeInfo(instance, instanceToken),
   words: words(instance, instanceToken),
   offWords: offWords(),

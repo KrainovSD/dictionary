@@ -60,7 +60,7 @@ export default {
         this.userInfo?.avatar != "" &&
         Object.keys(this.userInfo).length > 0
       ) {
-        return require(`../assets/avatar/${this.userInfo._id}/${this.userInfo.avatar}`);
+        return require(`../assets/avatar/${this.userInfo.nickName}/${this.userInfo.avatar}`);
       }
       return require("../assets/avatar.png");
     },

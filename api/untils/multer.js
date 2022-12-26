@@ -5,6 +5,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const maxLength = 1 * 1024 * 1024;
+import User from '../models/Users.js';
 
 const fileFilter = (req, file, cb) => {
   // Функция должна вызывать `cb` с булевым значением, которое покажет следует ли принимать  файл или нет
@@ -15,15 +16,18 @@ const fileFilter = (req, file, cb) => {
 };
 const storageConfig = multer.diskStorage({
   destination: async (req, file, cb) => {
-    // Путь куда сохраняется файл полностью прописывается
-    let dir = `./uploads/${req.userId}`;
-    if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
     try {
-      fs.mkdirSync(__dirname + `/../uploads/${req.userId}`);
+      let user = await User.findOne({ _id: req.userId });
+      let nickName = user.nickName;
+      // Путь куда сохраняется файл полностью прописывается
+      let dir = `./uploads/${nickName}`;
+      if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
+
+      fs.mkdirSync(__dirname + `/../uploads/${nickName}`);
+      cb(null, dir);
     } catch (error) {
       console.error(error);
     }
-    cb(null, dir);
   },
   filename: (req, file, cb) => {
     cb(null, file.originalname); // имя файла после сохранения

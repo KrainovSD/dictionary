@@ -229,7 +229,7 @@ export default {
       } catch (err) {
         console.log(err);
         if (err.response?.status == 401) {
-          this.showInfo(
+          return this.showInfo(
             "Отправка сообщения",
             "Отправка сообщения доступна только для зарегистрированных пользователей!"
           );

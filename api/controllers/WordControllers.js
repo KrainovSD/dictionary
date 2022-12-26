@@ -1,5 +1,4 @@
 import { signedCookies } from 'cookie-parser';
-import config from '../config.js';
 
 import User from '../models/Users.js';
 /* 
@@ -727,8 +726,16 @@ function fixIrregularVerb(word) {
 function isAlreadyHasWord(word, id, userInfo) {
   let allWords = [...userInfo.wordsToStudy, ...userInfo.knownWords];
   let hasWord = allWords.filter((wordItem) => {
+    if (checkIrregularVerb(word)) {
+      let irregularVerbs = word.split('--');
+      irregularVerbs = irregularVerbs.map((item) => item.toLowerCase().trim());
+      if (wordItem.irregularVerb == false)
+        return irregularVerbs.includes(wordItem.word) && wordItem._id != id;
+      return wordItem.word == word && wordItem._id != id;
+    }
     if (wordItem.irregularVerb == false)
       return wordItem.word == word && wordItem._id != id;
+
     let irregularVerbs = wordItem.word.split('--');
     irregularVerbs = irregularVerbs.map((item) => item.toLowerCase().trim());
     return irregularVerbs.includes(word) && wordItem._id != id;

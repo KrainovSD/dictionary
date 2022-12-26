@@ -241,6 +241,41 @@ body {
   }
 }
 
+@keyframes shake {
+  0% {
+    transform: translateX(0px);
+    timing-function: ease-in;
+  }
+  37% {
+    transform: translateX(5px);
+    timing-function: ease-out;
+  }
+  55% {
+    transform: translateX(-5px);
+    timing-function: ease-in;
+  }
+  73% {
+    transform: translateX(4px);
+    timing-function: ease-out;
+  }
+  82% {
+    transform: translateX(-4px);
+    timing-function: ease-in;
+  }
+  91% {
+    transform: translateX(2px);
+    timing-function: ease-out;
+  }
+  96% {
+    transform: translateX(-2px);
+    timing-function: ease-in;
+  }
+  100% {
+    transform: translateX(0px);
+    timing-function: ease-in;
+  }
+}
+
 body {
   background-color: whitesmoke;
 }
@@ -1271,11 +1306,27 @@ body {
   color: #304455;
   word-spacing: 0.07143rem;
   line-height: 1.6;
-  margin: 1.42857rem 0 1.42857rem;
-  padding-bottom: 1.42857rem;
+  margin: 0.71429rem 0 0.71429rem;
+  padding-bottom: 0.35714rem;
   text-align: justify;
   letter-spacing: 0.07143rem;
   font-size: 1.1vw;
+}
+
+.docs__contentText span {
+  font-weight: bold;
+  color: #87e002;
+}
+
+.docs__contentText i {
+  font-weight: bold;
+  color: red;
+  font-style: normal;
+}
+
+.docs__logo {
+  width: 70%;
+  margin: 25rem auto 0;
 }
 
 .contact {
@@ -2003,43 +2054,38 @@ body {
   font-size: 1.28571rem;
 }
 
-.learnCard__input {
-  width: 45%;
-  border-radius: 0.21429rem;
-  box-shadow: 0px 0px 4px 0px #ffffff;
-  background-color: white;
-  border: 1px solid white;
-  transition: all 0.3s ease;
-  font-size: 1.28571rem;
-  padding: 0.57143rem 0.35714rem;
+.learnCard__try {
   margin: 0 auto;
+  font-weight: bold;
+  font-size: 1.14286rem;
 }
 
-.learnCard__input:focus {
-  border-color: #66afe9;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
-}
-
-.learnCard__input._error {
-  border-color: #e96666;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(233, 102, 102, 0.6);
+.learnCard__input {
+  width: 55%;
+  margin: 0.57143rem auto;
 }
 
 .learnCard__confirmContainer {
   margin: 0.92857rem auto 0;
-  width: 30%;
+  width: 35%;
 }
 
 .learnCard__optionContainer {
-  display: flex;
-  flex-direction: column;
-  padding: 1.42857rem;
+  padding-top: 4.28571rem;
+  padding-bottom: 0.71429rem;
+  max-width: 410px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 7.14286rem;
+  row-gap: 1.07143rem;
+  column-gap: 1.07143rem;
 }
 
 .learnCard__optionItem {
-  padding: 1.42857rem;
+  word-wrap: break-word;
+  display: flex;
   justify-content: center;
-  font-family: Dreamcast;
+  align-items: center;
   position: relative;
   background-color: white;
   border-radius: 0.21429rem;
@@ -2057,18 +2103,30 @@ body {
   outline: 1px solid rgba(96, 146, 255, 0.5);
 }
 
-.learnCard__optionItem.left {
-  margin: 0.71429rem auto 0 0;
+.learnCard__optionItem._wrong {
+  animation-name: shake;
+  animation-duration: 0.5s;
+  border-color: #e96666;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(233, 102, 102, 0.6);
+  background-color: rgba(206, 14, 14, 0.527);
 }
 
-.learnCard__optionItem.right {
-  margin: 0.71429rem 0 0 auto;
+.learnCard__optionItem._correct {
+  animation-name: clickButtonHeader;
+  animation-duration: 0.5s;
+  border-color: green;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(1, 85, 1, 0.568);
+  background-color: rgba(18, 212, 18, 0.404);
 }
 
 .learnCard__workContainer {
   display: flex;
   flex-direction: column;
   margin: auto 0 0 0;
+}
+
+.learnCard__workContainer.reverse {
+  min-height: 24.28571rem;
 }
 
 .learnCard__answer {

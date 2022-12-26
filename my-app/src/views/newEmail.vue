@@ -86,7 +86,7 @@ export default {
           case "email":
             if (
               !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
-                fieldData
+                fieldData.toLowerCase()
               )
             ) {
               this.errors[field] = "Неверный формат введенного Email!";
@@ -112,7 +112,7 @@ export default {
           case "email":
             if (
               !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
-                fieldData
+                fieldData.toLowerCase()
               )
             ) {
               this.errors[field] = "Неверный формат введенного Email!";
@@ -126,7 +126,7 @@ export default {
       this.responseMessage = "";
       let form = {
         password: this.password,
-        email: this.email,
+        email: this.email.toLowerCase(),
       };
 
       this.validateForm(form);
@@ -150,7 +150,7 @@ export default {
       this.$api.change
         .email(form)
         .then((res) => {
-          this.showInfo("New Email", res.data.message);
+          this.showInfo("Смена Email", res.data.message);
         })
         .catch((err) => {
           if (err.response.status == 400) {

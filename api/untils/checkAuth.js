@@ -1,16 +1,15 @@
 import jwt from 'jsonwebtoken';
-///
-import fs from 'fs';
-const { secretAccessToken } = JSON.parse(
-  fs.readFileSync('./info.txt', { encoding: 'utf8', flag: 'r' })
-);
+import * as dotenv from 'dotenv';
+dotenv.config({ path: 'config.env' });
+const secretAccessToken = process.env.SECRET_ACCESS_TOKEN;
 
 export default (req, res, next) => {
   try {
     let token = req.headers.authorization?.replace(/Bearer\s?/, '');
+
     if (!token) {
       return res.status(401).json({
-        message: 'Need authorization',
+        message: 'Требуется авторизация!',
       });
     }
     let decoded = jwt.verify(token, secretAccessToken);
@@ -19,7 +18,7 @@ export default (req, res, next) => {
   } catch (err) {
     console.log(err);
     return res.status(401).json({
-      message: 'Need authorization',
+      message: 'Требуется авторизация!',
     });
   }
 };

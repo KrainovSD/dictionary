@@ -198,8 +198,8 @@ export const infoValidation = [
   body('regularityToRepeat')
     .optional()
     .custom((value) => {
-      if (value.length != 12)
-        throw new Error('Количество повторений должно быть равно 12-ти!');
+      if (value.length != 8)
+        throw new Error('Количество повторений должно быть равно 8-ми!');
       return true;
     }),
   body('maxDateCheckRelevance')
@@ -416,8 +416,11 @@ export const wordValidation = [
     ),
   body('description')
     .trim()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Описание не должно быть пустым!')
     .isString()
-    .withMessage('У транскрипции неверный тип данных!')
+    .withMessage('У описания неверный тип данных!')
     .isLength({ max: 164 })
     .withMessage(
       'Длина описания слова или словосочетания не должна превышать более 164 символов!'

@@ -52,7 +52,8 @@ export default function () {
       userInfo.categoriesToLearn[index].name = name;
       userInfo.categoriesToLearn[index].icon = icon;
       userInfo.categoriesToLearn[index].regularityToRepeat = regularityToRepeat;
-      userInfo.categoriesToLearn[index].offline = "update";
+      if (!userInfo.categoriesToLearn[index].offline)
+        userInfo.categoriesToLearn[index].offline = "update";
 
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
       store.commit("resetAuth");
@@ -68,20 +69,25 @@ export default function () {
         (item) => item._id == id
       );
       if (index == -1) throw new Error("Категории не существует!");
-      userInfo.categoriesToLearn[index].offline = "delete";
+      if (userInfo.categoriesToLearn[index].offline == "add")
+        userInfo.categoriesToLearn = userInfo.categoriesToLearn.filter(
+          (item) => item._id != id
+        );
+      else userInfo.categoriesToLearn[index].offline = "delete";
 
       let wordsInCategory = userInfo.wordsToStudy.filter(
         (item) => item.category == id
       );
-      let indexes = [];
       for (let word of wordsInCategory) {
         let index = userInfo.wordsToStudy.findIndex(
           (item) => item._id == word._id
         );
-        if (index != -1) indexes.push(index);
-      }
-      for (let index of indexes) {
-        userInfo.wordsToStudy[index].offline = "delete";
+        if (index == -1) continue;
+        if (userInfo.wordsToStudy[index].offline == "add")
+          userInfo.wordsToStudy = userInfo.wordsToStudy.filter(
+            (item) => item._id != word._id
+          );
+        else userInfo.wordsToStudy[index].offline = "delete";
       }
 
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
@@ -109,7 +115,11 @@ export default function () {
         let index = userInfo?.relevance.findIndex(
           (item) => item._id == hasRelevance[0]._id
         );
-        userInfo.relevance[index].offline = "delete";
+        if (userInfo.relevance[index].offline == "add")
+          userInfo.relevance = userInfo.relevance.filter(
+            (item) => item._id != hasRelevance[0]._id
+          );
+        else userInfo.relevance[index].offline = "delete";
       }
 
       let newWord = {
@@ -152,7 +162,8 @@ export default function () {
       userInfo.wordsToStudy[index].description = description;
       userInfo.wordsToStudy[index].example = example;
       userInfo.wordsToStudy[index].irregularVerb = irregularVerb;
-      userInfo.wordsToStudy[index].offline = "update";
+      if (!userInfo.wordsToStudy[index].offline)
+        userInfo.wordsToStudy[index].offline = "update";
 
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
       store.commit("resetAuth");
@@ -166,7 +177,11 @@ export default function () {
 
       let index = userInfo?.wordsToStudy.findIndex((item) => item._id == id);
       if (index == -1) throw new Error("Слова не существует!");
-      userInfo.wordsToStudy[index].offline = "delete";
+      if (userInfo.wordsToStudy[index].offline == "add")
+        userInfo.wordsToStudy = userInfo.wordsToStudy.filter(
+          (item) => item._id != id
+        );
+      else userInfo.wordsToStudy[index].offline = "delete";
 
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
       store.commit("resetAuth");
@@ -241,7 +256,8 @@ export default function () {
           let index = userInfo.relevance.findIndex((word) => word.word == item);
           if (index == -1) continue;
           userInfo.relevance[index].dateOfDetected.push(Date.now());
-          userInfo.relevance[index].offline = "update";
+          if (!userInfo.relevance[index].offline)
+            userInfo.relevance[index].offline = "update";
         }
       }
 

@@ -1,4 +1,4 @@
-export default function (instance) {
+export default function (instance, instanceToken) {
   return {
     login(data) {
       return instance.post("/login", data);
@@ -7,7 +7,7 @@ export default function (instance) {
       return instance.post("/register", data);
     },
     logout() {
-      return instance.post("/logout");
+      return instanceToken.post("/logout");
     },
     checkAuth() {
       return instance.post("/tokens");

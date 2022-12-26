@@ -21,18 +21,18 @@ export default {
       .confirm(form)
       .then((res) => {
         let responseMessage = res.data.message;
-        this.showInfoPopup("Confirm", responseMessage);
+        this.showInfoPopup("Подтверждение", responseMessage);
       })
       .catch((err) => {
         if (err.response.status == 400) {
-          this.showInfoPopup("Confirm", err.response.data.message);
+          this.showInfoPopup("Подтверждение", err.response.data.message);
           return;
         }
         if (err.response.status == 404) {
-          this.showInfoPopup("Confirm", err.response.data.message);
+          this.showInfoPopup("Подтверждение", err.response.data.message);
         }
         let responseMessage = "Сервер не отвечает";
-        this.showInfoPopup("Confirm", responseMessage);
+        this.showInfoPopup("Подтверждение", responseMessage);
       });
   },
   methods: {

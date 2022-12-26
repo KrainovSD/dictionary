@@ -529,7 +529,10 @@ export default {
       Object.keys(form).forEach((key) => {
         if (
           form[key] == "" &&
-          (key == "word" || key == "translate" || key == "transcription")
+          (key == "word" ||
+            key == "translate" ||
+            key == "transcription" ||
+            key == "description")
         ) {
           this.errors[key] = "Поле обязательно для заполнения!";
           return;
@@ -650,7 +653,10 @@ export default {
         }
         if (
           fieldData == "" &&
-          (field == "word" || field == "translate" || field == "transcription")
+          (field == "word" ||
+            field == "translate" ||
+            field == "transcription" ||
+            field == "description")
         ) {
           this.errors[field] = "Поле обязательно для заполнения!";
           return;

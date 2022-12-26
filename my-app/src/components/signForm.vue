@@ -221,7 +221,7 @@ export default {
           case "email":
             if (
               !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
-                form[key]
+                form[key].toLowerCase()
               )
             ) {
               this.errors[key] = "Неверный формат введенного Email!";
@@ -284,7 +284,7 @@ export default {
           case "email":
             if (
               !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
-                fieldData
+                fieldData.toLowerCase()
               )
             ) {
               this.errors[field] = "Неверный формат введенного Email!";

@@ -141,7 +141,7 @@ export default {
       this.$api.change
         .password(form)
         .then((res) => {
-          this.showInfo("New Password", res.data.message);
+          this.showInfo("Новый пароль", res.data.message);
         })
         .catch((err) => {
           if (err.response.status == 400) {

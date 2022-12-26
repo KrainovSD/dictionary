@@ -2,7 +2,7 @@
   <icon-popup
     v-if="iconPopupVisible == true"
     @close="iconPopupVisible = false"
-    @replace="(payload) => showInfo('New Avatar', payload)"
+    @replace="(payload) => showInfo('Смена аватара', payload)"
     @auth="$emit('noAuth')"
   />
   <info-popup ref="info" />
@@ -339,7 +339,7 @@ export default {
         case "email":
           if (
             !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
-              fieldData
+              fieldData.toLowerCase()
             )
           ) {
             this.errors[field] = "Неверный формат введенного Email!";
@@ -349,7 +349,7 @@ export default {
         case "password":
           if (
             !/^[a-z0-9][a-z0-9-_.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9]).[a-z0-9]{2,10}(?:.[a-z]{2,10})?$/.test(
-              fieldData
+              fieldData.toLowerCase()
             )
           ) {
             this.errors[field] = "Неверный формат введенного Email!";
@@ -429,6 +429,8 @@ export default {
     },
     checkField(data) {
       let { field, fieldData } = data;
+      if (field == "password" || field == "email")
+        fieldData = fieldData.toLowerCase();
       this.validateField(field, fieldData);
       if (this.errors[field]) {
         return;
@@ -447,7 +449,7 @@ export default {
       this.$api.change
         .info(form)
         .then((res) => {
-          this.showInfo(`Change field`, res.data.message);
+          this.showInfo(`Редактирование информации`, res.data.message);
           this.$store.commit("setUserInfo", res.data.user);
         })
         .catch((err) => {
@@ -456,10 +458,13 @@ export default {
           }
           if (err.response?.status == 400) {
             let message = err.response.data.message;
-            this.showInfo(`Change field`, message);
+            this.showInfo(`Редактирование информации`, message);
             return;
           }
-          this.showInfo(`Change field`, err?.response?.data?.message);
+          this.showInfo(
+            `Редактирование информации`,
+            err?.response?.data?.message
+          );
         });
     },
     exportData() {
