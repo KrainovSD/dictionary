@@ -81,6 +81,7 @@
             :errors="errors"
             placeholder="*Word"
             @change="translateApi"
+            @keyup.enter="operationWithWord"
           />
         </div>
         <div class="wordPopup__inputContainer">
@@ -91,6 +92,7 @@
             fontSize="16"
             :errors="errors"
             placeholder="*Translate"
+            @keyup.enter="operationWithWord"
           />
         </div>
 
@@ -206,6 +208,7 @@
             v-model="example[index]"
             v-if="exampleCount - 1 >= index"
             :id="`example${index}`"
+            @keyup.enter="operationWithWord"
           />
           <div
             class="wordPopup__tooltip"
@@ -222,7 +225,7 @@
         >
           <confirm-button
             text="Добавить слово"
-            @click="operationWithWord('add')"
+            @click="operationWithWord"
             fontSize="14"
           />
         </div>
@@ -232,7 +235,7 @@
         >
           <confirm-button
             text="Редактировать слово"
-            @click="operationWithWord('update')"
+            @click="operationWithWord"
             fontSize="14"
           />
         </div>
@@ -758,7 +761,7 @@ export default {
           delete this.errors[field];
       }
     },
-    operationWithWord(type) {
+    operationWithWord() {
       let form = {
         category: this.category,
         word: this.word,
@@ -770,8 +773,8 @@ export default {
 
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
-        if (type == "add") this.addWord(form);
-        if (type == "update") this.updateWord(form);
+        if (this.wordPopupType == "add") this.addWord(form);
+        if (this.wordPopupType == "update") this.updateWord(form);
       }
     },
     async addWord(form) {
@@ -814,6 +817,12 @@ export default {
         this.closePopup();
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
         this.showInfo("Добавление слова", message);
       }
     },
@@ -836,6 +845,12 @@ export default {
         this.closePopup();
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
         this.showInfo("Редактирование слова", message);
       }
     },

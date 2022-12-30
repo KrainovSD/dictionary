@@ -288,7 +288,7 @@ export default function () {
       });
       hasRelevances = hasRelevances.map((oldRelevance) => {
         let millisecondsToDays = 1000 * 60 * 60 * 24;
-        let now = Date.now() / millisecondsToDays;
+        let now = Math.floor(Date.now() / millisecondsToDays);
 
         let word = userInfo?.relevance.filter(
           (item) => item.word == oldRelevance
@@ -298,7 +298,8 @@ export default function () {
         let maxDateCheckRelevance =
           userInfo?.options?.[0]?.maxDateCheckRelevance;
         let countMeetsPerDays = word?.dateOfDetected.filter(
-          (date) => date / millisecondsToDays >= now - maxDateCheckRelevance
+          (date) =>
+            Math.floor(date / millisecondsToDays) >= now - maxDateCheckRelevance
         );
         countMeetsPerDays = countMeetsPerDays?.length;
 
@@ -311,6 +312,24 @@ export default function () {
       let addedWords = [...newWords, ...hasRelevances];
 
       return { message, words: addedWords };
+    },
+    pushLearnAnswers(data) {
+      return data;
+    },
+    pushReLearnAnswers(data) {
+      return data;
+    },
+    pushKnownAnswers(data) {
+      return data;
+    },
+    pushReKnownAnswers(data) {
+      return data;
+    },
+    pushRepeatAnswers(data) {
+      return data;
+    },
+    pushReRepeatAnswers(data) {
+      return data;
     },
   };
 }

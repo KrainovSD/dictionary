@@ -956,6 +956,11 @@ body {
   padding-bottom: 0.71429rem;
 }
 
+.newWords__subInfo {
+  margin-top: 0.35714rem;
+  font-size: 1rem;
+}
+
 .newWords__nameCategory {
   margin: 2.5rem auto 0 auto;
   font-size: 1.21429rem;
@@ -1004,6 +1009,14 @@ body {
   min-height: 35.71429rem;
   box-shadow: 0px 1px 8px 0px #000000;
   padding: 0.35714rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.knownWords__wordPlaceholder {
+  margin: auto;
+  font-size: 4.28571rem;
+  letter-spacing: 30px;
 }
 
 .knownWords__word {
@@ -1038,7 +1051,7 @@ body {
   padding-bottom: 0.71429rem;
 }
 
-.knownWords__dateToRepeat {
+.knownWords__subInfo {
   margin-top: 0.35714rem;
   font-size: 1rem;
 }
@@ -1058,39 +1071,32 @@ body {
   font-size: 1.28571rem;
   border-radius: 1.42857rem;
   font-family: antique;
+  color: black;
 }
 
 .knownWords__startButton.normal {
   margin: 0 auto 0 0;
 }
 
-.knownWords__startButton.normal.red {
-  background-color: #fddddc;
-  border: 1px #fc7b77 solid;
-}
-
-.knownWords__startButton.normal.green {
-  background-color: #dcfdde;
-  border: 1px #86f88f solid;
-}
-
 .knownWords__startButton.reverse {
   margin: 0 0 0 auto;
 }
 
-.knownWords__startButton.reverse.red {
+.knownWords__startButton.red {
   background-color: #fddddc;
   border: 1px #fc7b77 solid;
 }
 
-.knownWords__startButton.reverse.green {
+.knownWords__startButton.green {
   background-color: #dcfdde;
   border: 1px #86f88f solid;
 }
 
-.knownWords__startButton.start {
-  background-color: #0c0c0c48;
-  border: 1px gray solid;
+.knownWords__startButton.disabled {
+  background-color: #828386;
+  box-shadow: 0px 3px 13px 0px #999b9e;
+  border: 1px solid #828386;
+  color: white;
 }
 
 .repeatWords {
@@ -1127,6 +1133,14 @@ body {
   min-height: 32.85714rem;
   box-shadow: 0px 1px 8px 0px #000000;
   padding: 0.35714rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.repeatWords__wordPlaceholder {
+  margin: auto;
+  font-size: 4.28571rem;
+  letter-spacing: 30px;
 }
 
 .repeatWords__word {
@@ -1161,7 +1175,7 @@ body {
   padding-bottom: 0.71429rem;
 }
 
-.repeatWords__dateToRepeat {
+.repeatWords__subInfo {
   margin-top: 0.35714rem;
 }
 
@@ -1186,33 +1200,25 @@ body {
   margin: 0 auto 0 0;
 }
 
-.repeatWords__startButton.normal.red {
-  background-color: #fddddc;
-  border: 1px #fc7b77 solid;
-}
-
-.repeatWords__startButton.normal.green {
-  background-color: #dcfdde;
-  border: 1px #86f88f solid;
-}
-
 .repeatWords__startButton.reverse {
   margin: 0 0 0 auto;
 }
 
-.repeatWords__startButton.reverse.red {
+.repeatWords__startButton.red {
   background-color: #fddddc;
   border: 1px #fc7b77 solid;
 }
 
-.repeatWords__startButton.reverse.green {
+.repeatWords__startButton.green {
   background-color: #dcfdde;
   border: 1px #86f88f solid;
 }
 
-.repeatWords__startButton.start {
-  background-color: #0c0c0c48;
-  border: 1px gray solid;
+.repeatWords__startButton.disabled {
+  background-color: #828386;
+  box-shadow: 0px 3px 13px 0px #999b9e;
+  border: 1px solid #828386;
+  color: white;
 }
 
 .docs {

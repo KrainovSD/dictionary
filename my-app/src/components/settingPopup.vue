@@ -152,6 +152,16 @@
                   fontSize="16"
                   :index="index"
                   :errors="errors"
+                  @onEnter="
+                    checkField({
+                      field: 'regularityToRepeat',
+                      fieldData: regularityToRepeat,
+                    })
+                  "
+                  @onEsc="
+                    regularityToRepeatChange = false;
+                    clearField('regularityToRepeat');
+                  "
                 />
               </div>
 
@@ -296,6 +306,10 @@ export default {
     async showInfo(header, title) {
       await this.$refs.info.show(header, title);
     },
+    async showConfirm(header, title) {
+      let res = await this.$refs.confirm.show(header, title);
+      return res;
+    },
     validateField(field, fieldData) {
       if (fieldData.length == 0) {
         this.errors[field] = "Поле обязательно для заполнения!";
@@ -427,7 +441,7 @@ export default {
       }
       this[payload] = "";
     },
-    checkField(data) {
+    async checkField(data) {
       let { field, fieldData } = data;
       if (field == "password" || field == "email")
         fieldData = fieldData.toLowerCase();
@@ -435,6 +449,11 @@ export default {
       if (this.errors[field]) {
         return;
       }
+      let confirm = await this.showConfirm(
+        "Изменение данных",
+        `Вы уверены что хотите внести следующие изменения: "${fieldData}" ?`
+      );
+      if (!confirm) return;
 
       this.clearField(field);
       if (field == "regularityToRepeat") {

@@ -470,7 +470,7 @@ export default {
       }
       delete this.errors.answer;
     },
-    async start(learnType, words, categoryID = null) {
+    async start(learnType, words, categoryID = "undefined") {
       try {
         this.learnType = learnType;
         this.countWords = words.length;
@@ -485,11 +485,12 @@ export default {
           if (res) {
             answers = JSON.parse(localStorage.getItem(this.learnType));
             this.progress = answers.length + 1;
-            let alreadyStudiedWords = answers.map((item) => item.word._id);
+            if (this.progress > this.countWords)
+              this.progress = this.countWords;
+            let alreadyStudiedWords = answers.map((item) => item.word);
             words = words.filter(
               (item) => !alreadyStudiedWords.includes(item._id)
             );
-            console.log(alreadyStudiedWords, words);
           } else localStorage.removeItem(this.learnType);
         }
 
@@ -503,15 +504,14 @@ export default {
           await nextTick();
           let res = await this.checkAnswer();
           if (!res) answer.wrong = true;
-          answer.word = word;
+          answer.word = word._id;
           answers.push(answer);
           if (this.progress != this.countWords) this.progress++;
 
           localStorage.setItem(this.learnType, JSON.stringify(answers));
         }
-        localStorage.removeItem(this.learnType);
-        let data = { words: [...answers], category: categoryID };
-        console.log(`this.$api.words[${this.apiFunction}](data)`);
+
+        let data = { words: [...answers], categoryID: categoryID };
         let res = this.$store.getters.getAuth
           ? await this.$api.words[this.apiFunction](data)
           : this.$api.offWords[this.apiFunction](data);
@@ -521,13 +521,19 @@ export default {
           this.$store.commit("setUserInfo", userInfo);
           localStorage.setItem("userInfo", JSON.stringify(userInfo));
         }
-
+        localStorage.removeItem(this.learnType);
         let message = res?.data?.message || res?.message;
         await this.showInfo("Обучение", message);
         return this.closePopup();
       } catch (err) {
         console.log(err);
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн! Повторно откройте обучение, чтобы сохранить прогресс в режиме оффлайн!";
+          this.$store.commit("resetAuth");
+        }
         await this.showInfo("Обучение", message);
         return this.closePopup();
       }
@@ -603,7 +609,6 @@ export default {
           answers[index] = answerItem.substr(0, correctLetters[index].length);
           index++;
         }
-        console.log(answers);
         answers = answers.map((answer) => {
           if (answer.length == 0) return " ";
           return answer;

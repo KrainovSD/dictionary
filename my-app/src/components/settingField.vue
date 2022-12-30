@@ -17,6 +17,11 @@
         :name="field"
         :value="modelValue"
         @input="$emit('update:modelValue', $event.target.value)"
+        @keyup.enter="saveData"
+        @keyup.esc="
+          fieldChangin = false;
+          $emit('close', field);
+        "
         @focus="focusInput = true"
         @focusout="focusInput = false"
         v-if="fieldChangin == true"

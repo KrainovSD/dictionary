@@ -12,9 +12,9 @@
     @close="this.categoryPopupVisible = false"
   />
   <learn-card
-    v-if="cardVisible == true"
+    v-if="learnCardVisible == true"
     ref="learnCard"
-    @close="cardVisible = false"
+    @close="learnCardVisible = false"
   />
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
@@ -163,16 +163,16 @@
         <div class="newWords__wordPlaceholder" v-if="wordsList?.length == 0">
           WORDS
         </div>
-        <div v-if="wordsList?.length != 0">
+        <div v-else>
           <div
             class="newWords__word"
-            :class="currentSelectedWord._id == item._id ? 'selected' : ''"
             v-for="(item, index) in wordsList"
+            :class="[currentSelectedWord?._id == item._id ? 'selected' : '']"
             :key="index"
             :id="item._id"
             @click="
               currentSelectedWord =
-                currentSelectedWord._id == item._id ? {} : item
+                currentSelectedWord?._id == item._id ? {} : item
             "
           >
             <div class="newWords__info">
@@ -183,7 +183,7 @@
             <p class="newWords__description">
               Description: {{ item.description }}
             </p>
-            <div class="newWords_examples">
+            <div class="newWords_examples" v-if="item.example?.length > 0">
               <p>Examples:</p>
               <p
                 v-for="(itemExample, indexExample) in item.example"
@@ -192,7 +192,21 @@
                 {{ itemExample }}
               </p>
             </div>
+            <div class="newWords__sub">
+              <p>
+                Количество ошибок, допущенных в слове: {{ item.wrongs }}
+                {{ caseOfCount(item.wrongs) }}
+              </p>
+            </div>
           </div>
+          <p>
+            Осталось обычных повторений:
+            {{ 13 - currentSelectedCategory.countOfRepeat }}
+          </p>
+          <p>
+            Осталось реверсивных повторений:
+            {{ 13 - currentSelectedCategory.countOfReverseRepeat }}
+          </p>
         </div>
       </div>
       <p class="newWords__nameCategory">
@@ -231,7 +245,7 @@ export default {
       wordPopupOptions: {},
       categoryPopupOptions: {},
       search: "",
-      cardVisible: false,
+      learnCardVisible: false,
     };
   },
 
@@ -241,7 +255,6 @@ export default {
       if (Object.keys(userInfo)?.length == 0) {
         userInfo = this.getUserInfoFromLocalStorage();
       }
-      //console.log(userInfo);
       return userInfo;
     },
     categoriesList() {
@@ -262,10 +275,22 @@ export default {
     isActiveCategory() {
       if (Object.keys(this.currentSelectedCategory)?.length == 0) return false;
       if (this.currentSelectedCategory?.startLearn == false) return false;
+      let index = this.userInfo.categoriesToLearn.findIndex(
+        (item) => item._id == this.currentSelectedCategory._id
+      );
+      if (index == -1) {
+        return false;
+      }
       return true;
     },
     isHaveCategory() {
       if (Object.keys(this.currentSelectedCategory)?.length == 0) return false;
+      let index = this.userInfo.categoriesToLearn.findIndex(
+        (item) => item._id == this.currentSelectedCategory._id
+      );
+      if (index == -1) {
+        return false;
+      }
       return true;
     },
     wordsList() {
@@ -297,14 +322,39 @@ export default {
         wordsList = wordsList.filter(
           (word) => word.category == this.currentSelectedCategory?._id
         );
+      wordsList = wordsList.map((item) => {
+        let example = [];
+        for (let itemExample of item.example) {
+          if (itemExample == "") continue;
+          example.push(itemExample);
+        }
+        return {
+          _id: item._id,
+          word: item.word,
+          translate: item.translate,
+          transcription: item.transcription,
+          description: item.transcription,
+          example,
+          wrongs: item.wrongs,
+          irregularVerb: item.irregularVerb,
+          category: item.category,
+        };
+      });
 
       return wordsList;
     },
     standartModeButtonColor() {
       if (Object.keys(this.currentSelectedCategory)?.length == 0) return "";
       let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      let index = this.userInfo.categoriesToLearn.findIndex(
+        (item) => item._id == this.currentSelectedCategory._id
+      );
+      if (index == -1) {
+        return "";
+      }
       let nextRepeat = Math.floor(
-        this.currentSelectedCategory?.nextRepeat / (1000 * 60 * 60 * 24)
+        this.userInfo.categoriesToLearn[index]?.nextRepeat /
+          (1000 * 60 * 60 * 24)
       );
       if (now >= nextRepeat) return "red";
       return "green";
@@ -312,8 +362,15 @@ export default {
     reverseModeButtonColor() {
       if (Object.keys(this.currentSelectedCategory)?.length == 0) return "";
       let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      let index = this.userInfo.categoriesToLearn.findIndex(
+        (item) => item._id == this.currentSelectedCategory._id
+      );
+      if (index == -1) {
+        return "";
+      }
       let nextReverseRepeat = Math.floor(
-        this.currentSelectedCategory?.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        this.userInfo.categoriesToLearn[index]?.nextReverseRepeat /
+          (1000 * 60 * 60 * 24)
       );
       if (now >= nextReverseRepeat) return "red";
       return "green";
@@ -376,6 +433,10 @@ export default {
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
         return userInfo;
       }
+    },
+    caseOfCount(wrongs) {
+      if (wrongs == 2 || wrongs == 3 || wrongs == 4) return "раза";
+      return "раз";
     },
     categoryIcon(icon) {
       return require(`../assets/category/${icon}.png`);
@@ -459,6 +520,12 @@ export default {
         this.currentSelectedCategory = {};
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
         this.showInfo("Изменения статуса категории", message);
       }
     },
@@ -484,6 +551,12 @@ export default {
         await this.showInfo("Удаление категории", message);
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
         this.showInfo("Удаление категории", message);
       }
     },
@@ -510,6 +583,12 @@ export default {
         await this.showInfo("Удаление слова", message);
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
         this.showInfo("Удаление слова", message);
       }
     },
@@ -518,7 +597,8 @@ export default {
       let words = this.userInfo.wordsToStudy.filter(
         (item) => item.category == categoryID
       );
-      this.cardVisible = true;
+      words = words.sort(() => Math.random() - 0.5);
+      this.learnCardVisible = true;
       await nextTick();
       this.$refs.learnCard.start(type, words, categoryID);
     },
@@ -529,6 +609,16 @@ export default {
         this.currentSelectedWord = {};
       },
       deep: true,
+    },
+    userInfo() {
+      if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
+      let index = this.userInfo.categoriesToLearn.findIndex(
+        (item) => item._id == this.currentSelectedCategory._id
+      );
+      if (index == -1) {
+        this.currentSelectedCategory = {};
+      }
+      this.currentSelectedCategory = this.userInfo.categoriesToLearn[index];
     },
   },
 };

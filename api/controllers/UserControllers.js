@@ -5,6 +5,7 @@ const secretRefreshToken = process.env.SECRET_REFRESH_TOKEN;
 const secretPassword = process.env.SECRET_PASSWORD_TO_HASH;
 const timeExistForCheckKeys = 5; // В минутах
 const maxSizeAvatar = 1 * 1024 * 1024;
+const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;
 
 import User from '../models/Users.js';
 
@@ -154,7 +155,7 @@ export const login = async (req, res) => {
     }
 
     const timeExistCookies = getTimeExistCoockies();
-    if (!process.env.PRODUCTION) {
+    if (!PRODUCTION) {
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         expires: timeExistCookies,
@@ -839,11 +840,11 @@ function getTokens(userID) {
     },
     secretAccessToken,
     {
-      expiresIn: `${process.env.LIVE_TIME_ACCESS_TOKEN}`,
+      expiresIn: process.env.LIVE_TIME_ACCESS_TOKEN,
     }
   );
   const refreshToken = jwt.sign({ id: userID }, secretRefreshToken, {
-    expiresIn: `${process.env.LIVE_TIME_REFRESH_TOKEN}`,
+    expiresIn: process.env.LIVE_TIME_REFRESH_TOKEN,
   });
   return { accessToken, refreshToken };
 }

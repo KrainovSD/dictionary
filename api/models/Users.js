@@ -11,13 +11,15 @@ const statisticsSchema = new mongoose.Schema(
 const knownWordsShema = new mongoose.Schema({
   word: String,
   translate: String,
-  transcriprion: String,
+  transcription: String,
   description: String,
   example: [String],
   wrongs: Number,
   irregularVerb: Boolean,
   lastRepeat: Number,
-  LastReverseRepeat: Number,
+  lastReverseRepeat: Number,
+  historyOfRepeat: [Number],
+  historyOfReverseRepeat: [Number],
   dateOfKnown: Number,
 });
 const categoriesToLearnShema = new mongoose.Schema({
@@ -47,7 +49,7 @@ const wordsToStudyShema = new mongoose.Schema({
 const wordsToRepeatShema = new mongoose.Schema({
   word: String,
   translate: String,
-  transcriprion: String,
+  transcription: String,
   description: String,
   example: [String],
   irregularVerb: Boolean,

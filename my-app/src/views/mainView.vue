@@ -163,6 +163,7 @@ export default {
       this.signVisible = false;
     },
     logout() {
+      this.userMenuVisible = false;
       this.$api.auth
         .logout()
         .then((res) => {

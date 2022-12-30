@@ -477,15 +477,14 @@ export const addRelevance = async (req, res) => {
       };
     });
     hasRelevances = hasRelevances.map((oldRelevance) => {
-      let millisecondsToDays = 1000 * 60 * 60 * 24;
-      let now = Date.now() / millisecondsToDays;
+      let now = millisecondsToDays(Date.now());
 
       let word = user?.relevance.filter((item) => item.word == oldRelevance)[0];
       let totalCountMeets = word?.dateOfDetected?.length;
 
       let maxDateCheckRelevance = user?.options?.[0]?.maxDateCheckRelevance;
       let countMeetsPerDays = word?.dateOfDetected.filter(
-        (date) => date / millisecondsToDays >= now - maxDateCheckRelevance
+        (date) => millisecondsToDays(date) >= now - maxDateCheckRelevance
       );
       countMeetsPerDays = countMeetsPerDays?.length;
 
@@ -507,6 +506,738 @@ export const addRelevance = async (req, res) => {
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
+  }
+};
+
+export const learnAnswer = async (req, res) => {
+  try {
+    let { categoryID, words } = req.body;
+    let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: 'Не удалось найти информацию о пользователе!' });
+    }
+
+    let activeCategory = isActiveCategory(categoryID, user);
+    if (!activeCategory) {
+      return res.status(400).json({ message: 'Категория не активна!' });
+    }
+
+    let index = user.categoriesToLearn.findIndex(
+      (item) => item._id == categoryID
+    );
+    if (index == -1)
+      return res.status(400).json({
+        message: 'Категории не существует!',
+      });
+
+    let category = user.categoriesToLearn[index];
+    let nextRepeat = millisecondsToDays(category.nextRepeat);
+    if (millisecondsToDays(Date.now()) < nextRepeat)
+      return res.json({
+        message:
+          'День повторения категории не наступил! Прогресс не будет сохранен!',
+      });
+
+    let wordsWithWrong = words.filter((item) => {
+      if (item.wrong && typeof item?.wrong == 'boolean') return true;
+      return false;
+    });
+    if (wordsWithWrong.length > 0) {
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = user.wordsToStudy.filter((item) =>
+        wordsWithWrong.includes(item._id.toString())
+      );
+      return pushWrongsInWords(wordsWithWrong, 'wordsToStudy', req, res);
+    }
+
+    let countOfRepeat = category.countOfRepeat + 1;
+    let countOfReverseRepeat = category.countOfReverseRepeat;
+    if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
+      return pullStudiedCategory(req, res);
+    if (countOfRepeat > 13)
+      return res.json({
+        message:
+          'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!',
+      });
+
+    let nextPattern;
+    if (countOfRepeat == 13) nextPattern = daysToMilliseconds(365);
+    else {
+      nextPattern = daysToMilliseconds(
+        category.regularityToRepeat[countOfRepeat - 1]
+      );
+    }
+    let historyOfRepeat = category.historyOfRepeat;
+    historyOfRepeat.push(Date.now());
+
+    let changeFields = {
+      lastRepeat: Date.now(),
+      countOfRepeat,
+      nextRepeat: nextPattern + Date.now(),
+      historyOfRepeat,
+    };
+    let userInfo = await setElement(
+      'categoriesToLearn',
+      categoryID,
+      changeFields,
+      req.userId
+    );
+    if (!userInfo)
+      return res.status(400).json({
+        message: 'Не удалось выполнить операцию обновления!',
+      });
+
+    if (countOfRepeat == 13)
+      return res.json({
+        message:
+          'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!',
+        user: userInfo,
+      });
+    return res.json({ message: 'Операция выполнена успешно!', user: userInfo });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+export const reLearnAnswer = async (req, res) => {
+  try {
+    let { categoryID, words } = req.body;
+    let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: 'Не удалось найти данные пользователя!' });
+    }
+
+    let activeCategory = isActiveCategory(categoryID, user);
+    if (!activeCategory) {
+      return res.status(400).json({ message: 'Категория не активна!' });
+    }
+
+    let index = user.categoriesToLearn.findIndex(
+      (item) => item._id == categoryID
+    );
+    if (index == -1)
+      return res.status(400).json({
+        message: 'Категория не существует!',
+      });
+
+    let category = user.categoriesToLearn[index];
+    let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
+    if (millisecondsToDays(Date.now()) < nextReverseRepeat)
+      return res.json({
+        message:
+          'День повторения категории не наступил! Прогресс не будет сохранен!',
+      });
+
+    let wordsWithWrong = words.filter((item) => {
+      if (item.wrong && typeof item?.wrong == 'boolean') return true;
+      return false;
+    });
+    if (wordsWithWrong.length > 0) {
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = user.wordsToStudy.filter((item) =>
+        wordsWithWrong.includes(item._id.toString())
+      );
+      return pushWrongsInWords(wordsWithWrong, 'wordsToStudy', req, res);
+    }
+
+    let countOfRepeat = category.countOfRepeat;
+    let countOfReverseRepeat = category.countOfReverseRepeat + 1;
+    if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
+      return pullStudiedCategory(req, res);
+    if (countOfReverseRepeat > 13)
+      return res.json({
+        message:
+          'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!',
+      });
+
+    let nextPattern;
+    if (countOfReverseRepeat == 13) nextPattern = daysToMilliseconds(365);
+    else {
+      nextPattern = daysToMilliseconds(
+        category.regularityToRepeat[countOfReverseRepeat - 1]
+      );
+    }
+    let historyOfReverseRepeat = category.historyOfReverseRepeat;
+    historyOfReverseRepeat.push(Date.now());
+
+    let changeFields = {
+      lastReverseRepeat: Date.now(),
+      countOfReverseRepeat,
+      nextReverseRepeat: nextPattern + Date.now(),
+      historyOfReverseRepeat,
+    };
+    let userInfo = await setElement(
+      'categoriesToLearn',
+      categoryID,
+      changeFields,
+      req.userId
+    );
+    if (!userInfo)
+      return res.status(400).json({
+        message: 'Не удалось выполнить операцию обновления!',
+      });
+
+    if (countOfReverseRepeat == 13)
+      return res.json({
+        message:
+          'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!',
+        user: userInfo,
+      });
+    return res.json({ message: 'Операция выполнена успешно!', user: userInfo });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+const pullStudiedCategory = async (req, res) => {
+  try {
+    let { categoryID } = req.body;
+    let user = await getUserInfo(
+      req.userId,
+      'categoriesToLearn wordsToStudy knownWords'
+    );
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: 'Не удалось найти данные пользователя!' });
+
+    let words = user.wordsToStudy.filter((item) => item.category == categoryID);
+    let wordsName = words.map((item) => item.word);
+    let knownWords = user.knownWords.filter((item) => wordsName.includes(item));
+    if (knownWords.length > 0)
+      return res.status(400).json({
+        message: 'Слово из категории присутствует во вкладке "Изученные"',
+      });
+
+    console.log(categoryID);
+    let userInfo = await pullElement(
+      'categoriesToLearn',
+      categoryID,
+      req.userId
+    );
+    if (!userInfo)
+      return res.status(400).json({ message: 'Не удалось удалить категорию!' });
+
+    let wordsID = words.map((item) => item._id);
+    console.log(wordsID);
+    userInfo = await multiPullElement('wordsToStudy', wordsID, req.userId);
+    if (!userInfo)
+      return res.status(400).json({ message: 'Не удалось удалить слова!' });
+
+    let newWords = words.map((item) => {
+      return {
+        word: item.word,
+        translate: item.translate,
+        transcription: item.transcription,
+        description: item.description,
+        example: item.example,
+        wrongs: item.wrongs,
+        irregularVerb: item.irregularVerb,
+        _id: item._id,
+        dateOfKnown: Date.now(),
+        lastRepeat: 0,
+        lastReverseRepeat: 0,
+        historyOfRepeat: [],
+        historyOfReverseRepeat: [],
+      };
+    });
+    console.log(newWords);
+    userInfo = await multiPushNewElement('knownWords', newWords, req.userId);
+    if (!userInfo)
+      return res
+        .status(400)
+        .json({ message: 'Не удалось перенести слова из категории!' });
+
+    res.json({
+      message:
+        "Категория успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!",
+      user: userInfo,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+export const knownAnswer = async (req, res) => {
+  try {
+    let { words } = req.body;
+    let user = await getUserInfo(req.userId, 'knownWords');
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: 'Информация о пользователе не найдена!' });
+
+    let wordsWithWrong = words.filter((item) => {
+      if (item.wrong && typeof item?.wrong == 'boolean') return true;
+      return false;
+    });
+    if (wordsWithWrong.length > 0) {
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = user.knownWords.filter((item) =>
+        wordsWithWrong.includes(item._id.toString())
+      );
+      return pushWrongsInWords(wordsWithWrong, 'knownWords', req, res);
+    }
+
+    words = words.filter((item) => !item.wrong);
+    let updateStatistic = await User.findOneAndUpdate(
+      { _id: req.userId },
+      { $set: { [`statistics.0.lastRepeatKnownWords`]: Date.now() } },
+      { new: true, rawResult: true }
+    );
+    if (updateStatistic.ok == 0)
+      return res.status(400).json({
+        message: `Не удалось обновить статистику!`,
+      });
+
+    words = words.map((item) => item.word);
+    let multiSetOptions = [];
+    for (let word of words) {
+      let elementID = word;
+      let index = user.knownWords.findIndex((item) => item._id == word);
+      if (index == -1) continue;
+      let historyOfRepeat = user.knownWords[index].historyOfRepeat;
+      historyOfRepeat.push(Date.now());
+
+      let changeFields = {
+        lastRepeat: Date.now(),
+        historyOfRepeat,
+      };
+
+      multiSetOptions.push({ elementID, changeFields });
+    }
+    let userInfo = await multiSetElement(
+      'knownWords',
+      multiSetOptions,
+      req.userId
+    );
+    if (!userInfo)
+      return res.status(400).json({
+        message: `Не удалось обновить информацию о словах!`,
+      });
+
+    res.json({ message: 'Слова успешно повторены!', user: userInfo });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+export const reKnownAnswer = async (req, res) => {
+  try {
+    let { words } = req.body;
+    let user = await getUserInfo(req.userId, 'knownWords');
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: 'Информация о пользователе не найдена!' });
+
+    let wordsWithWrong = words.filter(
+      (item) => item.wrong && typeof item?.wrong == 'boolean'
+    );
+    if (wordsWithWrong.length > 0) {
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = user.knownWords.filter((item) =>
+        wordsWithWrong.includes(item._id.toString())
+      );
+      return pushWrongsInWords(wordsWithWrong, 'knownWords', req, res);
+    }
+
+    words = words.filter((item) => !item.wrong);
+    let updateStatistic = await User.findOneAndUpdate(
+      { _id: req.userId },
+      { $set: { [`statistics.0.lastReverseRepeatKnownWords`]: Date.now() } },
+      { new: true, rawResult: true }
+    );
+    if (updateStatistic.ok == 0)
+      return res.status(400).json({
+        message: `Не удалось обновить статистику!`,
+      });
+
+    words = words.map((item) => item.word);
+    let multiSetOptions = [];
+    for (let word of words) {
+      let elementID = word;
+      let index = user.knownWords.findIndex((item) => item._id == word);
+      if (index == -1) continue;
+      let historyOfReverseRepeat =
+        user.knownWords[index].historyOfReverseRepeat;
+      historyOfReverseRepeat.push(Date.now());
+
+      let changeFields = {
+        lastReverseRepeat: Date.now(),
+        historyOfReverseRepeat,
+      };
+
+      multiSetOptions.push({ elementID, changeFields });
+    }
+    let userInfo = await multiSetElement(
+      'knownWords',
+      multiSetOptions,
+      req.userId
+    );
+    if (!userInfo)
+      return res.status(400).json({
+        message: `Не удалось обновить информацию о словах!`,
+      });
+
+    res.json({ message: 'Слова успешно повторены!', user: userInfo });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+export const repeatAnswer = async (req, res) => {
+  try {
+    let { words } = req.body;
+    let message = 'Обучение пройдено успешно!';
+    let user = await getUserInfo(req.userId, 'wordsToRepeat options');
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: 'Информация о пользователе не найдена!' });
+
+    let wordsWithWrong = words.filter(
+      (item) => item.wrong && typeof item?.wrong == 'boolean'
+    );
+    wordsWithWrong = wordsWithWrong.map((item) => item.word);
+    wordsWithWrong = user.wordsToRepeat.filter((item) =>
+      wordsWithWrong.includes(item._id.toString())
+    );
+    wordsWithWrong = wordsWithWrong.map((item) => item.word);
+
+    if (wordsWithWrong.length > 0) {
+      wordsWithWrong = wordsWithWrong.join(', ');
+      message += ` В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!`;
+    }
+
+    words = words.filter((item) => !item.wrong);
+    let regularityToRepeat = user.options[0].regularityToRepeat;
+    let finishedWords = [];
+    let standartFinishedWords = [];
+    let multiSetOptions = [];
+    for (let item of words) {
+      let elementID = item.word;
+      let index = user.wordsToRepeat.findIndex((item) => item._id == elementID);
+      if (index == -1) continue;
+
+      let countOfReverseRepeat = user.wordsToRepeat[index].countOfReverseRepeat;
+      let countOfRepeat = user.wordsToRepeat[index].countOfRepeat + 1;
+      if (countOfReverseRepeat >= 9 && countOfRepeat >= 9) {
+        finishedWords.push(elementID);
+        continue;
+      }
+
+      let nextRepeat;
+      if (countOfRepeat == 9) {
+        standartFinishedWords.push(elementID);
+        nextRepeat = daysToMilliseconds(365) + Date.now();
+      } else
+        nextRepeat =
+          daysToMilliseconds(regularityToRepeat[countOfRepeat - 1]) +
+          Date.now();
+
+      let historyOfRepeat = user.wordsToRepeat[index].historyOfRepeat;
+      historyOfRepeat.push(Date.now());
+
+      let changeFields = {
+        lastRepeat: Date.now(),
+        nextRepeat,
+        historyOfRepeat,
+        countOfRepeat,
+      };
+      multiSetOptions.push({ elementID, changeFields });
+    }
+
+    let userInfo;
+    if (multiSetOptions.length > 0) {
+      userInfo = await multiSetElement(
+        'wordsToRepeat',
+        multiSetOptions,
+        req.userId
+      );
+      if (!userInfo)
+        return res.status(400).json({ message: 'Не удалось обработать слова' });
+    }
+
+    if (finishedWords.length > 0) {
+      userInfo = await multiPullElement(
+        'wordsToRepeat',
+        finishedWords,
+        req.userId
+      );
+      if (!userInfo)
+        return res.status(400).json({ message: 'Не удалось обработать слова' });
+    }
+
+    if (standartFinishedWords.length > 0) {
+      standartFinishedWords = user.wordsToRepeat.filter((item) =>
+        standartFinishedWords.includes(item._id.toString())
+      );
+      standartFinishedWords = standartFinishedWords.map((item) => item.word);
+      standartFinishedWords = standartFinishedWords.join(', ');
+      message += ` Слова, в которых закончился полный цикл обычных повторений: ${standartFinishedWords}. Закончите для этих слов цикл реверсивных повторений, чтобы убрать их из категории "Повторяемые"!`;
+    }
+
+    if (finishedWords.length > 0) {
+      finishedWords = user.wordsToRepeat.filter((item) =>
+        finishedWords.includes(item._id.toString())
+      );
+      finishedWords = finishedWords.map((item) => item.word);
+      finishedWords = finishedWords.join(', ');
+      message += ` Слова с полностью завершенными циклами повторений обоих типов: ${finishedWords}! Эти слова были удалены их категории "Повторяемые"`;
+    }
+
+    res.json({
+      message,
+      user: userInfo,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+export const reRepeatAnswer = async (req, res) => {
+  try {
+    let { words } = req.body;
+    let message = 'Обучение пройдено успешно!';
+    let user = await getUserInfo(req.userId, 'wordsToRepeat options');
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: 'Информация о пользователе не найдена!' });
+
+    let wordsWithWrong = words.filter(
+      (item) => item.wrong && typeof item?.wrong == 'boolean'
+    );
+    wordsWithWrong = wordsWithWrong.map((item) => item.word);
+    wordsWithWrong = user.wordsToRepeat.filter((item) =>
+      wordsWithWrong.includes(item._id.toString())
+    );
+    wordsWithWrong = wordsWithWrong.map((item) => item.word);
+
+    if (wordsWithWrong.length > 0) {
+      wordsWithWrong = wordsWithWrong.join(', ');
+      message += ` В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!`;
+    }
+
+    words = words.filter((item) => !item.wrong);
+    let regularityToRepeat = user.options[0].regularityToRepeat;
+    let finishedWords = [];
+    let reverseFinishedWords = [];
+    let multiSetOptions = [];
+    for (let item of words) {
+      let elementID = item.word;
+      let index = user.wordsToRepeat.findIndex((item) => item._id == elementID);
+      if (index == -1) continue;
+
+      let countOfReverseRepeat =
+        user.wordsToRepeat[index].countOfReverseRepeat + 1;
+      let countOfRepeat = user.wordsToRepeat[index].countOfRepeat;
+      if (countOfReverseRepeat >= 9 && countOfRepeat >= 9) {
+        finishedWords.push(elementID);
+        continue;
+      }
+
+      let nextReverseRepeat;
+      if (countOfReverseRepeat == 9) {
+        reverseFinishedWords.push(elementID);
+        nextReverseRepeat = daysToMilliseconds(365) + Date.now();
+      } else
+        nextReverseRepeat =
+          daysToMilliseconds(regularityToRepeat[countOfReverseRepeat - 1]) +
+          Date.now();
+
+      let historyOfReverseRepeat =
+        user.wordsToRepeat[index].historyOfReverseRepeat;
+      historyOfReverseRepeat.push(Date.now());
+
+      let changeFields = {
+        lastReverseRepeat: Date.now(),
+        nextReverseRepeat,
+        historyOfReverseRepeat,
+        countOfReverseRepeat,
+      };
+      multiSetOptions.push({ elementID, changeFields });
+    }
+
+    let userInfo;
+    if (multiSetOptions.length > 0) {
+      userInfo = await multiSetElement(
+        'wordsToRepeat',
+        multiSetOptions,
+        req.userId
+      );
+      if (!userInfo)
+        return res.status(400).json({ message: 'Не удалось обработать слова' });
+    }
+
+    if (finishedWords.length > 0) {
+      userInfo = await multiPullElement(
+        'wordsToRepeat',
+        finishedWords,
+        req.userId
+      );
+      if (!userInfo)
+        return res.status(400).json({ message: 'Не удалось обработать слова' });
+    }
+
+    if (reverseFinishedWords.length > 0) {
+      reverseFinishedWords = user.wordsToRepeat.filter((item) =>
+        reverseFinishedWords.includes(item._id.toString())
+      );
+      reverseFinishedWords = reverseFinishedWords.map((item) => item.word);
+      reverseFinishedWords = reverseFinishedWords.join(', ');
+      message += ` Слова, в которых закончился полный цикл реверсивных повторений: ${reverseFinishedWords}. Закончите для этих слов цикл обычных повторений, чтобы убрать их из категории "Повторяемые"!`;
+    }
+
+    if (finishedWords.length > 0) {
+      finishedWords = user.wordsToRepeat.filter((item) =>
+        finishedWords.includes(item._id.toString())
+      );
+      finishedWords = finishedWords.map((item) => item.word);
+      finishedWords = finishedWords.join(', ');
+      message += ` Слова с полностью завершенными циклами повторений обоих типов: ${finishedWords}! Эти слова были удалены их категории "Повторяемые"`;
+    }
+
+    res.json({
+      message,
+      user: userInfo,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+const pushWrongsInWords = async (words, typeWords, req, res) => {
+  try {
+    let message =
+      'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
+    let user = await getUserInfo(req.userId, `options`);
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: 'Не удалось найти информацию о пользователе!' });
+    const maxWrongs = user.options[0].countWrongsToAddToRepeat;
+
+    let multiSetOptions = [];
+    let wordsForRepeat = [];
+    for (let item of words) {
+      let wrongs = item.wrongs + 1;
+      if (wrongs >= maxWrongs) {
+        wordsForRepeat.push(item._id.toString());
+        wrongs = 0;
+      }
+      let elementID = item._id.toString();
+      let changeFields = {
+        wrongs,
+      };
+      multiSetOptions.push({ elementID, changeFields });
+    }
+
+    if (wordsForRepeat.length > 0) {
+      let pushWordInRepeat = await pushWordsInRepeat(wordsForRepeat, req);
+      if (!pushWordInRepeat)
+        return res.status(400).json({
+          message: 'Не удалось добавить слова в категорию повторения!',
+        });
+      wordsForRepeat = words.filter((item) =>
+        wordsForRepeat.includes(item._id.toString())
+      );
+      wordsForRepeat = wordsForRepeat.map((item) => item.word);
+      wordsForRepeat = wordsForRepeat.join(', ');
+      message += ` Следующие слова были поставлены на повторения из за большого количество накопившихся ошибок: ${wordsForRepeat}!`;
+    }
+
+    let userInfo;
+    if (multiSetOptions.length > 0) {
+      userInfo = await multiSetElement(typeWords, multiSetOptions, req.userId);
+      console.log(userInfo);
+      if (!userInfo)
+        return res.status(400).json({
+          message: 'Не удалось увеличить количество ошибок на словах!',
+        });
+    }
+
+    return res.json({
+      message,
+      user: userInfo,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+const pushWordsInRepeat = async (wordsWithWrong, req) => {
+  try {
+    let user = await getUserInfo(
+      req.userId,
+      'wordsToStudy knownWords wordsToRepeat'
+    );
+    if (!user) false;
+
+    let hasWordsInRepeat = user.wordsToRepeat.filter((item) =>
+      wordsWithWrong.includes(item._id.toString())
+    );
+    if (hasWordsInRepeat.length > 0) {
+      let hasWordsInRepeatID = hasWordsInRepeat.map((item) => item._id);
+      let pullOldItem = await multiPullElement(
+        'wordsToRepeat',
+        hasWordsInRepeatID,
+        req.userId
+      );
+      if (!pullOldItem) false;
+    }
+
+    let allWords = [...user.wordsToStudy, ...user.knownWords];
+    allWords = allWords.filter((item) =>
+      wordsWithWrong.includes(item._id.toString())
+    );
+    let newWords = allWords.map((item) => {
+      return {
+        word: item.word,
+        translate: item.translate,
+        transcription: item.transcription,
+        description: item.description,
+        example: item.example,
+        irregularVerb: item.irregularVerb,
+        _id: item._id,
+        lastRepeat: 0,
+        lastReverseRepeat: 0,
+        nextRepeat: 0,
+        nextReverseRepeat: 0,
+        historyOfRepeat: [],
+        historyOfReverseRepeat: [],
+        countOfRepeat: 0,
+        countOfReverseRepeat: 0,
+      };
+    });
+
+    let push = await multiPushNewElement('wordsToRepeat', newWords, req.userId);
+    if (!push) return false;
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
   }
 };
 
@@ -628,12 +1359,11 @@ async function multiSetElement(field, multiSetOptions, userID) {
   try {
     let success = true;
     for (let multiSetOption of multiSetOptions) {
-      if (!success) return;
+      if (!success) return false;
       let setOption = {};
       for (let key in multiSetOption?.changeFields) {
         setOption[`${field}.$.${key}`] = multiSetOption?.changeFields[key];
       }
-      console.log(setOption);
       let query = { _id: userID, [`${field}._id`]: multiSetOption?.elementID };
       let action = { $set: setOption };
       let option = { upsert: false };
@@ -642,7 +1372,9 @@ async function multiSetElement(field, multiSetOptions, userID) {
       if (user.modifiedCount == 0) {
         success = false;
       }
+      console.log(user);
     }
+
     if (success) {
       success = await User.findOne({ _id: userID });
       success = getUserInfoFromDoc(success._doc);
@@ -677,7 +1409,7 @@ async function multiSetOldRelevances(words, userID) {
   }
 }
 
-/* GET ALLOWED FIELDS */
+/* TRANSFORM DATA */
 function getUserInfoFromDoc(doc) {
   let user = doc;
   let {
@@ -709,6 +1441,14 @@ function replaceEmailToStar(email) {
     star += '*';
   }
   return email.replace(email.slice(start, end), star);
+}
+function millisecondsToDays(millisecond) {
+  let day = 1000 * 60 * 60 * 24;
+  return Math.floor(millisecond / day);
+}
+function daysToMilliseconds(days) {
+  let day = 1000 * 60 * 60 * 24;
+  return days * day;
 }
 
 /* VALIDATION */

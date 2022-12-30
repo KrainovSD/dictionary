@@ -475,6 +475,30 @@ export const relevanceValidation = [
     return true;
   }),
 ];
+export const answerValidation = [
+  body('words.*.word')
+    .trim()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Неверный формат ответа!')
+    .isString()
+    .withMessage('Неверный формат ответа!'),
+  body('words.*.wrong')
+    .optional()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Неверный формат ответа!')
+    .isBoolean()
+    .withMessage('Неверный формат ответа!'),
+  body('categoryID')
+    .trim()
+    .custom((value) => {
+      if (value != 'undefined' && typeof value != 'string')
+        throw new Error('Неверный формат ответа!');
+      if (value == '') throw new Error('Неверный формат ответа!');
+      return true;
+    }),
+];
 
 export const postCreateValidation = [
   body('title', 'Введите заголовок статьи').isLength({ min: 3 }).isString(),

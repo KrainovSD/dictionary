@@ -30,6 +30,7 @@
             placeholder="NickName"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="sendData"
           />
         </div>
 
@@ -42,6 +43,7 @@
             placeholder="UserName"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="sendData"
           />
         </div>
 
@@ -54,6 +56,7 @@
             placeholder="Email"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="sendData"
           />
         </div>
 
@@ -66,6 +69,7 @@
             placeholder="Password"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="sendData"
           />
         </div>
 
@@ -78,6 +82,7 @@
             placeholder="Password"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="sendData"
           />
         </div>
 
@@ -90,6 +95,7 @@
             placeholder="Repeat Password"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="sendData"
           />
         </div>
 

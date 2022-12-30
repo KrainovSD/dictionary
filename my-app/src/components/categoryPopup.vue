@@ -40,6 +40,7 @@
             fontSize="16"
             :errors="errors"
             placeholder="Name"
+            @keyup.enter="operationWithCategory"
           />
         </div>
 
@@ -79,6 +80,7 @@
               :errors="errors"
               field="regularityToRepeat"
               fontSize="18"
+              @keyup.enter="operationWithCategory"
             />
           </div>
         </div>
@@ -88,14 +90,14 @@
         >
           <confirm-button
             text="Добавить категорию"
-            @click="operationWithCategory('add')"
+            @click="operationWithCategory"
             fontSize="14"
           />
         </div>
         <div class="newPassword__confirmContainer" v-else>
           <confirm-button
             text="Редактировать категорию"
-            @click="operationWithCategory('update')"
+            @click="operationWithCategory"
             fontSize="14"
           />
         </div>
@@ -284,7 +286,7 @@ export default {
           delete this.errors[field];
       }
     },
-    operationWithCategory(type) {
+    operationWithCategory() {
       let form = {
         name: this.name,
         icon: this.icon,
@@ -295,8 +297,8 @@ export default {
       form.regularityToRepeat = this.regularityToRepeat.map((x) => +x);
 
       if (Object.keys(this.errors).length === 0) {
-        if (type == "add") this.addCategory(form);
-        if (type == "update") this.updateCaregory(form);
+        if (this.categoryPopupType == "add") this.addCategory(form);
+        if (this.categoryPopupType == "update") this.updateCaregory(form);
       }
     },
     async addCategory(form) {
@@ -315,6 +317,12 @@ export default {
         this.closePopup();
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
         this.showInfo("Добавление категории", message);
       }
     },
@@ -335,6 +343,12 @@ export default {
         this.closePopup();
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
         this.showInfo("Редактирование категории", message);
       }
     },

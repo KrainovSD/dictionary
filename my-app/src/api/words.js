@@ -25,22 +25,22 @@ export default function (instance, instanceToken) {
       return instanceToken.post("/relevance", data);
     },
     pushLearnAnswers(data) {
-      return instanceToken.post("/test", data);
+      return instanceToken.post("/learnAnswer", data);
     },
     pushReLearnAnswers(data) {
-      return instanceToken.post("/test", data);
+      return instanceToken.post("/reLearnAnswer", data);
     },
     pushKnownAnswers(data) {
-      return instanceToken.post("/test", data);
+      return instanceToken.post("/knownAnswer", data);
     },
     pushReKnownAnswers(data) {
-      return instanceToken.post("/test", data);
+      return instanceToken.post("/reKnownAnswer", data);
     },
     pushRepeatAnswers(data) {
-      return instanceToken.post("/test", data);
+      return instanceToken.post("/repeatAnswer", data);
     },
     pushReRepeatAnswers(data) {
-      return instanceToken.post("/test", data);
+      return instanceToken.post("/reRepeatAnswer", data);
     },
   };
 }

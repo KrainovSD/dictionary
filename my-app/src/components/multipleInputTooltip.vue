@@ -13,6 +13,8 @@
       autocomplete="off"
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
+      @keyup.enter="$emit('onEnter')"
+      @keyup.esc="$emit('onEsc')"
       @focus="focusInput = true"
       @focusout="focusInput = false"
       @keydown="enterNumber"
@@ -28,7 +30,7 @@
 
 <script>
 export default {
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "onEnter", "onEsc"],
   props: {
     modelValue: String,
     field: String,

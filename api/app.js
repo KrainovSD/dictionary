@@ -9,7 +9,7 @@ app.use(cookieParser()); // req.cookies
 
 import mongoose from 'mongoose';
 mongoose
-  .connect(`mongodb://${process.env.DB_HOST}/${process.env.DB_HOST}`)
+  .connect(`mongodb://${process.env.DB_HOST}/${process.env.DB_NAME}`)
   .then(() => console.log('server has connected to MongoDB'))
   .catch((err) => {
     console.log(err);
@@ -34,7 +34,8 @@ app.listen(port, host, (err) => {
   console.log(`Server has started on port ${port} and host ${host}`);
 });
 
-if (!process.env.PRODUCTION) {
+const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;
+if (!PRODUCTION) {
   app.use((request, response, next) => {
     //res.set('Access-Control-Allow-Credentials', 'true') - разрешение на куки
     response.header({
@@ -61,6 +62,7 @@ import {
   wordValidation,
   relevanceValidation,
   messageValidation,
+  answerValidation,
 } from './validations.js';
 import {
   handleValidationErrors,
@@ -179,6 +181,48 @@ app.post(
   relevanceValidation,
   handleValidationErrors,
   WordController.addRelevance
+);
+app.post(
+  '/learnAnswer',
+  checkAuth,
+  answerValidation,
+  handleValidationErrors,
+  WordController.learnAnswer
+);
+app.post(
+  '/reLearnAnswer',
+  checkAuth,
+  answerValidation,
+  handleValidationErrors,
+  WordController.reLearnAnswer
+);
+app.post(
+  '/knownAnswer',
+  checkAuth,
+  answerValidation,
+  handleValidationErrors,
+  WordController.knownAnswer
+);
+app.post(
+  '/reKnownAnswer',
+  checkAuth,
+  answerValidation,
+  handleValidationErrors,
+  WordController.reKnownAnswer
+);
+app.post(
+  '/repeatAnswer',
+  checkAuth,
+  answerValidation,
+  handleValidationErrors,
+  WordController.repeatAnswer
+);
+app.post(
+  '/reRepeatAnswer',
+  checkAuth,
+  answerValidation,
+  handleValidationErrors,
+  WordController.reRepeatAnswer
 );
 
 process.on('uncaughtException', (err) => {
