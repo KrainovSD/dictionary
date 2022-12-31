@@ -14,12 +14,7 @@
     />
 
     <div class="categoryPopup">
-      <img
-        src="@/assets/close.png"
-        alt=""
-        class="sign__closeButton"
-        @click.stop="closePopup"
-      />
+      <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">
         <h1 class="sign__header" v-if="categoryPopupType == 'add'">
           Новая категория
@@ -112,6 +107,7 @@ import confirmButton from "../components/confirmButton.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 import categoryIcon from "../components/categoryIcon.vue";
 import infoPopup from "../components/infoPopup.vue";
+import closeModalButton from "../components/closeModalButton.vue";
 export default {
   components: {
     inputTooltip,
@@ -119,6 +115,7 @@ export default {
     multipleInputTooltip,
     categoryIcon,
     infoPopup,
+    closeModalButton,
   },
   emits: ["close"],
   props: {
@@ -163,6 +160,7 @@ export default {
 
   methods: {
     closePopup() {
+      if (this.addIconVisible == true) return;
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
         setTimeout(() => {

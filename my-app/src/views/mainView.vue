@@ -98,6 +98,10 @@ export default {
   },
   mounted() {
     if (!this.auth) this.checkAuth();
+    document.addEventListener("keypress", this.validateKeyPress);
+  },
+  beforeUnmount() {
+    document.removeEventListener("keypress", this.validateKeyPress);
   },
   computed: {
     auth() {
@@ -119,6 +123,9 @@ export default {
     },
   },
   methods: {
+    validateKeyPress(event) {
+      if (event.target.tagName == "BUTTON") event.preventDefault();
+    },
     checkAuth() {
       this.$api.auth
         .checkAuth()
@@ -126,6 +133,7 @@ export default {
           let user = res.data.user;
           let token = res.data.token;
           this.$store.commit("setUserInfo", user);
+          localStorage.setItem("userInfo", JSON.stringify(user));
           this.$store.commit("setAccessToken", token);
         })
         .catch(() => {

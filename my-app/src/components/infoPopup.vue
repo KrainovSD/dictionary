@@ -32,7 +32,14 @@ export default {
     };
   },
   methods: {
+    keyBoardEvent(event) {
+      if (this.isVisible == false) return;
+      let code = event.keyCode;
+      if (code == 13) return this.closePopup();
+      if (code == 27) return this.closePopup();
+    },
     closePopup() {
+      document.removeEventListener("keyup", this.keyBoardEvent);
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
         setTimeout(() => {
@@ -47,6 +54,7 @@ export default {
       this.header = header;
       this.isVisible = true;
       let resolve, reject;
+      document.addEventListener("keyup", this.keyBoardEvent);
 
       const infoPromise = new Promise((confirm, cancel) => {
         resolve = confirm;

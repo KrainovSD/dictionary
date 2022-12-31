@@ -26,6 +26,7 @@
 
 <script>
 import confirmButton from "../components/confirmButton.vue";
+
 export default {
   components: { confirmButton },
   confirmController: null,
@@ -36,8 +37,17 @@ export default {
       isVisible: false,
     };
   },
+
   methods: {
+    keyBoardEvent(event) {
+      if (this.isVisible == false) return;
+      let code = event.keyCode;
+      if (code == 13) return this._confirm();
+      if (code == 27) return this._cancel();
+    },
     closePopup() {
+      if (this.isVisible == false) return;
+      document.removeEventListener("keyup", this.keyBoardEvent);
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
         setTimeout(() => {
@@ -50,6 +60,7 @@ export default {
       this.title = title;
       this.header = header;
       let resolve, reject;
+      document.addEventListener("keyup", this.keyBoardEvent);
 
       const confirmPromise = new Promise((confirm, cancel) => {
         resolve = confirm;

@@ -1153,6 +1153,10 @@ body {
   padding: 0.71429rem;
 }
 
+.repeatWords__word.red {
+  background-color: #fddddc;
+}
+
 .repeatWords__info {
   display: flex;
   font-size: 1.28571rem;
@@ -1531,15 +1535,7 @@ body {
 }
 
 .sign__closeButton {
-  width: 1rem;
-  height: 1rem;
   margin: 0.35714rem 0.35714rem 0 auto;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.sign__closeButton:hover {
-  transform: scale(1.2, 1.2);
 }
 
 .sign__container {

@@ -38,7 +38,7 @@ export default function () {
       let { id, name, icon, regularityToRepeat } = data;
       let userInfo = getUserInfoFromLocalStorage();
 
-      let activeCategory = isActiveCaregory(id, userInfo);
+      let activeCategory = isActiveCategory(id, userInfo);
       if (activeCategory)
         throw new Error("Категория уже поставлена на изучение!");
 
@@ -101,7 +101,7 @@ export default function () {
       if (irregularVerb) word = fixIrregularVerb(word);
       let userInfo = getUserInfoFromLocalStorage();
 
-      let statusCategory = isActiveCaregory(category, userInfo);
+      let statusCategory = isActiveCategory(category, userInfo);
       if (statusCategory)
         throw new Error(
           "Категория, в которую вы пытаетесь добавить слово, уже поставлена на изучение!"
@@ -196,7 +196,7 @@ export default function () {
         throw new Error(
           `В категории менее ${countWordsToActiveCategory} слов!`
         );
-      let activeCategory = isActiveCaregory(id, userInfo);
+      let activeCategory = isActiveCategory(id, userInfo);
       if (activeCategory)
         throw new Error(`Категория уже поставлена на изучение!`);
 
@@ -314,24 +314,402 @@ export default function () {
       return { message, words: addedWords };
     },
     pushLearnAnswers(data) {
-      return data;
+      let { categoryID, words } = data;
+      let user = getUserInfoFromLocalStorage();
+
+      let activeCategory = isActiveCategory(categoryID, user);
+      if (!activeCategory) throw new Error("Категория не активна!");
+
+      let index = user.categoriesToLearn.findIndex(
+        (item) => item._id == categoryID && item?.offline != "delete"
+      );
+      if (index == -1) throw new Error("Категория не существует!");
+
+      let category = user.categoriesToLearn[index];
+      let nextRepeat = millisecondsToDays(category.nextRepeat);
+      if (millisecondsToDays(Date.now()) < nextRepeat)
+        throw new Error(
+          "День повторения категории не наступил! Прогресс не будет сохранен!"
+        );
+
+      let wordsWithWrong = words.filter(
+        (item) => item.wrong && typeof item?.wrong == "boolean"
+      );
+      if (wordsWithWrong.length > 0) {
+        wordsWithWrong = wordsWithWrong.map((item) => item.word);
+        wordsWithWrong = user.wordsToStudy.filter((item) =>
+          wordsWithWrong.includes(item._id.toString())
+        );
+        let pushWrongs = pushWrongsInWords(
+          wordsWithWrong,
+          "wordsToStudy",
+          user
+        );
+        wordsWithWrong = wordsWithWrong.map((item) => item.word);
+        wordsWithWrong = wordsWithWrong.join(", ");
+        let message =
+          "В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!";
+        message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!`;
+        if (!pushWrongs.status) throw new Error(pushWrongs.message);
+        if (pushWrongs.message.length > 0) message += ` ${pushWrongs.message}`;
+        localStorage.setItem("userInfo", JSON.stringify(pushWrongs.user));
+        store.commit("resetAuth");
+        return { message };
+      }
+      /* Проверка на количество повторений категории */
+      let countOfRepeat = category.countOfRepeat + 1;
+      let countOfReverseRepeat = category.countOfReverseRepeat;
+      if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
+        return pullStudiedCategory(categoryID, user);
+
+      /* Сбор новых параметров категории*/
+      let nextPattern;
+      if (countOfRepeat >= 13) nextPattern = daysToMilliseconds(365);
+      else {
+        nextPattern = daysToMilliseconds(
+          category.regularityToRepeat[countOfRepeat - 1]
+        );
+      }
+      let historyOfRepeat = category.historyOfRepeat;
+      historyOfRepeat.push(Date.now());
+
+      let changeFields = {
+        lastRepeat: Date.now(),
+        countOfRepeat,
+        nextRepeat: nextPattern + Date.now(),
+        historyOfRepeat,
+      };
+      /* Изменение параметров категории */
+      user = setElement("categoriesToLearn", categoryID, changeFields, user);
+
+      let message = "";
+      if (countOfRepeat >= 13)
+        message =
+          "Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!";
+      else message = "Обычное повторение категории успешно завершено!";
+
+      localStorage.setItem("userInfo", JSON.stringify(user));
+      store.commit("resetAuth");
+      return { message };
     },
     pushReLearnAnswers(data) {
-      return data;
+      let { categoryID, words } = data;
+      let user = getUserInfoFromLocalStorage();
+
+      let activeCategory = isActiveCategory(categoryID, user);
+      if (!activeCategory) throw new Error("Категория не активна!");
+
+      let index = user.categoriesToLearn.findIndex(
+        (item) => item._id == categoryID && item?.offline != "delete"
+      );
+      if (index == -1) throw new Error("Категория не существует!");
+
+      let category = user.categoriesToLearn[index];
+      let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
+      if (millisecondsToDays(Date.now()) < nextReverseRepeat)
+        throw new Error(
+          "День повторения категории не наступил! Прогресс не будет сохранен!"
+        );
+
+      let wordsWithWrong = words.filter(
+        (item) => item.wrong && typeof item?.wrong == "boolean"
+      );
+      if (wordsWithWrong.length > 0) {
+        wordsWithWrong = wordsWithWrong.map((item) => item.word);
+        wordsWithWrong = user.wordsToStudy.filter((item) =>
+          wordsWithWrong.includes(item._id.toString())
+        );
+        let pushWrongs = pushWrongsInWords(
+          wordsWithWrong,
+          "wordsToStudy",
+          user
+        );
+        wordsWithWrong = wordsWithWrong.map((item) => item.word);
+        wordsWithWrong = wordsWithWrong.join(", ");
+        let message =
+          "В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!";
+        message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!`;
+        if (!pushWrongs.status) throw new Error(pushWrongs.message);
+        if (pushWrongs.message.length > 0) message += ` ${pushWrongs.message}`;
+        localStorage.setItem("userInfo", JSON.stringify(pushWrongs.user));
+        store.commit("resetAuth");
+        return { message };
+      }
+      /* Проверка на количество повторений категории */
+      let countOfRepeat = category.countOfRepeat;
+      let countOfReverseRepeat = category.countOfReverseRepeat + 1;
+      if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
+        return pullStudiedCategory(categoryID, user);
+      /* Сбор новых параметров категории*/
+      let nextPattern;
+      if (countOfReverseRepeat >= 13) nextPattern = daysToMilliseconds(365);
+      else {
+        nextPattern = daysToMilliseconds(
+          category.regularityToRepeat[countOfReverseRepeat - 1]
+        );
+      }
+      let historyOfReverseRepeat = category.historyOfReverseRepeat;
+      historyOfReverseRepeat.push(Date.now());
+
+      let changeFields = {
+        lastReverseRepeat: Date.now(),
+        countOfReverseRepeat,
+        nextReverseRepeat: nextPattern + Date.now(),
+        historyOfReverseRepeat,
+      };
+      /* Изменение параметров категории */
+      user = setElement("categoriesToLearn", categoryID, changeFields, user);
+
+      let message = "";
+      if (countOfReverseRepeat >= 13)
+        message =
+          "Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!";
+      else message = "Реверсивное повторение категории успешно завершено!";
+
+      localStorage.setItem("userInfo", JSON.stringify(user));
+      store.commit("resetAuth");
+      return { message };
     },
     pushKnownAnswers(data) {
-      return data;
+      console.log(data);
+      let userInfo = getUserInfoFromLocalStorage();
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      store.commit("resetAuth");
+      return { message: "Операция успешно выполнена!" };
     },
     pushReKnownAnswers(data) {
-      return data;
+      console.log(data);
+      let userInfo = getUserInfoFromLocalStorage();
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      store.commit("resetAuth");
+      return { message: "Операция успешно выполнена!" };
     },
     pushRepeatAnswers(data) {
-      return data;
+      console.log(data);
+      let userInfo = getUserInfoFromLocalStorage();
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      store.commit("resetAuth");
+      return { message: "Операция успешно выполнена!" };
     },
     pushReRepeatAnswers(data) {
-      return data;
+      console.log(data);
+      let userInfo = getUserInfoFromLocalStorage();
+      userInfo = setSignature(userInfo);
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      store.commit("resetAuth");
+      return { message: "Операция успешно выполнена!" };
     },
   };
+}
+function pullStudiedCategory(categoryID, user) {
+  /* Проверка нет ли слов из категории во вкладке Изученные */
+  let words = user.wordsToStudy.filter((item) => item.category == categoryID);
+  let wordsName = words.map((item) => item.word);
+  let knownWords = user.knownWords.filter((item) =>
+    wordsName.includes(item.word)
+  );
+  if (knownWords.length > 0)
+    throw new Error('Слово из категории присутствует во вкладке "Изученные"');
+
+  /* Удаление категории */
+  user = pullElement("categoriesToLearn", categoryID, user);
+  if (!user) throw new Error("Не удалось удалить категорию!");
+
+  /* Удаление слов из категории Изучаемые */
+  let wordsID = words.map((item) => item._id);
+  user = multiPullElement("wordsToStudy", wordsID, user);
+  if (!user) throw new Error("Не удалось удалить слова!");
+
+  /* Добавление слов в категорию Изученные */
+  let newKnownWords = words.map((item) => {
+    return {
+      word: item.word,
+      translate: item.translate,
+      transcription: item.transcription,
+      description: item.description,
+      example: item.example,
+      wrongs: item.wrongs,
+      irregularVerb: item.irregularVerb,
+      _id: item._id,
+      dateOfKnown: Date.now(),
+      lastRepeat: 0,
+      lastReverseRepeat: 0,
+      historyOfRepeat: [],
+      historyOfReverseRepeat: [],
+    };
+  });
+  user = multiPushNewElement("knownWords", newKnownWords, user);
+  if (!user) throw new Error("Не удалось перенести слова из категории!");
+
+  localStorage.setItem("userInfo", JSON.stringify(user));
+  store.commit("resetAuth");
+  return {
+    message:
+      "Категория успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!",
+  };
+}
+function pushWrongsInWords(words, typeWords, user) {
+  let message = "";
+  const maxWrongs = user.options[0].countWrongsToAddToRepeat;
+
+  let multiSetOptions = [];
+  let wordsForRepeat = [];
+  for (let item of words) {
+    let wrongs = item.wrongs + 1;
+    if (wrongs >= maxWrongs) {
+      wordsForRepeat.push(item._id.toString());
+      wrongs = 0;
+    }
+    let elementID = item._id.toString();
+    let changeFields = {
+      wrongs,
+    };
+    multiSetOptions.push({ elementID, changeFields });
+  }
+
+  if (wordsForRepeat.length > 0) {
+    user = pushWordsInRepeat(wordsForRepeat, user);
+    if (!user)
+      return {
+        message: "Не удалось добавить слова в категорию повторения!",
+        status: false,
+      };
+
+    wordsForRepeat = words.filter((item) =>
+      wordsForRepeat.includes(item._id.toString())
+    );
+    wordsForRepeat = wordsForRepeat.map((item) => item.word);
+    wordsForRepeat = wordsForRepeat.join(", ");
+    message += ` Следующие слова были поставлены на повторения из за большого количество накопившихся ошибок: ${wordsForRepeat}!`;
+  }
+
+  if (multiSetOptions.length > 0) {
+    user = multiSetElement(typeWords, multiSetOptions, user);
+    if (!user)
+      return {
+        message: "Не удалось увеличить количество ошибок на словах!",
+        status: false,
+      };
+  }
+  return { message, status: true, user };
+}
+function pushWordsInRepeat(wordsWithWrong, user) {
+  let hasWordsInRepeat = user.wordsToRepeat.filter(
+    (item) =>
+      wordsWithWrong.includes(item._id.toString()) && item?.offline != "delete"
+  );
+  if (hasWordsInRepeat.length > 0) {
+    let hasWordsInRepeatID = hasWordsInRepeat.map((item) => item._id);
+    user = multiPullElement("wordsToRepeat", hasWordsInRepeatID, user);
+    if (!user) false;
+  }
+
+  let allWords = [...user.wordsToStudy, ...user.knownWords];
+  let newRepeatWords = allWords.filter(
+    (item) =>
+      wordsWithWrong.includes(item._id.toString()) && item?.offline != "delete"
+  );
+
+  newRepeatWords = newRepeatWords.map((item) => {
+    return {
+      word: item.word,
+      translate: item.translate,
+      transcription: item.transcription,
+      description: item.description,
+      example: item.example,
+      irregularVerb: item.irregularVerb,
+      _id: item._id,
+      lastRepeat: 0,
+      lastReverseRepeat: 0,
+      nextRepeat: 0,
+      nextReverseRepeat: 0,
+      historyOfRepeat: [],
+      historyOfReverseRepeat: [],
+      countOfRepeat: 0,
+      countOfReverseRepeat: 0,
+    };
+  });
+
+  user = multiPushNewElement("wordsToRepeat", newRepeatWords, user);
+  if (!user) return false;
+  return user;
+}
+
+function setElement(field, elementID, changeFields, userInfo) {
+  try {
+    let index = userInfo[field].findIndex(
+      (item) => item._id == elementID && item?.offline != "delete"
+    );
+    if (index == -1) return false;
+    for (let key in changeFields) {
+      userInfo[field][index][key] = changeFields[key];
+    }
+    if (userInfo[field][index].offline != "add")
+      userInfo[field][index].offline = "update";
+    return userInfo;
+  } catch (err) {
+    return false;
+  }
+}
+function pullElement(field, elementID, userInfo) {
+  try {
+    let index = userInfo[field].findIndex(
+      (item) => item._id == elementID && item?.offline != "delete"
+    );
+    if (index == -1) return false;
+    if (userInfo[field][index].offline == "add")
+      userInfo = userInfo[field][index].filter((item) => item._id != elementID);
+    else userInfo[field][index].offline = "delete";
+    return userInfo;
+  } catch (err) {
+    return false;
+  }
+}
+function multiSetElement(field, changeFields, userInfo) {
+  try {
+    // changeFields = ({ elementID, [changeFields] });
+    for (let element of changeFields) {
+      let index = userInfo[field].findIndex(
+        (item) => item._id == element.elementID && item?.offline != "delete"
+      );
+      if (index == -1) return false;
+      for (let key in element.changeFields) {
+        userInfo[field][index][key] = element.changeFields[key];
+      }
+      if (userInfo[field][index].offline != "add")
+        userInfo[field][index].offline = "update";
+    }
+    return userInfo;
+  } catch (err) {
+    return false;
+  }
+}
+function multiPullElement(field, elemetsID, userInfo) {
+  try {
+    for (let id of elemetsID) {
+      let index = userInfo[field].findIndex(
+        (item) => item._id == id && item?.offline != "delete"
+      );
+      if (index == -1) return false;
+      if (userInfo[field][index].offline == "add")
+        userInfo = userInfo[field].filter((item) => item._id != id);
+      else userInfo[field][index].offline = "delete";
+    }
+    return userInfo;
+  } catch (err) {
+    return false;
+  }
+}
+function multiPushNewElement(field, newWords, userInfo) {
+  try {
+    for (let word of newWords) {
+      word.offline = "add";
+      userInfo[field].push(word);
+    }
+    return userInfo;
+  } catch (err) {
+    return false;
+  }
 }
 
 function makeID() {
@@ -440,7 +818,7 @@ function isHasRelevance(word, userInfo) {
   }
   return false;
 }
-function isActiveCaregory(id, userInfo) {
+function isActiveCategory(id, userInfo) {
   let statusCategory = userInfo.categoriesToLearn.filter(
     (item) => item._id == id
   );
@@ -462,4 +840,15 @@ function isHasCategory(name, id, userInfo) {
   );
   if (hasCategory.length == 0) return false;
   return true;
+}
+function millisecondsToDays(millisecond) {
+  let day = 1000 * 60 * 60 * 24;
+  return Math.floor(millisecond / day);
+}
+function daysToMilliseconds(days) {
+  let day = 1000 * 60 * 60 * 24;
+  return days * day;
+}
+function setSignature(userInfo) {
+  return userInfo;
 }

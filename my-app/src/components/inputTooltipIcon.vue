@@ -322,8 +322,7 @@ export default {
   top: 50%;
   transform: translatey(-50%) rotate(90deg);
 }
-.inputIconContainer__advice {
-}
+
 .inputIconContainer__advice._active {
   color: greenyellow;
 }
@@ -332,8 +331,7 @@ export default {
   height: 20px;
   border: 1px solid white;
 }
-.inputIconContainer__progress {
-}
+
 .inputIconContainer__progress._veryEasy {
   width: 20%;
   height: 100%;

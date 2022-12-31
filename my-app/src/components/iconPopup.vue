@@ -1,12 +1,7 @@
 <template>
   <div class="modal__backDrop" style="z-index: 6" ref="backDrop">
     <div class="iconPopup">
-      <img
-        src="@/assets/close.png"
-        alt=""
-        class="sign__closeButton"
-        @click.stop="closePopup"
-      />
+      <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="iconPopup__container">
         <h1 class="sign__header">Смена аватара</h1>
         <p class="sign__description">Загрузите иконку для смены аватара</p>
@@ -37,10 +32,12 @@
 
 <script>
 import confirmButton from "../components/confirmButton.vue";
+import closeModalButton from "../components/closeModalButton.vue";
 export default {
   emits: ["close", "replace", "auth"],
   components: {
     confirmButton,
+    closeModalButton,
   },
   data() {
     return {

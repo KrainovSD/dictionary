@@ -511,6 +511,7 @@ export const addRelevance = async (req, res) => {
 
 export const learnAnswer = async (req, res) => {
   try {
+    /* Получение данных от пользователя и информации о пользователе */
     let { categoryID, words } = req.body;
     let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
     if (!user) {
@@ -518,12 +519,12 @@ export const learnAnswer = async (req, res) => {
         .status(400)
         .json({ message: 'Не удалось найти информацию о пользователе!' });
     }
-
+    /* Проверка на активность категории */
     let activeCategory = isActiveCategory(categoryID, user);
     if (!activeCategory) {
       return res.status(400).json({ message: 'Категория не активна!' });
     }
-
+    /* Проверка на сущесвтование категории */
     let index = user.categoriesToLearn.findIndex(
       (item) => item._id == categoryID
     );
@@ -531,7 +532,7 @@ export const learnAnswer = async (req, res) => {
       return res.status(400).json({
         message: 'Категории не существует!',
       });
-
+    /* Проверка на актуальность повторения */
     let category = user.categoriesToLearn[index];
     let nextRepeat = millisecondsToDays(category.nextRepeat);
     if (millisecondsToDays(Date.now()) < nextRepeat)
@@ -539,7 +540,7 @@ export const learnAnswer = async (req, res) => {
         message:
           'День повторения категории не наступил! Прогресс не будет сохранен!',
       });
-
+    /* Проверка на ошибки в словах */
     let wordsWithWrong = words.filter((item) => {
       if (item.wrong && typeof item?.wrong == 'boolean') return true;
       return false;
@@ -549,9 +550,25 @@ export const learnAnswer = async (req, res) => {
       wordsWithWrong = user.wordsToStudy.filter((item) =>
         wordsWithWrong.includes(item._id.toString())
       );
-      return pushWrongsInWords(wordsWithWrong, 'wordsToStudy', req, res);
+      let pushWrongs = await pushWrongsInWords(
+        wordsWithWrong,
+        'wordsToStudy',
+        req
+      );
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = wordsWithWrong.join(', ');
+      let message =
+        'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
+      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!`;
+      if (!pushWrongs.status)
+        return res.status(400).json({ message: pushWrongs.message });
+      if (pushWrongs.message.length > 0) message += ` ${pushWrongs.message}`;
+      return res.json({
+        message,
+        user: pushWrongs.user,
+      });
     }
-
+    /* Проверка на количество повторений категории */
     let countOfRepeat = category.countOfRepeat + 1;
     let countOfReverseRepeat = category.countOfReverseRepeat;
     if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
@@ -561,7 +578,7 @@ export const learnAnswer = async (req, res) => {
         message:
           'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!',
       });
-
+    /* Сбор новых параметров категории*/
     let nextPattern;
     if (countOfRepeat == 13) nextPattern = daysToMilliseconds(365);
     else {
@@ -578,6 +595,7 @@ export const learnAnswer = async (req, res) => {
       nextRepeat: nextPattern + Date.now(),
       historyOfRepeat,
     };
+    /* Изменение параметров категории */
     let userInfo = await setElement(
       'categoriesToLearn',
       categoryID,
@@ -595,7 +613,10 @@ export const learnAnswer = async (req, res) => {
           'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!',
         user: userInfo,
       });
-    return res.json({ message: 'Операция выполнена успешно!', user: userInfo });
+    return res.json({
+      message: 'Обычное повторение категории успешно завершено!',
+      user: userInfo,
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -605,6 +626,7 @@ export const learnAnswer = async (req, res) => {
 };
 export const reLearnAnswer = async (req, res) => {
   try {
+    /* Получение данных от пользователя и информации о пользователе */
     let { categoryID, words } = req.body;
     let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
     if (!user) {
@@ -612,12 +634,12 @@ export const reLearnAnswer = async (req, res) => {
         .status(400)
         .json({ message: 'Не удалось найти данные пользователя!' });
     }
-
+    /* Проверка на активность категории */
     let activeCategory = isActiveCategory(categoryID, user);
     if (!activeCategory) {
       return res.status(400).json({ message: 'Категория не активна!' });
     }
-
+    /* Проверка на сущесвтование категории */
     let index = user.categoriesToLearn.findIndex(
       (item) => item._id == categoryID
     );
@@ -625,7 +647,7 @@ export const reLearnAnswer = async (req, res) => {
       return res.status(400).json({
         message: 'Категория не существует!',
       });
-
+    /* Проверка на актуальность повторения */
     let category = user.categoriesToLearn[index];
     let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
     if (millisecondsToDays(Date.now()) < nextReverseRepeat)
@@ -633,7 +655,7 @@ export const reLearnAnswer = async (req, res) => {
         message:
           'День повторения категории не наступил! Прогресс не будет сохранен!',
       });
-
+    /* Проверка на ошибки в словах */
     let wordsWithWrong = words.filter((item) => {
       if (item.wrong && typeof item?.wrong == 'boolean') return true;
       return false;
@@ -643,9 +665,22 @@ export const reLearnAnswer = async (req, res) => {
       wordsWithWrong = user.wordsToStudy.filter((item) =>
         wordsWithWrong.includes(item._id.toString())
       );
-      return pushWrongsInWords(wordsWithWrong, 'wordsToStudy', req, res);
+      let pushWrongs = await pushWrongsInWords(
+        wordsWithWrong,
+        'wordsToStudy',
+        req
+      );
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = wordsWithWrong.join(', ');
+      let message =
+        'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
+      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!`;
+      if (!pushWrongs.status)
+        return res.status(400).json({ message: pushWrongs.message });
+      if (pushWrongs.message.length > 0) message += ` ${pushWrongs.message}`;
+      return res.json({ message, user: pushWrongs.user });
     }
-
+    /* Проверка на количество повторений категории */
     let countOfRepeat = category.countOfRepeat;
     let countOfReverseRepeat = category.countOfReverseRepeat + 1;
     if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
@@ -655,7 +690,7 @@ export const reLearnAnswer = async (req, res) => {
         message:
           'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!',
       });
-
+    /* Сбор новых параметров категории*/
     let nextPattern;
     if (countOfReverseRepeat == 13) nextPattern = daysToMilliseconds(365);
     else {
@@ -672,6 +707,7 @@ export const reLearnAnswer = async (req, res) => {
       nextReverseRepeat: nextPattern + Date.now(),
       historyOfReverseRepeat,
     };
+    /* Изменение параметров категории */
     let userInfo = await setElement(
       'categoriesToLearn',
       categoryID,
@@ -689,7 +725,10 @@ export const reLearnAnswer = async (req, res) => {
           'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!',
         user: userInfo,
       });
-    return res.json({ message: 'Операция выполнена успешно!', user: userInfo });
+    return res.json({
+      message: 'Реверсивное повторение категории успешно завершено!',
+      user: userInfo,
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -699,6 +738,7 @@ export const reLearnAnswer = async (req, res) => {
 };
 const pullStudiedCategory = async (req, res) => {
   try {
+    /* Сбор информации о пользователе и ID категории */
     let { categoryID } = req.body;
     let user = await getUserInfo(
       req.userId,
@@ -708,16 +748,18 @@ const pullStudiedCategory = async (req, res) => {
       return res
         .status(400)
         .json({ message: 'Не удалось найти данные пользователя!' });
-
+    /* Проверка нет ли слов из категории во вкладке Изученные */
     let words = user.wordsToStudy.filter((item) => item.category == categoryID);
     let wordsName = words.map((item) => item.word);
-    let knownWords = user.knownWords.filter((item) => wordsName.includes(item));
+    let knownWords = user.knownWords.filter((item) =>
+      wordsName.includes(item.word)
+    );
     if (knownWords.length > 0)
       return res.status(400).json({
         message: 'Слово из категории присутствует во вкладке "Изученные"',
       });
 
-    console.log(categoryID);
+    /* Удаление категории */
     let userInfo = await pullElement(
       'categoriesToLearn',
       categoryID,
@@ -726,12 +768,12 @@ const pullStudiedCategory = async (req, res) => {
     if (!userInfo)
       return res.status(400).json({ message: 'Не удалось удалить категорию!' });
 
+    /* Удаление слов из категории Изучаемые */
     let wordsID = words.map((item) => item._id);
-    console.log(wordsID);
     userInfo = await multiPullElement('wordsToStudy', wordsID, req.userId);
     if (!userInfo)
       return res.status(400).json({ message: 'Не удалось удалить слова!' });
-
+    /* Добавление слов в категорию Изученные */
     let newWords = words.map((item) => {
       return {
         word: item.word,
@@ -749,7 +791,6 @@ const pullStudiedCategory = async (req, res) => {
         historyOfReverseRepeat: [],
       };
     });
-    console.log(newWords);
     userInfo = await multiPushNewElement('knownWords', newWords, req.userId);
     if (!userInfo)
       return res
@@ -770,13 +811,15 @@ const pullStudiedCategory = async (req, res) => {
 };
 export const knownAnswer = async (req, res) => {
   try {
+    /* Сбор информации о пользователе и списке слов */
     let { words } = req.body;
+    let message = 'Слова успешно повторены!';
     let user = await getUserInfo(req.userId, 'knownWords');
     if (!user)
       return res
         .status(400)
         .json({ message: 'Информация о пользователе не найдена!' });
-
+    /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter((item) => {
       if (item.wrong && typeof item?.wrong == 'boolean') return true;
       return false;
@@ -786,9 +829,19 @@ export const knownAnswer = async (req, res) => {
       wordsWithWrong = user.knownWords.filter((item) =>
         wordsWithWrong.includes(item._id.toString())
       );
-      return pushWrongsInWords(wordsWithWrong, 'knownWords', req, res);
+      let pushWords = await pushWrongsInWords(
+        wordsWithWrong,
+        'knownWords',
+        req
+      );
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = wordsWithWrong.join(', ');
+      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!`;
+      if (!pushWords.status)
+        return res.status(400).json({ message: pushWords.message });
+      if (pushWords.message.length > 0) message += ` ${pushWords.message}`;
     }
-
+    /* Изменение статуса последнего повторения */
     words = words.filter((item) => !item.wrong);
     let updateStatistic = await User.findOneAndUpdate(
       { _id: req.userId },
@@ -799,7 +852,7 @@ export const knownAnswer = async (req, res) => {
       return res.status(400).json({
         message: `Не удалось обновить статистику!`,
       });
-
+    /* Получение новых параметров слов */
     words = words.map((item) => item.word);
     let multiSetOptions = [];
     for (let word of words) {
@@ -816,6 +869,7 @@ export const knownAnswer = async (req, res) => {
 
       multiSetOptions.push({ elementID, changeFields });
     }
+    /* Установка новых параметров слов */
     let userInfo = await multiSetElement(
       'knownWords',
       multiSetOptions,
@@ -826,7 +880,7 @@ export const knownAnswer = async (req, res) => {
         message: `Не удалось обновить информацию о словах!`,
       });
 
-    res.json({ message: 'Слова успешно повторены!', user: userInfo });
+    res.json({ message, user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -836,13 +890,15 @@ export const knownAnswer = async (req, res) => {
 };
 export const reKnownAnswer = async (req, res) => {
   try {
+    /* Сбор информации о пользователе и списке слов */
     let { words } = req.body;
+    let message = 'Слова успешно повторены!';
     let user = await getUserInfo(req.userId, 'knownWords');
     if (!user)
       return res
         .status(400)
         .json({ message: 'Информация о пользователе не найдена!' });
-
+    /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter(
       (item) => item.wrong && typeof item?.wrong == 'boolean'
     );
@@ -851,9 +907,19 @@ export const reKnownAnswer = async (req, res) => {
       wordsWithWrong = user.knownWords.filter((item) =>
         wordsWithWrong.includes(item._id.toString())
       );
-      return pushWrongsInWords(wordsWithWrong, 'knownWords', req, res);
+      let pushWords = await pushWrongsInWords(
+        wordsWithWrong,
+        'knownWords',
+        req
+      );
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = wordsWithWrong.join(', ');
+      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!`;
+      if (!pushWords.status)
+        return res.status(400).json({ message: pushWords.message });
+      if (pushWords.message.length > 0) message += ` ${pushWords.message}`;
     }
-
+    /* Изменение статуса последнего повторения */
     words = words.filter((item) => !item.wrong);
     let updateStatistic = await User.findOneAndUpdate(
       { _id: req.userId },
@@ -864,7 +930,7 @@ export const reKnownAnswer = async (req, res) => {
       return res.status(400).json({
         message: `Не удалось обновить статистику!`,
       });
-
+    /* Получение новых параметров слов */
     words = words.map((item) => item.word);
     let multiSetOptions = [];
     for (let word of words) {
@@ -882,6 +948,7 @@ export const reKnownAnswer = async (req, res) => {
 
       multiSetOptions.push({ elementID, changeFields });
     }
+    /* Установка новых параметров слов */
     let userInfo = await multiSetElement(
       'knownWords',
       multiSetOptions,
@@ -892,7 +959,7 @@ export const reKnownAnswer = async (req, res) => {
         message: `Не удалось обновить информацию о словах!`,
       });
 
-    res.json({ message: 'Слова успешно повторены!', user: userInfo });
+    res.json({ message, user: userInfo });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -902,6 +969,7 @@ export const reKnownAnswer = async (req, res) => {
 };
 export const repeatAnswer = async (req, res) => {
   try {
+    /* Получение информации о пользователе и списке слов */
     let { words } = req.body;
     let message = 'Обучение пройдено успешно!';
     let user = await getUserInfo(req.userId, 'wordsToRepeat options');
@@ -909,7 +977,7 @@ export const repeatAnswer = async (req, res) => {
       return res
         .status(400)
         .json({ message: 'Информация о пользователе не найдена!' });
-
+    /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter(
       (item) => item.wrong && typeof item?.wrong == 'boolean'
     );
@@ -923,7 +991,7 @@ export const repeatAnswer = async (req, res) => {
       wordsWithWrong = wordsWithWrong.join(', ');
       message += ` В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!`;
     }
-
+    /* Получение новых параметров слова */
     words = words.filter((item) => !item.wrong);
     let regularityToRepeat = user.options[0].regularityToRepeat;
     let finishedWords = [];
@@ -961,7 +1029,7 @@ export const repeatAnswer = async (req, res) => {
       };
       multiSetOptions.push({ elementID, changeFields });
     }
-
+    /* Установка новых параметров слова */
     let userInfo;
     if (multiSetOptions.length > 0) {
       userInfo = await multiSetElement(
@@ -972,7 +1040,7 @@ export const repeatAnswer = async (req, res) => {
       if (!userInfo)
         return res.status(400).json({ message: 'Не удалось обработать слова' });
     }
-
+    /* Удаление повторенных слов */
     if (finishedWords.length > 0) {
       userInfo = await multiPullElement(
         'wordsToRepeat',
@@ -982,7 +1050,7 @@ export const repeatAnswer = async (req, res) => {
       if (!userInfo)
         return res.status(400).json({ message: 'Не удалось обработать слова' });
     }
-
+    /* Формирование ответа */
     if (standartFinishedWords.length > 0) {
       standartFinishedWords = user.wordsToRepeat.filter((item) =>
         standartFinishedWords.includes(item._id.toString())
@@ -1014,6 +1082,7 @@ export const repeatAnswer = async (req, res) => {
 };
 export const reRepeatAnswer = async (req, res) => {
   try {
+    /* Получение информации о пользователе и списке слов */
     let { words } = req.body;
     let message = 'Обучение пройдено успешно!';
     let user = await getUserInfo(req.userId, 'wordsToRepeat options');
@@ -1021,7 +1090,7 @@ export const reRepeatAnswer = async (req, res) => {
       return res
         .status(400)
         .json({ message: 'Информация о пользователе не найдена!' });
-
+    /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter(
       (item) => item.wrong && typeof item?.wrong == 'boolean'
     );
@@ -1035,7 +1104,7 @@ export const reRepeatAnswer = async (req, res) => {
       wordsWithWrong = wordsWithWrong.join(', ');
       message += ` В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!`;
     }
-
+    /* Получение новых параметров слова */
     words = words.filter((item) => !item.wrong);
     let regularityToRepeat = user.options[0].regularityToRepeat;
     let finishedWords = [];
@@ -1075,7 +1144,7 @@ export const reRepeatAnswer = async (req, res) => {
       };
       multiSetOptions.push({ elementID, changeFields });
     }
-
+    /* Установка новых параметров слова */
     let userInfo;
     if (multiSetOptions.length > 0) {
       userInfo = await multiSetElement(
@@ -1086,7 +1155,7 @@ export const reRepeatAnswer = async (req, res) => {
       if (!userInfo)
         return res.status(400).json({ message: 'Не удалось обработать слова' });
     }
-
+    /* Удаление повторенных слов */
     if (finishedWords.length > 0) {
       userInfo = await multiPullElement(
         'wordsToRepeat',
@@ -1096,7 +1165,7 @@ export const reRepeatAnswer = async (req, res) => {
       if (!userInfo)
         return res.status(400).json({ message: 'Не удалось обработать слова' });
     }
-
+    /* Формирование ответа */
     if (reverseFinishedWords.length > 0) {
       reverseFinishedWords = user.wordsToRepeat.filter((item) =>
         reverseFinishedWords.includes(item._id.toString())
@@ -1126,15 +1195,15 @@ export const reRepeatAnswer = async (req, res) => {
     });
   }
 };
-const pushWrongsInWords = async (words, typeWords, req, res) => {
+const pushWrongsInWords = async (words, typeWords, req) => {
   try {
-    let message =
-      'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
+    let message = '';
     let user = await getUserInfo(req.userId, `options`);
     if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Не удалось найти информацию о пользователе!' });
+      return {
+        message: 'Не удалось найти информацию о пользователе!',
+        status: false,
+      };
     const maxWrongs = user.options[0].countWrongsToAddToRepeat;
 
     let multiSetOptions = [];
@@ -1155,9 +1224,11 @@ const pushWrongsInWords = async (words, typeWords, req, res) => {
     if (wordsForRepeat.length > 0) {
       let pushWordInRepeat = await pushWordsInRepeat(wordsForRepeat, req);
       if (!pushWordInRepeat)
-        return res.status(400).json({
+        return {
           message: 'Не удалось добавить слова в категорию повторения!',
-        });
+          status: false,
+        };
+
       wordsForRepeat = words.filter((item) =>
         wordsForRepeat.includes(item._id.toString())
       );
@@ -1169,17 +1240,14 @@ const pushWrongsInWords = async (words, typeWords, req, res) => {
     let userInfo;
     if (multiSetOptions.length > 0) {
       userInfo = await multiSetElement(typeWords, multiSetOptions, req.userId);
-      console.log(userInfo);
       if (!userInfo)
-        return res.status(400).json({
+        return {
           message: 'Не удалось увеличить количество ошибок на словах!',
-        });
+          status: false,
+        };
     }
 
-    return res.json({
-      message,
-      user: userInfo,
-    });
+    return { message, status: true, user: userInfo };
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -1372,7 +1440,6 @@ async function multiSetElement(field, multiSetOptions, userID) {
       if (user.modifiedCount == 0) {
         success = false;
       }
-      console.log(user);
     }
 
     if (success) {

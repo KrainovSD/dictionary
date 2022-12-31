@@ -30,6 +30,7 @@
         </div>
         <div
           class="repeatWords__word"
+          :class="wordColor(item._id)"
           v-for="(item, index) in wordsList"
           :key="index"
         >
@@ -225,6 +226,20 @@ export default {
     },
   },
   methods: {
+    wordColor(id) {
+      let index = this.userInfo?.wordsToRepeat.findIndex(
+        (item) => item._id == id
+      );
+      if (index == -1) return "";
+      let word = this.userInfo?.wordsToRepeat[index];
+      let nextRepeat = Math.floor(word.nextRepeat / (1000 * 60 * 60 * 24));
+      let nextReverseRepeat = Math.floor(
+        word.nextReverseRepeat / (1000 * 60 * 60 * 24)
+      );
+      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      if (nextRepeat < now || nextReverseRepeat < now) return "red";
+      return "";
+    },
     dateFormatter(date) {
       date = new Date(date);
       let minute = date.getMinutes();

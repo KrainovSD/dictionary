@@ -3,11 +3,9 @@
     <info-popup ref="info" />
     <confirm-popup ref="confirm" />
     <div class="learnCard">
-      <img
-        src="@/assets/close.png"
-        alt=""
+      <close-modal-button
+        @close="closePopup('event')"
         class="sign__closeButton"
-        @click.stop="closePopup"
       />
       <div class="learnCard__container">
         <div class="learnCard__progressContainer">
@@ -25,7 +23,7 @@
             Description: {{ word.description }}
           </p>
           <div class="learnCard__workContainer">
-            <template v-if="showAnswer == true">
+            <template v-if="isVisibleAnswer == true">
               <p class="learnCard__answer">{{ word.word }}</p>
               <p class="learnCard__transcriprion">{{ word.transcription }}</p>
               <div class="learnCard__examples">
@@ -43,7 +41,7 @@
                 />
               </div>
             </template>
-            <template v-if="showAnswer == false">
+            <template v-if="isVisibleAnswer == false">
               <p class="learnCard__try">
                 Количество попыток: {{ countHasTry }}
               </p>
@@ -56,13 +54,12 @@
                   :errors="errors"
                   :interactive="interactiveInput"
                   placeholder="Answer"
-                  @keyup.enter="normalConfirm"
                 />
               </div>
               <div class="learnCard__confirmContainer">
                 <confirm-button
                   text="Подтвердить"
-                  @click="normalConfirm"
+                  @click="debounceNormalConfirm"
                   fontSize="14"
                 />
               </div>
@@ -82,8 +79,12 @@
                 v-for="(item, index) in reAnswerOptions"
                 :key="index"
                 :class="[
-                  showAnswer == true && correctAnswer == item ? '_correct' : '',
-                  showAnswer == true && correctAnswer != item && answer == item
+                  isVisibleAnswer == true && correctAnswer == item
+                    ? '_correct'
+                    : '',
+                  isVisibleAnswer == true &&
+                  correctAnswer != item &&
+                  answer == item
                     ? '_wrong'
                     : '',
                 ]"
@@ -92,7 +93,10 @@
                 {{ item }}
               </div>
             </div>
-            <div class="learnCard__confirmContainer" v-if="showAnswer == true">
+            <div
+              class="learnCard__confirmContainer"
+              v-if="isVisibleNext == true"
+            >
               <confirm-button
                 :text="`Далее (${this.timerToShowAnswer} ${secondFormat})`"
                 @click="nextWord"
@@ -112,12 +116,16 @@ import confirmButton from "../components/confirmButton.vue";
 import infoPopup from "../components/infoPopup.vue";
 import confirmPopup from "../components/confirmPopup.vue";
 import interactiveInput from "../components/interactiveInput.vue";
+import { throttle } from "lodash";
+import closeModalButton from "../components/closeModalButton.vue";
+
 export default {
   components: {
     confirmButton,
     infoPopup,
     interactiveInput,
     confirmPopup,
+    closeModalButton,
   },
   data() {
     return {
@@ -130,11 +138,13 @@ export default {
       answer: "",
       correctAnswer: "",
       isCorrectAnswer: false,
-      showAnswer: false,
+
       interactiveInput: "",
       errors: {},
       visible: false,
       timerToShowAnswer: 0,
+      isVisibleAnswer: false,
+      isVisibleNext: false,
     };
   },
   spareTranslates: [
@@ -259,11 +269,23 @@ export default {
   ],
   timeToShowAnswer: 8000,
   countTryToAnswer: 3,
+  delayToEnterAnswer: 1200,
   setTimeoutController: null,
   timerContoller: null,
   controller: null,
   beforeUnmount() {
+    document.removeEventListener("keyup", this.keyBoardEvent);
+    if (this.isVisibleAnswer == false) return;
     clearTimeout(this.$options.setTimeoutController);
+    clearInterval(this.$options.timerContoller);
+    this.$options.controller.resolve(this.isCorrectAnswer);
+  },
+  mounted() {
+    this.debounceNormalConfirm = throttle(
+      this.normalConfirm,
+      this.$options.delayToEnterAnswer
+    );
+    document.addEventListener("keyup", this.keyBoardEvent);
   },
   computed: {
     headerInfo() {
@@ -406,6 +428,19 @@ export default {
         answerIndex++;
       }
     },
+    keyBoardEvent(event) {
+      let code = event.keyCode;
+      if (code != 13) return;
+
+      if (this.isVisibleAnswer == true && code == 13) return this.nextWord();
+
+      if (
+        this.kindOfLearn == "standart" &&
+        this.isVisibleAnswer == false &&
+        code == 13
+      )
+        return this.debounceNormalConfirm();
+    },
     async showInfo(header, title) {
       await nextTick();
       await this.$refs.info.show(header, title);
@@ -431,12 +466,15 @@ export default {
           clearInterval(this.$options.timerContoller);
       }, 1000);
     },
-    async closePopup(event = null) {
-      if (event !== null) {
+    async closePopup(event = "undefinded") {
+      if (this.$refs.confirm.isVisible == true || this.$refs.info.isVisible)
+        return;
+      if (event !== "undefinded") {
         let res = await this.showConfirm(
           "Окончание обучения",
           "Вы уверены, что хотите прервать сессию обучения? После возвращение вы сможете продолжить с того места, на котором остановились!"
         );
+
         if (!res) return;
       }
 
@@ -495,6 +533,7 @@ export default {
         }
 
         for (let word of words) {
+          this.isVisibleAnswer = false;
           let answer = {};
           this.try = 0;
           this.word = word;
@@ -546,7 +585,17 @@ export default {
       this.$options.controller = { resolve };
       return cardsPromise;
     },
+    showAnswer(correct) {
+      this.isCorrectAnswer = correct;
+      this.isVisibleAnswer = true;
+      this.setTimer();
+      this.isVisibleNext = true;
+      this.$options.setTimeoutController = setTimeout(() => {
+        this.$options.controller.resolve(correct);
+      }, this.$options.timeToShowAnswer);
+    },
     async normalConfirm() {
+      if (this.isVisibleAnswer == true) return;
       this.answer = this.answer.trim().toLowerCase();
       this.validateAnswer(this.answer);
       if (this.errors?.answer) return;
@@ -563,26 +612,14 @@ export default {
 
       if (this.answer == this.correctAnswer) {
         await this.animatedInput("correct");
-        this.isCorrectAnswer = true;
-        this.showAnswer = true;
-        this.setTimer();
-        this.$options.setTimeoutController = setTimeout(() => {
-          this.$options.controller.resolve(true);
-          this.showAnswer = false;
-        }, this.$options.timeToShowAnswer);
+        this.showAnswer(true);
         return;
       }
 
       this.try++;
       if (this.try >= this.$options.countTryToAnswer) {
         await this.animatedInput("wrong");
-        this.isCorrectAnswer = false;
-        this.showAnswer = true;
-        this.setTimer();
-        this.$options.setTimeoutController = setTimeout(() => {
-          this.$options.controller.resolve(false);
-          this.showAnswer = false;
-        }, this.$options.timeToShowAnswer);
+        this.showAnswer(false);
         return;
       }
       await this.animatedInput("between");
@@ -629,32 +666,20 @@ export default {
       return;
     },
     reverseConfirm(event) {
-      if (this.answer != "") return;
+      if (this.answer != "" || this.isVisibleAnswer == true) return;
       this.answer = event.target.textContent;
       if (this.answer != this.correctAnswer) {
-        this.isCorrectAnswer = false;
-        this.showAnswer = true;
-        this.setTimer();
-        this.$options.setTimeoutController = setTimeout(() => {
-          this.showAnswer = false;
-          this.$options.controller.resolve(false);
-        }, this.$options.timeToShowAnswer);
+        this.showAnswer(false);
         return;
       }
-      this.isCorrectAnswer = true;
-      this.showAnswer = true;
-      this.setTimer();
-      this.$options.setTimeoutController = setTimeout(() => {
-        this.showAnswer = false;
-        this.$options.controller.resolve(true);
-      }, this.$options.timeToShowAnswer);
+      this.showAnswer(true);
       return;
     },
     nextWord() {
-      if (this.showAnswer == false) return;
+      if (this.isVisibleAnswer == false || this.isVisibleNext == false) return;
+      this.isVisibleNext = false;
       clearTimeout(this.$options.setTimeoutController);
       clearInterval(this.$options.timerContoller);
-      this.showAnswer = false;
       this.$options.controller.resolve(this.isCorrectAnswer);
     },
   },

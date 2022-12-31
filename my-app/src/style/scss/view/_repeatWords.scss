@@ -61,6 +61,10 @@
         margin-bottom: rem(20);
         cursor: pointer;
         padding: rem(10);
+
+        &.red {
+            background-color: #fddddc;
+        }
     }
 
     &__info {

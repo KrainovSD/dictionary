@@ -17,8 +17,8 @@
         :name="field"
         :value="modelValue"
         @input="$emit('update:modelValue', $event.target.value)"
-        @keyup.enter="saveData"
-        @keyup.esc="
+        @keyup.enter.stop="saveData"
+        @keyup.esc.stop="
           fieldChangin = false;
           $emit('close', field);
         "

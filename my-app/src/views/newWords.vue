@@ -268,15 +268,17 @@ export default {
       return categories;
     },
     selectedCaregory() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0)
+      if (Object.keys(this?.currentSelectedCategory)?.length == 0)
         return "не выбрана";
       return this.currentSelectedCategory?.name;
     },
     isActiveCategory() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0) return false;
+      if (Object.keys(this?.currentSelectedCategory)?.length == 0) return false;
       if (this.currentSelectedCategory?.startLearn == false) return false;
       let index = this.userInfo.categoriesToLearn.findIndex(
-        (item) => item._id == this.currentSelectedCategory._id
+        (item) =>
+          item._id == this.currentSelectedCategory._id &&
+          item?.offline != "delete"
       );
       if (index == -1) {
         return false;
@@ -284,9 +286,11 @@ export default {
       return true;
     },
     isHaveCategory() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0) return false;
+      if (Object.keys(this?.currentSelectedCategory)?.length == 0) return false;
       let index = this.userInfo.categoriesToLearn.findIndex(
-        (item) => item._id == this.currentSelectedCategory._id
+        (item) =>
+          item._id == this.currentSelectedCategory._id &&
+          item?.offline != "delete"
       );
       if (index == -1) {
         return false;
@@ -613,10 +617,13 @@ export default {
     userInfo() {
       if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
       let index = this.userInfo.categoriesToLearn.findIndex(
-        (item) => item._id == this.currentSelectedCategory._id
+        (item) =>
+          item._id == this.currentSelectedCategory._id &&
+          item?.offline != "delete"
       );
       if (index == -1) {
         this.currentSelectedCategory = {};
+        return;
       }
       this.currentSelectedCategory = this.userInfo.categoriesToLearn[index];
     },

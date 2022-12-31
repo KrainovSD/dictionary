@@ -7,12 +7,7 @@
   <info-popup ref="info" />
   <div class="modal__backDrop" ref="backDrop" style="z-index: 5">
     <div class="sign" :class="signType == 'register' ? 'signUp' : ''">
-      <img
-        src="@/assets/close.png"
-        alt=""
-        class="sign__closeButton"
-        @click.stop="closePopup"
-      />
+      <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">
         <h1 class="sign__header" v-if="signType === 'register'">Регистрация</h1>
         <p class="sign__description" v-if="signType === 'register'"></p>
@@ -135,12 +130,14 @@ import forgotPassword from "../components/forgotPassword.vue";
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 import confirmButton from "../components/confirmButton.vue";
 import infoPopup from "../components/infoPopup.vue";
+import closeModalButton from "../components/closeModalButton.vue";
 export default {
   components: {
     forgotPassword,
     inputTooltipIcon,
     confirmButton,
     infoPopup,
+    closeModalButton,
   },
   emits: ["close", "register", "switch"],
   props: {
@@ -160,6 +157,7 @@ export default {
   },
   methods: {
     closePopup() {
+      if (this.forgotPasswordVisible == true) return;
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
         setTimeout(() => {
@@ -321,6 +319,7 @@ export default {
         .login(form)
         .then((res) => {
           this.$store.commit("setUserInfo", res.data.user);
+          localStorage.setItem("userInfo", JSON.stringify(res.data.user));
           this.$store.commit("setAccessToken", res.data.token);
           this.$emit("close");
         })

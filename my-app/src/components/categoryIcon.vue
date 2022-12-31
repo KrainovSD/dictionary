@@ -1,11 +1,6 @@
 <template>
   <div class="categoryIcon" ref="categoryIcon">
-    <img
-      src="@/assets/close.png"
-      alt=""
-      class="sign__closeButton"
-      @click.stop="closeCategoryIcon"
-    />
+    <close-modal-button @close="closeCategoryIcon" class="sign__closeButton" />
     <div class="categoryIcon__container">
       <div class="categoryIcon__containerIcon">
         <img
@@ -32,9 +27,11 @@
 
 <script>
 import confirmButton from "../components/confirmButton.vue";
+import closeModalButton from "../components/closeModalButton.vue";
 export default {
   components: {
     confirmButton,
+    closeModalButton,
   },
   props: {
     icon: String,
@@ -86,6 +83,12 @@ export default {
       img.addEventListener("click", this.selectIcon);
     });
     if (this.icon != "") this.currentSelectionIcon = this.icon;
+  },
+  beforeUnmount() {
+    let imgs = Array.from(document.querySelectorAll(".categIcon"));
+    imgs.forEach((img) => {
+      img.removeEventListener("click", this.selectIcon);
+    });
   },
   computed: {
     isCurrentSelectionIconEmpty() {

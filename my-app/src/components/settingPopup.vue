@@ -10,12 +10,7 @@
 
   <div class="modal__backDrop" ref="backDrop">
     <div class="setting">
-      <img
-        src="@/assets/close.png"
-        alt=""
-        class="sign__closeButton"
-        @click.stop="closePopup"
-      />
+      <close-modal-button @click="closePopup" class="sign__closeButton" />
       <h1 class="sign__header">Пользовательские настройки</h1>
 
       <div class="setting__avatarContainer">
@@ -225,6 +220,7 @@ import settingField from "../components/settingField.vue";
 import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 import infoPopup from "../components/infoPopup.vue";
 import confirmPopup from "../components/confirmPopup.vue";
+import closeModalButton from "../components/closeModalButton.vue";
 
 export default {
   emits: ["close", "noAuth"],
@@ -235,6 +231,7 @@ export default {
     multipleInputTooltip,
     infoPopup,
     confirmPopup,
+    closeModalButton,
   },
   data() {
     return {
@@ -449,17 +446,17 @@ export default {
       if (this.errors[field]) {
         return;
       }
+      this.clearField(field);
+      if (field == "regularityToRepeat") {
+        this.regularityToRepeatChange = false;
+        fieldData = fieldData.map((x) => +x);
+      }
       let confirm = await this.showConfirm(
         "Изменение данных",
         `Вы уверены что хотите внести следующие изменения: "${fieldData}" ?`
       );
       if (!confirm) return;
 
-      this.clearField(field);
-      if (field == "regularityToRepeat") {
-        this.regularityToRepeatChange = false;
-        fieldData = fieldData.map((x) => +x);
-      }
       let form = {};
       form[field] = fieldData;
       this.sendInfo(form);

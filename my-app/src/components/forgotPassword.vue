@@ -1,12 +1,7 @@
 <template>
   <div class="modal__backDrop" style="z-index: 6" ref="backDrop">
     <div class="forgotPassword">
-      <img
-        src="@/assets/close.png"
-        alt=""
-        class="sign__closeButton"
-        @click.stop="closePopup"
-      />
+      <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">
         <h1 class="sign__header">Восстановление пароля</h1>
         <p class="sign__description">Укажите свой Nickname и Email</p>
@@ -44,10 +39,12 @@
 <script>
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 import confirmButton from "../components/confirmButton.vue";
+import closeModalButton from "../components/closeModalButton.vue";
 export default {
   components: {
     inputTooltipIcon,
     confirmButton,
+    closeModalButton,
   },
   data() {
     return {

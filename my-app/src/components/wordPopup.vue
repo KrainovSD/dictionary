@@ -8,12 +8,7 @@
   />
   <div class="modal__backDrop" ref="backDrop">
     <div class="wordPopup">
-      <img
-        src="@/assets/close.png"
-        alt=""
-        class="sign__closeButton"
-        @click.stop="closePopup"
-      />
+      <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">
         <h1 class="sign__header" v-if="wordPopupType == 'add'">Новое слово</h1>
         <h1 class="sign__header" v-else>Редактирование слова</h1>
@@ -251,6 +246,7 @@ import inputTooltip from "../components/inputTooltip";
 import confirmButton from "../components/confirmButton";
 import infoPopup from "../components/infoPopup";
 import confirmPopup from "../components/confirmPopup";
+import closeModalButton from "../components/closeModalButton.vue";
 
 export default {
   components: {
@@ -259,6 +255,7 @@ export default {
     confirmButton,
     infoPopup,
     confirmPopup,
+    closeModalButton,
   },
   emits: ["close"],
   props: {
@@ -439,6 +436,7 @@ export default {
       }
     },
     closePopup() {
+      if (this.categoryPopupVisible == true) return;
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
         setTimeout(() => {

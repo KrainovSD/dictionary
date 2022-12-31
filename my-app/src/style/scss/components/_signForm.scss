@@ -32,15 +32,8 @@
     width: rem(345);
 
     &__closeButton {
-        width: rem(14);
-        height: rem(14);
         margin: rem(5) rem(5) 0 auto;
-        transition: all 0.2s ease;
-        cursor: pointer;
 
-        &:hover {
-            transform: scale(1.2, 1.2);
-        }
 
     }
 
