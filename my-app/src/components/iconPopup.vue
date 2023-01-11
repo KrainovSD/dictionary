@@ -1,4 +1,6 @@
 <template>
+  <info-popup ref="info" />
+  <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" style="z-index: 6" ref="backDrop">
     <div class="iconPopup">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
@@ -32,17 +34,22 @@
 
 <script>
 import confirmButton from "../components/confirmButton.vue";
+import infoPopup from "../components/infoPopup.vue";
 import closeModalButton from "../components/closeModalButton.vue";
+import loadingPopup from "../components/loadingPopup.vue";
 export default {
-  emits: ["close", "replace", "auth"],
+  emits: ["close", "auth"],
   components: {
     confirmButton,
     closeModalButton,
+    infoPopup,
+    loadingPopup,
   },
   data() {
     return {
       icon: "",
       error: "",
+      isLoading: false,
     };
   },
   computed: {
@@ -67,6 +74,9 @@ export default {
     },
   },
   methods: {
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+    },
     closePopup() {
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
@@ -96,23 +106,31 @@ export default {
       };
       reader.readAsDataURL(file);
     },
-    sendData() {
-      let file = this.$refs.input?.files[0];
-      let formData = new FormData();
-      formData.append("avatar", file);
-      this.$api.change
-        .avatar(formData)
-        .then((res) => {
-          this.$store.commit("setUserInfo", res.data.user);
-          this.$emit("replace", res.data.message);
-          this.closePopup();
-        })
-        .catch((err) => {
-          if (err.response.status == 500) this.error = "Сервер не отвечает!";
-          if (err.response.status == 400)
-            this.error = "Переданный файл не прошел проверку!";
-          if (err.response.status == 401) this.$emit("auth");
-        });
+    async sendData() {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+        let file = this.$refs.input?.files[0];
+        let formData = new FormData();
+        formData.append("avatar", file);
+
+        let res = await this.$api.change.avatar(formData);
+        let user = res?.data?.user;
+        let message = res?.data?.message;
+        this.isLoading = false;
+
+        this.$store.commit("setUserInfo", user);
+        await this.showInfo("Смена аватара", message);
+        this.closePopup();
+      } catch (err) {
+        let status = err?.response?.status;
+        this.isLoading = false;
+        if (status == 500) return (this.error = "Сервер не отвечает!");
+        if (status == 400)
+          return (this.error = "Переданный файл не прошел проверку!");
+        if (status == 401) return this.$emit("auth");
+        return (this.error = "Сервер не отвечает!");
+      }
     },
   },
 };

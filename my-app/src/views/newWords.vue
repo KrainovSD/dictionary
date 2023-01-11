@@ -18,6 +18,7 @@
   />
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
+  <loading-popup v-if="isLoading == true" />
   <div class="learnPlace__container">
     <div class="categories">
       <div class="CRUDpanel">
@@ -57,14 +58,7 @@
         <template v-if="userInfo?.categoriesToLearn?.length != 0">
           <div
             class="category"
-            :class="[
-              categoryColor(
-                item.nextRepeat,
-                item.nextReverseRepeat,
-                item.startLearn
-              ),
-              isSelectedCategory(item._id),
-            ]"
+            :class="[categoryColor(item), isSelectedCategory(item._id)]"
             :id="item._id"
             v-for="(item, index) in categoriesList"
             :key="index"
@@ -149,10 +143,18 @@
         <button
           class="CRUDpanel__toolsButton delete reverse"
           :class="
-            Object.keys(currentSelectedWord)?.length == 0 ? 'disabled' : ''
+            Object.keys(currentSelectedWord)?.length == 0
+              ? 'disabled'
+              : isWordInActiveCategory == true
+              ? 'disabled'
+              : ''
           "
           :disabled="
-            Object.keys(currentSelectedWord)?.length == 0 ? true : false
+            Object.keys(currentSelectedWord)?.length == 0
+              ? true
+              : isWordInActiveCategory == true
+              ? true
+              : false
           "
           @click="deleteWord()"
         >
@@ -195,18 +197,28 @@
             <div class="newWords__sub">
               <p>
                 Количество ошибок, допущенных в слове: {{ item.wrongs }}
-                {{ caseOfCount(item.wrongs) }}
+                {{ captionOfCountWrongs(item.wrongs) }}
               </p>
             </div>
           </div>
-          <p>
-            Осталось обычных повторений:
-            {{ 13 - currentSelectedCategory.countOfRepeat }}
-          </p>
-          <p>
-            Осталось реверсивных повторений:
-            {{ 13 - currentSelectedCategory.countOfReverseRepeat }}
-          </p>
+          <template v-if="isActiveCategory == true">
+            <p>
+              Осталось обычных повторений:
+              {{ 13 - currentSelectedCategory.countOfRepeat }}
+            </p>
+            <p>
+              Осталось реверсивных повторений:
+              {{ 13 - currentSelectedCategory.countOfReverseRepeat }}
+            </p>
+            <p>
+              Следующее обычное повторение:
+              {{ currentSelectedCategory.infoNextRepeat }}
+            </p>
+            <p>
+              Следующее реверсивное повторение:
+              {{ currentSelectedCategory.infoNextReverseRepeat }}
+            </p>
+          </template>
         </div>
       </div>
       <p class="newWords__nameCategory">
@@ -223,6 +235,7 @@ import learnCard from "../components/learnCard";
 import searchPanel from "../components/searchPanel";
 import infoPopup from "../components/infoPopup";
 import confirmPopup from "../components/confirmPopup";
+import loadingPopup from "../components/loadingPopup.vue";
 import { nextTick } from "@vue/runtime-core";
 export default {
   countWordsToActiveCategory: 2,
@@ -233,6 +246,7 @@ export default {
     searchPanel,
     infoPopup,
     confirmPopup,
+    loadingPopup,
   },
   data() {
     return {
@@ -246,6 +260,7 @@ export default {
       categoryPopupOptions: {},
       search: "",
       learnCardVisible: false,
+      isLoading: false,
     };
   },
 
@@ -253,7 +268,7 @@ export default {
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
       if (Object.keys(userInfo)?.length == 0) {
-        userInfo = this.getUserInfoFromLocalStorage();
+        userInfo = this.$api.offline.getUserInfo();
       }
       return userInfo;
     },
@@ -265,6 +280,27 @@ export default {
         if (a.name > b.name) return 1;
         return 0;
       });
+      for (let category of categories) {
+        let infoNextRepeat =
+          category.nextRepeat == 0
+            ? "Сегодня"
+            : Math.floor(category.nextRepeat / (1000 * 60 * 60 * 24)) -
+                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+              100
+            ? "Никогда"
+            : this.dateFormatter(category.nextRepeat);
+        let infoNextReverseRepeat =
+          category.nextReverseRepeat == 0
+            ? "Сегодня"
+            : Math.floor(category.nextReverseRepeat / (1000 * 60 * 60 * 24)) -
+                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+              50
+            ? "Никогда"
+            : this.dateFormatter(category.nextReverseRepeat);
+
+        category.infoNextRepeat = infoNextRepeat;
+        category.infoNextReverseRepeat = infoNextReverseRepeat;
+      }
       return categories;
     },
     selectedCaregory() {
@@ -296,6 +332,16 @@ export default {
         return false;
       }
       return true;
+    },
+    isWordInActiveCategory() {
+      if (Object.keys(this?.currentSelectedWord)?.length == 0) return false;
+      let index = this.userInfo.categoriesToLearn.findIndex(
+        (item) => item._id == this.currentSelectedWord.category
+      );
+      if (index == -1) return false;
+      let category = this.userInfo.categoriesToLearn[index];
+      if (category?.startLearn == true) return true;
+      return false;
     },
     wordsList() {
       /* Сделать сортировку по алфавиту или даже сортировку в целом */
@@ -337,7 +383,7 @@ export default {
           word: item.word,
           translate: item.translate,
           transcription: item.transcription,
-          description: item.transcription,
+          description: item.description,
           example,
           wrongs: item.wrongs,
           irregularVerb: item.irregularVerb,
@@ -360,7 +406,16 @@ export default {
         this.userInfo.categoriesToLearn[index]?.nextRepeat /
           (1000 * 60 * 60 * 24)
       );
-      if (now >= nextRepeat) return "red";
+      let dateOfStartLearn = Math.floor(
+        this.userInfo.categoriesToLearn[index]?.dateOfStartLearn /
+          (1000 * 60 * 60 * 24)
+      );
+
+      if (nextRepeat == now) return "yellow";
+      if (nextRepeat < now) {
+        if (now - dateOfStartLearn <= 1) return "yellow";
+        return "red";
+      }
       return "green";
     },
     reverseModeButtonColor() {
@@ -376,69 +431,38 @@ export default {
         this.userInfo.categoriesToLearn[index]?.nextReverseRepeat /
           (1000 * 60 * 60 * 24)
       );
-      if (now >= nextReverseRepeat) return "red";
+      let dateOfStartLearn = Math.floor(
+        this.userInfo.categoriesToLearn[index]?.dateOfStartLearn /
+          (1000 * 60 * 60 * 24)
+      );
+
+      if (nextReverseRepeat == now) return "yellow";
+      if (nextReverseRepeat < now) {
+        if (now - dateOfStartLearn <= 1) return "yellow";
+        return "red";
+      }
       return "green";
     },
   },
   methods: {
-    getUserInfoFromLocalStorage() {
-      try {
-        let userInfo = {};
-        let info = JSON.parse(localStorage.getItem("userInfo"));
-        if (typeof info != "object" && info != null)
-          throw new Error("Данные повреждены");
-        if (info != null) userInfo = info;
-        else {
-          userInfo = {
-            knownWords: [],
-            wordsToStudy: [],
-            wordsToRepeat: [],
-            relevance: [],
-            options: [
-              {
-                countKnownWordsAtOneTime: 50,
-                countWrongsToAddToRepeat: 3,
-                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-                maxDateCheckRelevance: 45,
-                maxCountCheckRelevance: 3,
-              },
-            ],
-            categoriesToLearn: [],
-          };
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        }
-        return userInfo;
-      } catch (err) {
-        console.log(err);
-        (async () => {
-          await nextTick();
-          this.showInfo(
-            "Пользовательские данные",
-            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
-          );
-        })();
-        localStorage.clear();
-        let userInfo = {
-          knownWords: [],
-          wordsToStudy: [],
-          wordsToRepeat: [],
-          relevance: [],
-          options: [
-            {
-              countKnownWordsAtOneTime: 50,
-              countWrongsToAddToRepeat: 3,
-              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-              maxDateCheckRelevance: 45,
-              maxCountCheckRelevance: 3,
-            },
-          ],
-          categoriesToLearn: [],
-        };
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        return userInfo;
+    dateFormatter(date) {
+      date = new Date(date);
+      let minute = date.getMinutes();
+      let hour = date.getHours();
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+
+      if (minute >= 0 && minute < 10) {
+        minute = `0${minute}`;
       }
+      if (hour >= 0 && hour < 10) {
+        hour = `0${hour}`;
+      }
+
+      return `${day}-${month}-${year}`;
     },
-    caseOfCount(wrongs) {
+    captionOfCountWrongs(wrongs) {
       if (wrongs == 2 || wrongs == 3 || wrongs == 4) return "раза";
       return "раз";
     },
@@ -454,12 +478,21 @@ export default {
       );
       return wordsList.length;
     },
-    categoryColor(nextRepeat, nextReverseRepeat, startLearn) {
-      if (!startLearn) return "gray";
+    categoryColor(category) {
+      if (!category.startLearn) return "gray";
       let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-      nextRepeat = Math.floor(nextRepeat / (1000 * 60 * 60 * 24));
-      nextReverseRepeat = Math.floor(nextReverseRepeat / (1000 * 60 * 60 * 24));
-      if (now >= nextRepeat || now >= nextReverseRepeat) return "red";
+      let dateOfStartLearn = Math.floor(
+        category.dateOfStartLearn / (1000 * 60 * 60 * 24)
+      );
+      let nextRepeat = Math.floor(category.nextRepeat / (1000 * 60 * 60 * 24));
+      let nextReverseRepeat = Math.floor(
+        category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+      );
+      if (nextRepeat == now || nextReverseRepeat == now) return "yellow";
+      if (nextRepeat < now || nextReverseRepeat < now) {
+        if (now - dateOfStartLearn <= 1) return "yellow";
+        return "red";
+      }
       return "green";
     },
     isSelectedCategory(id) {
@@ -510,14 +543,18 @@ export default {
         );
         if (!confirm) return;
 
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         let res = this.$store.getters.getAuth
           ? await this.$api.words.startLearnCategory(form)
-          : this.$api.offWords.startLearnCategory(form);
+          : this.$api.offline.startLearnCategory(form);
 
+        this.isLoading = false;
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         let message = res?.data?.message || res?.message;
         await this.showInfo("Изменения статуса категории", message);
@@ -525,6 +562,7 @@ export default {
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
+        this.isLoading = false;
         if (status == 0 || status == 500) {
           message =
             "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
@@ -542,20 +580,26 @@ export default {
           "Вы уверены, что хотите удалить выбранную категорию? Весь прогресс изучения слов из категории будет утерян, а слова будут удалены!"
         );
         if (!confirm) return;
+
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         let res = this.$store.getters.getAuth
           ? await this.$api.words.deleteCategory(id)
-          : this.$api.offWords.deleteCategory(id);
+          : this.$api.offline.deleteCategory(id);
 
+        this.isLoading = false;
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         let message = res?.data?.message || res?.message;
         await this.showInfo("Удаление категории", message);
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
+        this.isLoading = false;
         if (status == 0 || status == 500) {
           message =
             "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
@@ -574,20 +618,26 @@ export default {
           "Вы уверены, что хотите удалить выбранное слово?"
         );
         if (!confirm) return;
+
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         let res = this.$store.getters.getAuth
           ? await this.$api.words.deleteWord(id)
-          : this.$api.offWords.deleteWord(id);
+          : this.$api.offline.deleteWord(id);
 
+        this.isLoading = false;
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         let message = res?.data?.message || res?.message;
         await this.showInfo("Удаление слова", message);
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
+        this.isLoading = false;
         if (status == 0 || status == 500) {
           message =
             "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
@@ -599,7 +649,7 @@ export default {
     async startLearn(type) {
       let categoryID = this.currentSelectedCategory._id;
       let words = this.userInfo.wordsToStudy.filter(
-        (item) => item.category == categoryID
+        (item) => item.category == categoryID && item?.offline != "delete"
       );
       words = words.sort(() => Math.random() - 0.5);
       this.learnCardVisible = true;

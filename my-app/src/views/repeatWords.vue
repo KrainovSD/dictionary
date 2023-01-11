@@ -134,7 +134,7 @@ export default {
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
       if (Object.keys(userInfo)?.length == 0) {
-        userInfo = this.getUserInfoFromLocalStorage();
+        userInfo = this.$api.offline.getUserInfo();
       }
       return userInfo;
     },
@@ -162,13 +162,22 @@ export default {
         }
 
         let infoNextRepeat =
-          item.nextRepeat != 0
-            ? this.dateFormatter(item.nextRepeat)
-            : "Сегодня";
+          item.nextRepeat == 0
+            ? "Сегодня"
+            : Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24)) -
+                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+              100
+            ? "Никогда"
+            : this.dateFormatter(item.nextRepeat);
         let infoNextReverseRepeat =
-          item.nextReverseRepeat != 0
-            ? this.dateFormatter(item.nextReverseRepeat)
-            : "Сегодня";
+          item.nextReverseRepeat == 0
+            ? "Сегодня"
+            : Math.floor(item.nextReverseRepeat / (1000 * 60 * 60 * 24)) -
+                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+              50
+            ? "Никогда"
+            : this.dateFormatter(item.nextReverseRepeat);
+
         let infoCountOfRepeat = 9 - item.countOfRepeat;
         let infoCountOfReverseRepeat = 9 - item.countOfReverseRepeat;
 
@@ -197,32 +206,67 @@ export default {
       return wordsList;
     },
     colorStandartRepeat() {
-      if (!this.userInfo?.wordsToRepeat) return "green";
+      if (!this.userInfo?.wordsToRepeat) return "";
       let words = this.userInfo.wordsToRepeat;
-      if (words.length == 0) return "green";
-      words = words.filter((item) => {
+      words = words.filter((item) => item?.offline != "delete");
+      if (words.length == 0) return "";
+      let isRed = words.filter((item) => {
+        let dateOfCreation = Math.floor(
+          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        );
         let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
         let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-        if (nextRepeat < now) return true;
+        if (nextRepeat < now && now - dateOfCreation > 1) return true;
         return false;
       });
-      if (words.length == 0) return "green";
-      return "red";
+      if (isRed.length > 0) return "red";
+      let isYellow = words.filter((item) => {
+        let dateOfCreation = Math.floor(
+          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        );
+        let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
+        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        if (nextRepeat == now || (nextRepeat < now && now - dateOfCreation > 1))
+          return true;
+        return false;
+      });
+      if (isYellow.length > 0) return "yellow";
+      return "green";
     },
     colorReverseRepeat() {
-      if (!this.userInfo?.wordsToRepeat) return "green";
+      if (!this.userInfo?.wordsToRepeat) return "";
       let words = this.userInfo.wordsToRepeat;
-      if (words.length == 0) return "green";
-      words = words.filter((item) => {
+      words = words.filter((item) => item?.offline != "delete");
+      if (words.length == 0) return "";
+      let isRed = words.filter((item) => {
+        let dateOfCreation = Math.floor(
+          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        );
         let nextReverseRepeat = Math.floor(
           item.nextReverseRepeat / (1000 * 60 * 60 * 24)
         );
         let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-        if (nextReverseRepeat < now) return true;
+        if (nextReverseRepeat < now && now - dateOfCreation > 1) return true;
         return false;
       });
-      if (words.length == 0) return "green";
-      return "red";
+      if (isRed.length > 0) return "red";
+      let isYellow = words.filter((item) => {
+        let dateOfCreation = Math.floor(
+          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        );
+        let nextReverseRepeat = Math.floor(
+          item.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        );
+        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        if (
+          nextReverseRepeat == now ||
+          (nextReverseRepeat < now && now - dateOfCreation > 1)
+        )
+          return true;
+        return false;
+      });
+      if (isYellow.length > 0) return "yellow";
+      return "green";
     },
   },
   methods: {
@@ -232,12 +276,21 @@ export default {
       );
       if (index == -1) return "";
       let word = this.userInfo?.wordsToRepeat[index];
+      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+
+      let dateOfCreation = Math.floor(
+        word.dateOfCreation / (1000 * 60 * 60 * 24)
+      );
       let nextRepeat = Math.floor(word.nextRepeat / (1000 * 60 * 60 * 24));
       let nextReverseRepeat = Math.floor(
         word.nextReverseRepeat / (1000 * 60 * 60 * 24)
       );
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-      if (nextRepeat < now || nextReverseRepeat < now) return "red";
+      if (nextRepeat == now || nextReverseRepeat == now) return "yellow";
+      if (nextRepeat < now || nextReverseRepeat < now) {
+        if (now - dateOfCreation <= 1) return "yellow";
+        return "red";
+      }
+
       return "";
     },
     dateFormatter(date) {
@@ -314,63 +367,6 @@ export default {
       };
       return functions[typeFilter];
     },
-    getUserInfoFromLocalStorage() {
-      try {
-        let userInfo = {};
-        let info = JSON.parse(localStorage.getItem("userInfo"));
-        if (typeof info != "object" && info != null)
-          throw new Error("Данные повреждены");
-        if (info != null) userInfo = info;
-        else {
-          userInfo = {
-            knownWords: [],
-            wordsToStudy: [],
-            wordsToRepeat: [],
-            relevance: [],
-            options: [
-              {
-                countKnownWordsAtOneTime: 50,
-                countWrongsToAddToRepeat: 3,
-                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-                maxDateCheckRelevance: 45,
-                maxCountCheckRelevance: 3,
-              },
-            ],
-            categoriesToLearn: [],
-          };
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        }
-        return userInfo;
-      } catch (err) {
-        console.log(err);
-        (async () => {
-          await nextTick();
-          this.showInfo(
-            "Пользовательские данные",
-            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
-          );
-        })();
-        localStorage.clear();
-        let userInfo = {
-          knownWords: [],
-          wordsToStudy: [],
-          wordsToRepeat: [],
-          relevance: [],
-          options: [
-            {
-              countKnownWordsAtOneTime: 50,
-              countWrongsToAddToRepeat: 3,
-              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-              maxDateCheckRelevance: 45,
-              maxCountCheckRelevance: 3,
-            },
-          ],
-          categoriesToLearn: [],
-        };
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        return userInfo;
-      }
-    },
     async startLearn(type) {
       let words = this.userInfo.wordsToRepeat;
       if (type == "repeat") {
@@ -391,7 +387,7 @@ export default {
           return true;
         });
       }
-
+      words = words.filter((item) => item?.offline != "delete");
       if (words.length == 0) return;
 
       words = words.sort(() => Math.random() - 0.5);

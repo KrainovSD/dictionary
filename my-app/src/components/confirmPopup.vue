@@ -8,9 +8,17 @@
     <div class="confirmPopup">
       <h1 class="confirmPopup__header">{{ header }}</h1>
       <div class="confirmPopup__line"></div>
-      <p class="confirmPopup__title">
-        {{ title }}
-      </p>
+      <div class="confirmPopup__titleContainer">
+        <p
+          class="confirmPopup__title"
+          v-for="(item, index) in fullTitle"
+          :key="index"
+          :class="item.length == 0 ? '_enter' : ''"
+        >
+          {{ item }}
+        </p>
+      </div>
+
       <div class="confirmPopup__line"></div>
       <div class="confirmPopup__buttonContainer">
         <div class="confirmPopup__confirmContainer left">
@@ -37,7 +45,13 @@ export default {
       isVisible: false,
     };
   },
+  computed: {
+    fullTitle() {
+      let title = this.title.split("\n");
 
+      return title;
+    },
+  },
   methods: {
     keyBoardEvent(event) {
       if (this.isVisible == false) return;
@@ -90,7 +104,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-width: 30%;
-  max-width: 50%;
+  max-width: 60%;
   padding: 20px;
 }
 .confirmPopup__header {
@@ -98,10 +112,16 @@ export default {
   font-size: 1.8vw;
   margin: 0 auto;
 }
+.confirmPopup__titleContainer {
+  margin: 0 auto;
+}
 .confirmPopup__title {
-  text-align: center;
-  font-size: 1.2vw;
-  font-family: Dreamcast;
+  text-align: justify;
+  font-size: 1.3vw;
+  font-family: "Times New Roman", Times, serif;
+}
+.confirmPopup__title._enter {
+  margin-top: 10px;
 }
 .confirmPopup__line {
   width: 80%;

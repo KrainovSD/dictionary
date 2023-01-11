@@ -66,8 +66,6 @@ export default {
 </script>
 
 <style>
-.inputTooltip {
-}
 .inputTooltip__input {
   display: flex;
   border-radius: 3px;

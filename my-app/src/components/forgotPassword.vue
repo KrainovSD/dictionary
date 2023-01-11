@@ -1,4 +1,6 @@
 <template>
+  <info-popup ref="info" />
+  <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" style="z-index: 6" ref="backDrop">
     <div class="forgotPassword">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
@@ -14,6 +16,7 @@
             placeholder="NickName"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="checkData"
           />
         </div>
         <div class="sign__inputIconContainer">
@@ -25,6 +28,7 @@
             placeholder="Email"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="checkData"
           />
         </div>
         <p class="sign__infoMessage">{{ responseMessage }}</p>
@@ -40,11 +44,15 @@
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 import confirmButton from "../components/confirmButton.vue";
 import closeModalButton from "../components/closeModalButton.vue";
+import infoPopup from "../components/infoPopup.vue";
+import loadingPopup from "../components/loadingPopup.vue";
 export default {
   components: {
     inputTooltipIcon,
     confirmButton,
     closeModalButton,
+    infoPopup,
+    loadingPopup,
   },
   data() {
     return {
@@ -52,10 +60,14 @@ export default {
       email: "",
       errors: {},
       responseMessage: "",
+      isLoading: false,
     };
   },
 
   methods: {
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+    },
     closePopup() {
       if (!this.$refs.backDrop.classList.contains("close")) {
         this.$refs.backDrop.classList.toggle("close");
@@ -139,26 +151,24 @@ export default {
         console.log(this.errors);
       }
     },
-    sendData(form) {
-      this.$api.change
-        .forgot(form)
-        .then((res) => {
-          if (!this.$refs.backDrop.classList.contains("close")) {
-            this.$refs.backDrop.classList.toggle("close");
-            setTimeout(() => {
-              this.$refs.backDrop.classList.toggle("close");
-              this.$emit("forgot", res.data.message);
-            }, 300);
-          }
-        })
-        .catch((err) => {
-          if (err.response.status == 400) {
-            this.responseMessage = err.response.data.message;
-            return;
-          }
-          console.log(err);
-          this.responseMessage = "Сервер не отвечает";
-        });
+    async sendData(form) {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+        let res = await this.$api.change.forgot(form);
+        let message = res?.data?.message || "";
+        this.isLoading = false;
+        await this.showInfo("Смена пароля", message);
+        this.closePopup();
+      } catch (err) {
+        this.isLoading = false;
+        if (err?.response?.status == 400) {
+          this.responseMessage = err?.response?.data?.message;
+          return;
+        }
+        console.log(err);
+        this.responseMessage = "Сервер не отвечает";
+      }
     },
   },
   watch: {

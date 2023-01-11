@@ -17,6 +17,7 @@
       @focus="focusInput = true"
       @focusout="focusInput = false"
       v-if="type == 'input'"
+      ref="input"
     />
     <textarea
       type="text"
@@ -35,6 +36,7 @@
       @focus="focusInput = true"
       @focusout="focusInput = false"
       v-else
+      ref="textarea"
     />
     <div
       class="interactiveInput__tooltip"
@@ -63,6 +65,15 @@ export default {
     return {
       focusInput: false,
     };
+  },
+  mounted() {
+    let input = this.$refs?.input;
+    let textarea = this.$refs?.textarea;
+    if (!textarea) {
+      input.focus();
+    } else {
+      textarea.focus();
+    }
   },
   computed: {
     interactiveClass() {

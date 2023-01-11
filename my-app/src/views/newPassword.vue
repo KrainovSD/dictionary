@@ -1,5 +1,6 @@
 <template>
   <info-popup ref="info" />
+  <loading-popup v-if="isLoading == true" />
   <div class="newPassword">
     <div class="newPassword__container">
       <div class="sign__container">
@@ -14,6 +15,7 @@
             placeholder="Password"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="checkData"
           />
         </div>
         <div class="sign__inputIconContainer">
@@ -25,6 +27,7 @@
             placeholder="Repeat Password"
             fontSize="14"
             :errors="errors"
+            @keyup.enter="checkData"
           />
         </div>
 
@@ -43,14 +46,16 @@
 import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 import confirmButton from "../components/confirmButton.vue";
 import infoPopup from "../components/infoPopup.vue";
+import loadingPopup from "../components/loadingPopup.vue";
 export default {
-  components: { inputTooltipIcon, confirmButton, infoPopup },
+  components: { inputTooltipIcon, confirmButton, infoPopup, loadingPopup },
   data() {
     return {
       password: "",
       repeatPassword: "",
       errors: {},
       responseMessage: "",
+      isLoading: false,
     };
   },
   computed: {
@@ -62,24 +67,29 @@ export default {
   methods: {
     async showInfo(header, title) {
       await this.$refs.info.show(header, title);
-      this.updateInfo();
+      await this.updateInfo();
       this.redirect();
     },
     redirect() {
       this.$router.push({ name: "home" });
     },
-    updateInfo() {
-      this.$api.auth
-        .checkAuth()
-        .then((res) => {
-          let user = res.data.user;
-          let token = res.data.token;
-          this.$store.commit("setUserInfo", user);
-          this.$store.commit("setAccessToken", token);
-        })
-        .catch(() => {
-          this.$store.commit("resetAuth");
-        });
+    async updateInfo() {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = await this.$api.auth.checkAuth();
+        let user = res?.data?.user;
+        let token = res?.data?.token;
+
+        this.isLoading = false;
+
+        this.$store.commit("setUserInfo", user);
+        this.$store.commit("setAccessToken", token);
+      } catch (err) {
+        this.isLoading = false;
+        this.$store.commit("resetAuth");
+      }
     },
     validateField(field, fieldData) {
       if (this.errors[field]) {
@@ -137,20 +147,27 @@ export default {
         console.log(this.errors);
       }
     },
-    sendData(form) {
-      this.$api.change
-        .password(form)
-        .then((res) => {
-          this.showInfo("Новый пароль", res.data.message);
-        })
-        .catch((err) => {
-          if (err.response.status == 400) {
-            this.responseMessage = err.response.data.message;
-            return;
-          }
-          console.log(err);
-          this.responseMessage = "Сервер не отвечает";
-        });
+    async sendData(form) {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = await this.$api.change.password(form);
+
+        let message = res?.data?.message;
+        this.isLoading = false;
+        this.showInfo("Новый пароль", message);
+      } catch (err) {
+        let status = err?.response?.status;
+        let message = err?.response?.data?.message;
+        this.isLoading = false;
+        if (status == 400) {
+          this.responseMessage = message;
+          return;
+        }
+        console.log(err);
+        this.responseMessage = "Сервер не отвечает";
+      }
     },
   },
   watch: {

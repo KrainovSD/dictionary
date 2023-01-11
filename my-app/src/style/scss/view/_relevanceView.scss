@@ -4,7 +4,7 @@
 }
 
 .relevance {
-    max-width: $maxWidth;
+    @extend %variable-maxWidth;
     padding: rem(40) rem(20) rem(20);
     margin: rem(0) auto;
 

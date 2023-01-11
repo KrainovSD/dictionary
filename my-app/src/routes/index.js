@@ -12,6 +12,7 @@ import newPassword from "../views/newPassword";
 import notFoundPage from "../views/notFoundPage";
 import confirmView from "../views/confirmView";
 import newEmail from "../views/newEmail";
+import statistic from "../views/statisticView";
 
 const routes = [
   {
@@ -25,6 +26,7 @@ const routes = [
         name: "learn",
         component: learnView,
         children: [
+          { path: "statistic", name: "statistic", component: statistic },
           { path: "known", name: "known", component: knownWords },
           { path: "newWords", name: "newWords", component: newWords },
           { path: "repeat", name: "repeat", component: repeatWords },

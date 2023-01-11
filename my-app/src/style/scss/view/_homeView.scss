@@ -15,7 +15,7 @@
     overflow: hidden;
 
     &__container {
-        max-width: $maxWidth;
+        @extend %variable-maxWidth;
         margin: auto;
         width: 100%;
     }
@@ -54,7 +54,7 @@
     overflow: hidden;
 
     &__container {
-        max-width: $maxWidth;
+        @extend %variable-maxWidth;
         margin: auto;
         width: 100%;
     }
@@ -116,7 +116,7 @@
     overflow: hidden;
 
     &__container {
-        max-width: $maxWidth;
+        @extend %variable-maxWidth;
         width: 100%;
         display: flex;
         margin: auto;

@@ -1,10 +1,14 @@
 import mongoose from 'mongoose';
 const statisticsSchema = new mongoose.Schema(
   {
-    lastLearning: Number,
     bestStreak: Number,
+    currentStreak: Number,
+    dateOfLastStreak: Number,
+    lastDailyCheckStreak: Number,
     lastRepeatKnownWords: Number,
+    historyOfRepeatKnownWords: [Number],
     lastReverseRepeatKnownWords: Number,
+    historyOfReverseRepeatKnownWords: [Number],
   },
   { _id: false }
 );
@@ -35,6 +39,7 @@ const categoriesToLearnShema = new mongoose.Schema({
   countOfRepeat: Number,
   countOfReverseRepeat: Number,
   startLearn: Boolean,
+  dateOfStartLearn: Number,
 });
 const wordsToStudyShema = new mongoose.Schema({
   word: String,
@@ -61,6 +66,7 @@ const wordsToRepeatShema = new mongoose.Schema({
   historyOfReverseRepeat: [Number],
   countOfRepeat: Number,
   countOfReverseRepeat: Number,
+  dateOfCreation: Number,
 });
 const relevanceShema = new mongoose.Schema({
   word: String,

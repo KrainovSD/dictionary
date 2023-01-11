@@ -8,9 +8,16 @@
     <div class="infoPopup">
       <h1 class="infoPopup__header">{{ header }}</h1>
       <div class="infoPopup__line"></div>
-      <p class="infoPopup__title">
-        {{ title }}
-      </p>
+      <div class="infoPopup__titleContainer">
+        <p
+          class="infoPopup__title"
+          v-for="(item, index) in fullTitle"
+          :key="index"
+          :class="item.length == 0 ? '_enter' : ''"
+        >
+          {{ item }}
+        </p>
+      </div>
       <div class="infoPopup__line"></div>
       <div class="infoPopup__confirmContainer">
         <confirm-button text="OK" @click="closePopup" fontSize="1vw" />
@@ -30,6 +37,12 @@ export default {
       header: "",
       isVisible: false,
     };
+  },
+  computed: {
+    fullTitle() {
+      let title = this.title.split("\n");
+      return title;
+    },
   },
   methods: {
     keyBoardEvent(event) {
@@ -75,7 +88,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-width: 30%;
-  max-width: 50%;
+  max-width: 60%;
   padding: 20px;
 }
 .infoPopup__header {
@@ -83,13 +96,19 @@ export default {
   font-size: 1.8vw;
   margin: 0 auto;
 }
+.infoPopup__titleContainer {
+  margin: 0 auto;
+}
 .infoPopup__title {
-  text-align: center;
-  font-size: 1.2vw;
-  font-family: Dreamcast;
+  text-align: justify;
+  font-size: 1.3vw;
+  font-family: "Times New Roman", Times, serif;
+}
+.infoPopup__title._enter {
+  margin-top: 10px;
 }
 .infoPopup__line {
-  width: 80%;
+  width: 90%;
   margin: 8px auto;
   height: 1px;
   background-color: black;

@@ -65,6 +65,10 @@
         &.red {
             background-color: #fddddc;
         }
+
+        &.yellow {
+            background-color: rgb(245, 245, 139);
+        }
     }
 
     &__info {
@@ -121,6 +125,11 @@
         &.red {
             background-color: #fddddc;
             border: 1px #fc7b77 solid;
+        }
+
+        &.yellow {
+            background-color: rgb(245, 245, 139);
+            border: 1px rgb(221, 221, 19) solid;
         }
 
         &.green {

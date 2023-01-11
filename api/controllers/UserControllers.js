@@ -3,12 +3,15 @@ dotenv.config({ path: 'config.env' });
 const secretAccessToken = process.env.SECRET_ACCESS_TOKEN;
 const secretRefreshToken = process.env.SECRET_REFRESH_TOKEN;
 const secretPassword = process.env.SECRET_PASSWORD_TO_HASH;
+const secretImportSignature = process.env.SECRET_IMPORT_SIGNATURE;
+const secretSyncSignature = process.env.SECRET_SYNC_SIGNATURE;
 const timeExistForCheckKeys = 5; // В минутах
 const maxSizeAvatar = 1 * 1024 * 1024;
 const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;
 
 import User from '../models/Users.js';
 
+import Utf8 from 'crypto-js/enc-utf8';
 import crypto from 'node:crypto';
 const iterations = 10000;
 import { pbkdf2, pbkdf2Sync } from 'crypto';
@@ -69,10 +72,14 @@ export const register = async (req, res) => {
       lastLogin: 0,
       statistics: [
         {
-          lastLearning: 0,
           bestStreak: 0,
+          currentStreak: 0,
+          dateOfLastStreak: 0,
+          lastDailyCheckStreak: 0,
           lastRepeatKnownWords: 0,
+          historyOfRepeatKnownWords: [],
           lastReverseRepeatKnownWords: 0,
+          historyOfReverseRepeatKnownWords: [],
         },
       ],
       knownWords: [],
@@ -172,6 +179,7 @@ export const login = async (req, res) => {
     }
 
     let userData = getUserInfoFromDoc(user._doc);
+    console.log(userData);
     return res.json({ user: userData, token: accessToken });
   } catch (err) {
     console.log(err);
@@ -325,6 +333,11 @@ export const changeEmail = async (req, res) => {
       });
     }
 
+    if (user.emailToConfirm != '') {
+      return res.status(400).json({
+        message: `Вы уже отправляли заявку на смену Email. Перейдите на почту и проверьте сообщение! Если вы указали неверный адресс электронной почты, повторите процесс смены Email с самого начала немного позже!`,
+      });
+    }
     if (user.confirmKey != key)
       return res.status(400).json({
         message: 'Неверный пароль или ключ подтверждения!',
@@ -342,11 +355,7 @@ export const changeEmail = async (req, res) => {
         message: `Время операции истекло!`,
       });
     }
-    if (user.emailToConfirm != '') {
-      return res.status(400).json({
-        message: `Вы уже отправляли заявку на смену Email. Перейдите на почту и проверьте сообщение!`,
-      });
-    }
+
     let hasEmail = await User.findOne({ email: email });
     if (hasEmail) {
       return res.status(400).json({
@@ -374,7 +383,7 @@ export const changeEmail = async (req, res) => {
     }
     const message = {
       from: process.env.POST_LOGIN,
-      to: user.email,
+      to: email,
       subject: `Смена почты`,
       text: `Перейдите по ссылке, чтобы изменить Email: http://${process.env.HOST}:${process.env.PORT}/confirm/${confirmKey}`,
       html: `Перейдите по ссылке, чтобы изменить Email:  <a href="http://${process.env.HOST}:${process.env.PORT}/confirm/${confirmKey}">Confirm</a> `,
@@ -781,10 +790,8 @@ export const exportUserData = async (req, res) => {
       avatar,
       refreshToken,
       lastLogin,
-      statistics,
       ...userData
     } = user._doc;
-    console.log(userData);
 
     let signature = getSignature(userData);
     userData.signature = signature;
@@ -801,7 +808,21 @@ export const exportUserData = async (req, res) => {
 export const importUserData = async (req, res) => {
   try {
     let { userInfo } = req.body;
-    let correctSignature = isCorrectSignature(userInfo);
+    let correctSignature = isCorrectSignatureImport(userInfo);
+    if (!correctSignature)
+      return res.status(400).json({ message: 'Данные повреждены!' });
+
+    res.json('sosi');
+  } catch (err) {
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+};
+export const syncInfo = async (req, res) => {
+  try {
+    let { userInfo } = req.body;
+    let correctSignature = isCorrectSignatureSync(userInfo);
     if (!correctSignature)
       return res.status(400).json({ message: 'Данные повреждены!' });
 
@@ -852,13 +873,25 @@ function getHash(password, salt = '') {
   if (salt == '') salt = crypto.randomBytes(128).toString('base64');
   let hash = pbkdf2Sync(
     password + salt,
-    secretPassword + salt,
+    secretPassword,
     iterations,
     512,
     'sha512'
   );
   hash = hash.toString('hex');
   return { hash, salt };
+}
+function getSignatureHash(info) {
+  let salt = 'dsmdsmkasmvsa34@de';
+  let hash = pbkdf2Sync(
+    info + salt,
+    secretImportSignature,
+    iterations,
+    512,
+    'sha512'
+  );
+  hash = hash.toString('hex');
+  return { hash };
 }
 function getCheckKey() {
   let key = crypto.randomBytes(128).toString('base64');
@@ -891,42 +924,95 @@ function getTimeExistCoockies() {
   return timeExistToken;
 }
 function getSignature(userInfo) {
-  let signature = {
-    knownWords: JSON.stringify(userInfo.knownWords).length,
-    categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).length,
-    wordsToStudy: JSON.stringify(userInfo.wordsToStudy).length,
-    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).length,
-    relevance: JSON.stringify(userInfo.relevance).length,
-    options: JSON.stringify(userInfo.options).length,
-    export: JSON.stringify(userInfo).length,
+  let user = {
+    knownWords: userInfo.knownWords,
+    categoriesToLearn: userInfo.categoriesToLearn,
+    wordsToStudy: userInfo.wordsToStudy,
+    wordsToRepeat: userInfo.wordsToRepeat,
+    relevance: userInfo.relevance,
+    options: userInfo.options,
+    statistics: userInfo.statistics,
   };
-  for (let key in signature) {
-    let { hash } = getHash(signature[key], 'signature');
-    signature[key] = hash;
+
+  let info = {
+    knownWords: JSON.stringify(userInfo.knownWords).split(''),
+    categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(''),
+    wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(''),
+    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(''),
+    relevance: JSON.stringify(userInfo.relevance).split(''),
+    options: JSON.stringify(userInfo.options).split(''),
+    statistics: JSON.stringify(userInfo.statistics).split(''),
+    data: JSON.stringify(user).split(''),
+  };
+  for (let key in info) {
+    let amountDiffSymbol = {};
+    info[key].forEach((x) => {
+      amountDiffSymbol[x] = (amountDiffSymbol[x] || 0) + 1;
+    });
+    info[key] = JSON.stringify(amountDiffSymbol);
   }
 
+  let signature = {};
+  for (let key in info) {
+    let { hash } = getSignatureHash(info[key]);
+    signature[key] = hash;
+  }
   console.log(signature);
   return signature;
 }
-function isCorrectSignature(userInfo) {
-  let { signatureForCheck, ...userData } = userInfo;
-
-  let signature = {
-    knownWords: JSON.stringify(userData.knownWords).length,
-    categoriesToLearn: JSON.stringify(userData.categoriesToLearn).length,
-    wordsToStudy: JSON.stringify(userData.wordsToStudy).length,
-    wordsToRepeat: JSON.stringify(userData.wordsToRepeat).length,
-    relevance: JSON.stringify(userData.relevance).length,
-    options: JSON.stringify(userData.options).length,
-    export: JSON.stringify(userData).length,
+function isCorrectSignatureImport(userInfo) {
+  let user = {
+    knownWords: userInfo.knownWords,
+    categoriesToLearn: userInfo.categoriesToLearn,
+    wordsToStudy: userInfo.wordsToStudy,
+    wordsToRepeat: userInfo.wordsToRepeat,
+    relevance: userInfo.relevance,
+    options: userInfo.options,
+    statistics: userInfo.statistics,
   };
-  let correct = true;
-  for (let key in signature) {
-    let { hash } = getHash(signature[key], 'signature');
-    if (signatureForCheck[key] != hash) correct = false;
-    console.log(`${key} = ${correct}`);
+  let info = {
+    knownWords: JSON.stringify(userInfo.knownWords).split(''),
+    categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(''),
+    wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(''),
+    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(''),
+    relevance: JSON.stringify(userInfo.relevance).split(''),
+    options: JSON.stringify(userInfo.options).split(''),
+    statistics: JSON.stringify(userInfo.statistics).split(''),
+    data: JSON.stringify(user).split(''),
+  };
+  for (let key in info) {
+    let { hash } = getSignatureHash(info[key]);
+    if (hash != userInfo.signature[key]) return false;
   }
-  return correct;
+  return true;
+}
+function isCorrectSignatureSync(userInfo) {
+  let user = {
+    knownWords: userInfo.knownWords,
+    categoriesToLearn: userInfo.categoriesToLearn,
+    wordsToStudy: userInfo.wordsToStudy,
+    wordsToRepeat: userInfo.wordsToRepeat,
+    relevance: userInfo.relevance,
+    options: userInfo.options,
+    statistics: userInfo.statistics,
+  };
+  let info = {
+    knownWords: JSON.stringify(userInfo.knownWords).split(''),
+    categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(''),
+    wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(''),
+    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(''),
+    relevance: JSON.stringify(userInfo.relevance).split(''),
+    options: JSON.stringify(userInfo.options).split(''),
+    statistics: JSON.stringify(userInfo.statistics).split(''),
+    data: JSON.stringify(user).split(''),
+  };
+  for (let key in userInfo.signature) {
+    let hash = userInfo.signature[key];
+    let descrypt = AES.decrypt(hash, secretSyncSignature);
+    descrypt = descrypt.toString(Utf8);
+    if (info[key] != descrypt) return false;
+  }
+  return true;
 }
 
 function isNowDay(date) {

@@ -2,9 +2,9 @@
   <forgot-password
     v-if="forgotPasswordVisible == true"
     @close="forgotPasswordVisible = false"
-    @forgot="(payload) => forgot(payload)"
   />
   <info-popup ref="info" />
+  <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" ref="backDrop" style="z-index: 5">
     <div class="sign" :class="signType == 'register' ? 'signUp' : ''">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
@@ -131,6 +131,7 @@ import inputTooltipIcon from "../components/inputTooltipIcon.vue";
 import confirmButton from "../components/confirmButton.vue";
 import infoPopup from "../components/infoPopup.vue";
 import closeModalButton from "../components/closeModalButton.vue";
+import loadingPopup from "../components/loadingPopup.vue";
 export default {
   components: {
     forgotPassword,
@@ -138,8 +139,9 @@ export default {
     confirmButton,
     infoPopup,
     closeModalButton,
+    loadingPopup,
   },
-  emits: ["close", "register", "switch"],
+  emits: ["close", "switch"],
   props: {
     signType: String,
   },
@@ -153,9 +155,14 @@ export default {
       errors: {},
       responseMessage: "",
       forgotPasswordVisible: false,
+      isLoading: false,
     };
   },
   methods: {
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+      return;
+    },
     closePopup() {
       if (this.forgotPasswordVisible == true) return;
       if (!this.$refs.backDrop.classList.contains("close")) {
@@ -314,38 +321,79 @@ export default {
         delete this.errors[field];
       }
     },
-    login(form) {
-      this.$api.auth
-        .login(form)
-        .then((res) => {
-          this.$store.commit("setUserInfo", res.data.user);
-          localStorage.setItem("userInfo", JSON.stringify(res.data.user));
-          this.$store.commit("setAccessToken", res.data.token);
-          this.$emit("close");
-        })
-        .catch((err) => {
-          if (err.response.status == 400) {
-            this.responseMessage = err.response.data.message;
-            return;
-          }
-          console.log(err);
-          this.responseMessage = "Сервер не отвечает";
-        });
+    async syncUserInfoWithServer() {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let userInfo = this.$api.offline.getUserInfo();
+        let res = await this.$api.change.syncInfo(userInfo);
+
+        this.isLoading = false;
+        userInfo = res?.data?.user;
+        this.$store.commit("setUserInfo", userInfo);
+        this.$api.offline.setSignatureAPI(userInfo);
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Синхронизация данных с сервером", message);
+        return true;
+      } catch (err) {
+        let message = err?.response?.data?.message || err?.message;
+        this.isLoading = false;
+        await this.showInfo("Синхронизация данных с сервером", message);
+        return false;
+      }
     },
-    register(form) {
-      this.$api.auth
-        .register(form)
-        .then((res) => {
-          this.$emit("register", res.data.message);
-        })
-        .catch((err) => {
-          if (err.response.status == 400) {
-            this.responseMessage = err.response.data.message;
-            return;
-          }
-          console.log(err);
-          this.responseMessage = "Сервер не отвечает";
-        });
+    async login(form) {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = await this.$api.auth.login(form);
+        let user = res?.data?.user;
+        let token = res?.data?.token;
+        this.isLoading = false;
+
+        this.$store.commit("setUserInfo", user);
+        res = await this.syncUserInfoWithServer();
+        if (!res) console.log(user);
+        //this.$api.offline.setSignatureAPI(userInfo);
+        this.$store.commit("setAccessToken", token);
+        this.$emit("close");
+      } catch (err) {
+        let status = err?.response?.status;
+        let message = err?.response?.data?.message;
+        this.isLoading = false;
+        if (status == 400) {
+          this.responseMessage = message;
+          return;
+        }
+        console.log(err);
+        this.responseMessage = "Сервер не отвечает";
+      }
+    },
+    async register(form) {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = await this.$api.auth.register(form);
+        let message = res?.data?.message;
+
+        this.isLoading = false;
+
+        await this.showInfo("Регистрация", message);
+        this.$emit("close");
+      } catch (err) {
+        let status = err?.response?.status;
+        let message = err?.response?.data?.message;
+        this.isLoading = false;
+        if (status == 400) {
+          this.responseMessage = message;
+          return;
+        }
+        console.log(err);
+        this.responseMessage = "Сервер не отвечает";
+      }
     },
     sendData() {
       let form = {};
@@ -370,10 +418,6 @@ export default {
       } else {
         console.log(this.errors);
       }
-    },
-    async forgot(message) {
-      this.forgotPasswordVisible = false;
-      await this.$refs.info.show(message, "Reset password");
     },
   },
   watch: {

@@ -57,7 +57,7 @@ import {
   newPasswordValidation,
   infoValidation,
   newEmailValidation,
-  importDataValidation,
+  userInfoValidation,
   categoryValidation,
   wordValidation,
   relevanceValidation,
@@ -131,9 +131,16 @@ app.post('/export', checkAuth, UserController.exportUserData);
 app.post(
   '/import',
   checkAuth,
-  importDataValidation,
+  userInfoValidation,
   handleValidationErrors,
   UserController.importUserData
+);
+app.post(
+  '/syncInfo',
+  checkAuth,
+  userInfoValidation,
+  handleValidationErrors,
+  UserController.syncInfo
 );
 /* MESSAGE */
 app.post(
@@ -224,6 +231,11 @@ app.post(
   handleValidationErrors,
   WordController.reRepeatAnswer
 );
+app.post('/streak', checkAuth, WordController.checkStreak);
+app.post('/translateAPI', (req, res) => {
+  const API_KEY = process.env.TRANSLATE_YANDEX_API_KEY;
+  return res.json({ API_KEY });
+});
 
 process.on('uncaughtException', (err) => {
   console.log(err);

@@ -1,0 +1,24 @@
+@function rem($px) {
+    $result : $px / 14;
+    @return $result+rem;
+}
+
+.statistic {
+    @extend %variable-maxWidth;
+    padding: rem(50) rem(20);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+
+    &__bestStreak {
+        margin: 0 auto;
+        font-size: rem(24);
+    }
+
+    &__chartContainer {
+        margin-top: rem(60);
+        width: 100%;
+
+
+    }
+}

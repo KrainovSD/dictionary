@@ -2,9 +2,9 @@
   <icon-popup
     v-if="iconPopupVisible == true"
     @close="iconPopupVisible = false"
-    @replace="(payload) => showInfo('Смена аватара', payload)"
     @auth="$emit('noAuth')"
   />
+  <loading-popup v-if="isLoading == true" />
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
 
@@ -202,7 +202,7 @@
             id="import"
             type="file"
             class="hidden"
-            @change="sendImportFile"
+            @change="importData"
             ref="import"
           />
           <label for="import" class="setting__backupButton import"
@@ -221,6 +221,7 @@ import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 import infoPopup from "../components/infoPopup.vue";
 import confirmPopup from "../components/confirmPopup.vue";
 import closeModalButton from "../components/closeModalButton.vue";
+import loadingPopup from "../components/loadingPopup.vue";
 
 export default {
   emits: ["close", "noAuth"],
@@ -232,6 +233,7 @@ export default {
     infoPopup,
     confirmPopup,
     closeModalButton,
+    loadingPopup,
   },
   data() {
     return {
@@ -247,6 +249,7 @@ export default {
       iconPopupVisible: false,
       regularityToRepeatChange: false,
       errors: {},
+      isLoading: false,
     };
   },
   computed: {
@@ -274,6 +277,13 @@ export default {
     },
   },
   methods: {
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+    },
+    async showConfirm(header, title) {
+      let res = await this.$refs.confirm.show(header, title);
+      return res;
+    },
     dateFormat(date) {
       date = new Date(date);
       let minute = date.getMinutes();
@@ -299,13 +309,6 @@ export default {
           this.$emit("close");
         }, 300);
       }
-    },
-    async showInfo(header, title) {
-      await this.$refs.info.show(header, title);
-    },
-    async showConfirm(header, title) {
-      let res = await this.$refs.confirm.show(header, title);
-      return res;
     },
     validateField(field, fieldData) {
       if (fieldData.length == 0) {
@@ -461,222 +464,88 @@ export default {
       form[field] = fieldData;
       this.sendInfo(form);
     },
-    sendInfo(form) {
-      this.$api.change
-        .info(form)
-        .then((res) => {
-          this.showInfo(`Редактирование информации`, res.data.message);
-          this.$store.commit("setUserInfo", res.data.user);
-        })
-        .catch((err) => {
-          if (err.response?.status == 401) {
-            this.$emit("noAuth");
-          }
-          if (err.response?.status == 400) {
-            let message = err.response.data.message;
-            this.showInfo(`Редактирование информации`, message);
-            return;
-          }
-          this.showInfo(
-            `Редактирование информации`,
-            err?.response?.data?.message
-          );
-        });
-    },
-    exportData() {
-      this.$api.change
-        .export()
-        .then((res) => {
-          let userData = res.data.message;
-          let blob = new Blob([userData], { type: "text/plain" });
-          let link = document.createElement("a");
-          link.setAttribute("href", URL.createObjectURL(blob));
-          link.setAttribute("download", "userData.txt");
-          link.click();
-        })
-        .catch((err) => {
-          let message = err?.response?.data?.message || "Сервер не отвечает!";
-          if (err.response?.status == 401) {
-            this.$emit("noAuth");
-          }
-          if (err.response?.status == 400) {
-            this.showInfo(`Export`, message);
-            return;
-          }
-          this.showInfo(`Export`, message);
-        });
-    },
-    async checkImportFile(data) {
-      /* let checkForm = {
-          id: data?._id,
-          knownWords: data?.knownWords,
-          categoriesToLean: data?.categoriesToLean,
-          wordsToStudy: data?.wordsToStudy,
-          wordsToRepeat: data?.wordsToRepeat,
-          relevance: data?.relevance,
-          options: data?.options,
-        };*/
-      let error = false;
-      return new Promise((resolve) => {
-        Object.keys(data).forEach((field) => {
-          if (error) return;
-          switch (field) {
-            case "id": {
-              let id = data[field];
-              if (!id || id?.length == 0 || typeof id != "string") {
-                resolve(false);
-                error = true;
-                return;
-              }
-              break;
-            }
-            case "options": {
-              let options = data[field];
-              if (!options || options?.length != 1) {
-                resolve(false);
-                error = true;
-                return;
-              }
-              options = options[0];
-              if (Object.keys(options)?.length != 5) {
-                resolve(false);
-                error = true;
-                return;
-              }
-              let check = {
-                countKnownWordsAtOneTime: options?.countKnownWordsAtOneTime,
-                countWrongsToAddToRepeat: options?.countWrongsToAddToRepeat,
-                regularityToRepeat: options?.regularityToRepeat,
-                maxDateCheckRelevance: options?.maxDateCheckRelevance,
-                maxCountCheckRelevance: options?.maxCountCheckRelevance,
-              };
-              Object.keys(check).forEach((subField) => {
-                if (error) return;
-                let fieldData = check[subField];
-                switch (subField) {
-                  case "countKnownWordsAtOneTime": {
-                    if (
-                      !fieldData ||
-                      typeof fieldData != "number" ||
-                      fieldData < 20 ||
-                      fieldData > 99
-                    ) {
-                      resolve(false);
-                      error = true;
-                      return;
-                    }
-                    break;
-                  }
-                  case "countWrongsToAddToRepeat": {
-                    if (
-                      !fieldData ||
-                      typeof fieldData != "number" ||
-                      fieldData < 3 ||
-                      fieldData > 9
-                    ) {
-                      resolve(false);
-                      error = true;
-                      return;
-                    }
-                    break;
-                  }
-                  case "maxDateCheckRelevance": {
-                    if (
-                      !fieldData ||
-                      typeof fieldData != "number" ||
-                      fieldData < 10 ||
-                      fieldData > 90
-                    ) {
-                      resolve(false);
-                      error = true;
-                      return;
-                    }
-                    break;
-                  }
-                  case "maxCountCheckRelevance": {
-                    if (
-                      !fieldData ||
-                      typeof fieldData != "number" ||
-                      fieldData < 3 ||
-                      fieldData > 9
-                    ) {
-                      resolve(false);
-                      error = true;
-                      return;
-                    }
-                    break;
-                  }
-                  case "regularityToRepeat": {
-                    if (!fieldData || fieldData?.length != 8) {
-                      resolve(false);
-                      error = true;
-                      return;
-                    }
-                    fieldData.forEach((item) => {
-                      if (error) return;
-                      if (typeof item != "number" || item < 1 || item > 16) {
-                        resolve(false);
-                        error = true;
-                        return;
-                      }
-                    });
-                    break;
-                  }
-                }
-              });
-
-              break;
-            }
-            case "knownWords": {
-              let knownWords = data[field];
-              if (knownWords?.length == 0) return;
-
-              break;
-            }
-          }
-        });
-        resolve(true);
-      });
-    },
-    async sendImportFile(event) {
+    async sendInfo(form) {
       try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = await this.$api.change.info(form);
+        let message = res?.data?.message;
+        let user = res?.data?.user;
+
+        this.isLoading = false;
+
+        this.showInfo(`Редактирование информации`, message);
+        this.$store.commit("setUserInfo", user);
+      } catch (err) {
+        let status = err?.response?.status;
+        let message = err?.response?.data?.message || "Сервер не отвечает!";
+        this.isLoading = false;
+
+        if (status == 401) {
+          this.$emit("noAuth");
+        }
+        if (status == 400) {
+          this.showInfo(`Редактирование информации`, message);
+          return;
+        }
+        this.showInfo(`Редактирование информации`, message);
+      }
+    },
+    async exportData() {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = await this.$api.change.export();
+        let userData = res?.data?.message;
+        this.isLoading = false;
+
+        let blob = new Blob([userData], { type: "text/plain" });
+        let link = document.createElement("a");
+        link.setAttribute("href", URL.createObjectURL(blob));
+        link.setAttribute("download", "userData.txt");
+        link.click();
+      } catch (err) {
+        let message = err?.response?.data?.message || "Сервер не отвечает!";
+        let status = err?.response?.status;
+        this.isLoading = false;
+        if (status == 401) {
+          this.$emit("noAuth");
+        }
+        this.showInfo(`Экспорт`, message);
+      }
+    },
+    async importData(event) {
+      try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         let file = event.target.files[0];
         this.$refs.import.value = null;
         let type = file.type;
         let size = file.size;
         let maxSize = 10 * 1024 * 1024;
         if (type != "text/plain" || size > maxSize) {
-          this.showInfo("Import", "Неверный формат файла!");
-          return;
+          throw new Error("Неверный тип данных!");
         }
         let data = await file.text();
         data = JSON.parse(data);
-        /*let checkForm = {
-          id: data?._id,
-          knownWords: data?.knownWords,
-          categoriesToLean: data?.categoriesToLearn,
-          wordsToStudy: data?.wordsToStudy,
-          wordsToRepeat: data?.wordsToRepeat,
-          relevance: data?.relevance,
-          options: data?.options,
-        };
-        console.log(data);*/
-        /*let validation = await this.checkImportFile(checkForm);
-        console.log(validation);
-        if (!validation) {
-          this.showInfo("Import", "Неверный формат файла или данных!");
-          return;
-        }*/
+
         let confirm = await this.$refs.confirm.show(
           "Import",
           "Вы уверены что хотите заменить данные об изученных словах? Если вы используете старую резеврную копию, то весь достигнутый с этой даты прогресс будет утерян."
         );
         if (!confirm) return;
-        console.log("confirmed");
+
+        this.isLoading = false;
+
         localStorage.setItem("userInfo", JSON.stringify(data));
+        this.showInfo("Импорт", "Файл успешно испортирован!");
       } catch (err) {
         console.log(err);
-        this.showInfo("Import", "Неверный формат файла или данных!");
+        this.isLoading = false;
+        this.showInfo("Импорт", "Неверный формат файла или данных!");
         return;
       }
     },

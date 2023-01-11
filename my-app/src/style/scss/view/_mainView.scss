@@ -24,12 +24,12 @@ body {
 .mainContainer {}
 
 .workplaceContainer {
-    max-width: $maxWidth;
+    @extend %variable-maxWidth;
     margin: auto;
 }
 
 .headerContainer {
-    max-width: $maxWidth;
+    @extend %variable-maxWidth;
     padding: 0 rem(20);
     margin: auto;
     display: flex;

@@ -1,5 +1,6 @@
 <template>
   <info-popup ref="info" />
+  <loading-popup v-if="isLoading == true" />
   <confirm-popup ref="confirm" />
   <category-popup
     v-if="categoryPopupVisible == true"
@@ -67,7 +68,7 @@
           />
         </div>
 
-        <div class="wordPopup__inputContainer">
+        <div class="wordPopup__inputContainer" style="position: relative">
           <input-tooltip
             type="input"
             v-model="word"
@@ -75,10 +76,78 @@
             fontSize="16"
             :errors="errors"
             placeholder="*Word"
-            @change="translateApi"
+            @input="translateApi"
             @keyup.enter="operationWithWord"
           />
+          <div
+            class="wordPopup__tooltipAdvice"
+            v-if="
+              !errors?.word &&
+              ((adviceWord.length > 0 && this.word != this.adviceWord) ||
+                (adviceTranscription.length > 0 &&
+                  this.transcription != this.adviceTranscription) ||
+                (adviceTranslate.length > 0 && adviceTranslateUsed != true))
+            "
+          >
+            <div
+              class="wordPopup__adviceWordContainer"
+              v-if="adviceWord.length > 0 && this.word != this.adviceWord"
+            >
+              <p>Возможно вы имели ввиду:</p>
+
+              <div
+                @click="
+                  this.word = this.adviceWord;
+                  this.translateApi();
+                "
+                class="wordPopup__adviceWord"
+              >
+                {{ adviceWord }}
+              </div>
+            </div>
+            <div
+              class="wordPopup__adviceTranscriptionContainer"
+              v-if="
+                adviceTranscription.length > 0 &&
+                this.transcription != this.adviceTranscription
+              "
+            >
+              <p>Транскрипция:</p>
+
+              <div
+                class="wordPopup__adviceTranscription"
+                @click="
+                  this.$refs.transcription.value = this.adviceTranscription;
+                  this.transcription = this.adviceTranscription;
+                "
+              >
+                {{ adviceTranscription }}
+              </div>
+            </div>
+            <div
+              class="wordPopup__adviceTranslateContainer"
+              v-if="adviceTranslate.length > 0 && adviceTranslateUsed != true"
+            >
+              <p>Варианты перевода:</p>
+
+              <template v-for="(item, index) in adviceTranslate" :key="index">
+                <div
+                  class="wordPopup__adviceTranslate"
+                  v-if="!translateList.includes(item)"
+                  @click="
+                    this.translate =
+                      this.translate.length > 0
+                        ? `${this.translate}, ${item}`
+                        : `${item}`
+                  "
+                >
+                  {{ item }}
+                </div>
+              </template>
+            </div>
+          </div>
         </div>
+
         <div class="wordPopup__inputContainer">
           <input-tooltip
             type="input"
@@ -93,64 +162,10 @@
 
         <!-- TRANSCTIPTION -->
         <div style="position: relative">
-          <div
-            class="keyboard"
+          <transcription-keyboard
             v-if="currentFocusInput == 'transcription'"
-            @mousedown="enterTranscription"
-          >
-            <div>
-              <div class="keyboard__key">ɑ</div>
-              <div class="keyboard__key">ʌ</div>
-              <div class="keyboard__key">ə</div>
-              <div class="keyboard__key">ε</div>
-              <div class="keyboard__key">æ</div>
-              <div class="keyboard__key">ɜ</div>
-              <div class="keyboard__key">ʒ</div>
-              <div class="keyboard__key">ı</div>
-              <div class="keyboard__key">ɪ</div>
-              <div class="keyboard__key">ŋ</div>
-              <div class="keyboard__key">ɔ</div>
-              <div class="keyboard__key">ɒ</div>
-              <div class="keyboard__key">ʃ</div>
-              <div class="keyboard__key">ð</div>
-              <div class="keyboard__key">θ</div>
-              <div class="keyboard__key">ʤ</div>
-            </div>
-            <div>
-              <div class="keyboard__key">ʊ</div>
-              <div class="keyboard__key">b</div>
-              <div class="keyboard__key">d</div>
-              <div class="keyboard__key">e</div>
-              <div class="keyboard__key">f</div>
-              <div class="keyboard__key">g</div>
-              <div class="keyboard__key">h</div>
-              <div class="keyboard__key">i</div>
-              <div class="keyboard__key">j</div>
-              <div class="keyboard__key">k</div>
-              <div class="keyboard__key">l</div>
-              <div class="keyboard__key">m</div>
-              <div class="keyboard__key">n</div>
-              <div class="keyboard__key">p</div>
-              <div class="keyboard__key">r</div>
-              <div class="keyboard__key">ʧ</div>
-            </div>
-            <div>
-              <div class="keyboard__key">s</div>
-              <div class="keyboard__key">t</div>
-              <div class="keyboard__key">u</div>
-              <div class="keyboard__key">v</div>
-              <div class="keyboard__key">w</div>
-              <div class="keyboard__key">z</div>
-              <div class="keyboard__key">[</div>
-              <div class="keyboard__key space">_</div>
-              <div class="keyboard__key">]</div>
-              <div class="keyboard__key">ˌ</div>
-              <div class="keyboard__key">ˈ</div>
-              <div class="keyboard__key">:</div>
-              <div class="keyboard__key">ː</div>
-              <div class="keyboard__key space">←</div>
-            </div>
-          </div>
+            @enterKey="(payload) => enterTranscription(payload)"
+          />
           <input
             type="text"
             class="wordPopup__input"
@@ -159,6 +174,11 @@
             name="transcription"
             @keypress.prevent=""
             @keyup="enterTranscription"
+            @input="
+              (e) => {
+                this.transcription = e.target.value;
+              }
+            "
             autocomplete="off"
             ref="transcription"
           />
@@ -247,6 +267,8 @@ import confirmButton from "../components/confirmButton";
 import infoPopup from "../components/infoPopup";
 import confirmPopup from "../components/confirmPopup";
 import closeModalButton from "../components/closeModalButton.vue";
+import loadingPopup from "../components/loadingPopup.vue";
+import transcriptionKeyboard from "../components/transcriptionKeyboard.vue";
 
 export default {
   components: {
@@ -256,6 +278,8 @@ export default {
     infoPopup,
     confirmPopup,
     closeModalButton,
+    loadingPopup,
+    transcriptionKeyboard,
   },
   emits: ["close"],
   props: {
@@ -275,21 +299,28 @@ export default {
       errors: {},
       exampleCount: 1,
       categoryPopupVisible: false,
+      isLoading: false,
+      adviceWord: "",
+      adviceTranslate: [],
+      adviceTranscription: "",
     };
   },
+  timerAPIController: null,
+  delayAPI: 2000,
   mounted() {
     if (Object.keys(this.options)?.length != 0) {
-      Object.keys(this.options).forEach((key) => {
-        if (key == "transcription")
-          this.$refs.transcription.value = this.options[key];
-        this[key] = this.options[key];
-        (async () => {
-          if (key == "example") {
+      for (let key in this.options) {
+        if (key == "example") {
+          (async () => {
+            let examplesOption = this.options.example;
+            while (examplesOption.length < 3) examplesOption.push("");
+            this[key] = examplesOption;
             let count = 1;
-            this.options[key].forEach((example, index) => {
-              if (index == 0) return;
+            for (let index in examplesOption) {
+              let example = examplesOption[index];
+              if (index == 0) continue;
               if (example.length > 0) count++;
-            });
+            }
             this.exampleCount = count;
             await nextTick();
             if (count > 1) {
@@ -300,10 +331,15 @@ export default {
                 input.addEventListener("focusout", this.unSelectInput);
               }
             }
-          }
-        })();
-      });
+          })();
+          continue;
+        }
+        if (key == "transcription")
+          this.$refs.transcription.value = this.options[key];
+        this[key] = this.options[key];
+      }
     }
+    if (this.word.length > 0) this.translateApi();
 
     let input = Array.from(document.querySelectorAll("input"));
     let textArea = Array.from(document.querySelectorAll("textarea"));
@@ -315,12 +351,6 @@ export default {
     inputs.forEach((input) => {
       input.addEventListener("focusout", this.unSelectInput);
     });
-    if (this.form) {
-      Object.keys(this.form).forEach((field) => {
-        console.log(field);
-        this[field] = this.form[field];
-      });
-    }
   },
   beforeUnmount() {
     let input = Array.from(document.querySelectorAll("input"));
@@ -337,7 +367,7 @@ export default {
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
       if (Object.keys(userInfo)?.length == 0) {
-        userInfo = this.getUserInfoFromLocalStorage();
+        userInfo = this.$api.offline.getUserInfo();
       }
       return userInfo;
     },
@@ -359,81 +389,43 @@ export default {
       if (this.category == "") return "Выберите категорию";
       return this.categoryList[this.category];
     },
+    translateList() {
+      let translateList = this.translate.split(",");
+      translateList = translateList.filter((item) => item.trim() != "");
+      translateList = translateList.map((item) => item.trim());
+      return translateList;
+    },
+    adviceTranslateUsed() {
+      if (this.adviceTranslate.length == 0) return true;
+      let flag = true;
+      for (let item of this.adviceTranslate) {
+        if (this.translateList.includes(item)) continue;
+        flag = false;
+      }
+      return flag;
+    },
   },
   methods: {
-    getUserInfoFromLocalStorage() {
-      try {
-        let userInfo = {};
-        let info = JSON.parse(localStorage.getItem("userInfo"));
-        if (typeof info != "object" && info != null)
-          throw new Error("Данные повреждены");
-        if (info != null) userInfo = info;
-        else {
-          userInfo = {
-            knownWords: [],
-            wordsToStudy: [],
-            wordsToRepeat: [],
-            relevance: [],
-            options: [
-              {
-                countKnownWordsAtOneTime: 50,
-                countWrongsToAddToRepeat: 3,
-                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-                maxDateCheckRelevance: 45,
-                maxCountCheckRelevance: 3,
-              },
-            ],
-            categoriesToLearn: [],
-          };
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        }
-        return userInfo;
-      } catch (err) {
-        console.log(err);
-        (async () => {
-          await nextTick();
-          this.showInfo(
-            "Пользовательские данные",
-            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
-          );
-        })();
-        localStorage.clear();
-        let userInfo = {
-          knownWords: [],
-          wordsToStudy: [],
-          wordsToRepeat: [],
-          relevance: [],
-          options: [
-            {
-              countKnownWordsAtOneTime: 50,
-              countWrongsToAddToRepeat: 3,
-              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-              maxDateCheckRelevance: 45,
-              maxCountCheckRelevance: 3,
-            },
-          ],
-          categoriesToLearn: [],
-        };
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        return userInfo;
-      }
-    },
     async translateApi() {
-      try {
-        /*let response = await fetch(
-          `https://speller.yandex.net/services/spellservice.json/checkText?text=${this.word}`
-        );
-        let result = await response.json();
-        console.log(result);
-
-        response = await fetch(
-          `https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key=dict.1.1.20221129T170854Z.af9b2899afb4c061.7c5e69f9944a8a1b7f7b5c16916f21e54e6c34a9&lang=en-ru&text=${this.word}`
-        );
-        result = await response.json();
-        console.log(result);*/
-      } catch (err) {
-        console.log(err);
-      }
+      clearTimeout(this.$options.timerAPIController);
+      this.$options.timerAPIController = setTimeout(async () => {
+        try {
+          let res = await this.$api.words.translateAPI(
+            this.word.toLowerCase().trim()
+          );
+          let { adviceWord, adviceTranslate, adviceTranscription } = res;
+          this.adviceWord = adviceWord.length > 0 ? adviceWord : "";
+          this.adviceTranscription =
+            adviceTranscription.length > 0 ? adviceTranscription : "";
+          this.adviceTranslate =
+            adviceTranslate.length > 0 ? adviceTranslate : [];
+        } catch (err) {
+          this.adviceWord = "";
+          this.adviceTranscription = "";
+          this.adviceTranslate = [];
+          console.log(err);
+        }
+      }, this.$options.delayAPI);
     },
     closePopup() {
       if (this.categoryPopupVisible == true) return;
@@ -472,15 +464,13 @@ export default {
       }
     },
     enterTranscription(event) {
-      if (event.type == "keyup") {
+      if (event?.type == "keyup") {
         let input = this.$refs.transcription;
         this.validateField("transcription", input.value);
         return;
       }
 
-      event.preventDefault();
-      if (!event.target.classList.contains("keyboard__key")) return;
-      let symbol = event.target.textContent;
+      let symbol = event;
       let input = this.$refs.transcription;
       let cursor = input.selectionStart;
       let text = input.value;
@@ -506,6 +496,7 @@ export default {
           break;
         }
       }
+      this.transcription = input.value;
       this.validateField("transcription", input.value);
     },
     async addExample() {
@@ -513,7 +504,6 @@ export default {
 
       await nextTick();
       let id = `example${this.exampleCount - 1}`;
-      console.log(id);
       let input = document.querySelector(`#${id}`);
       input.addEventListener("focus", this.selectInput);
       input.addEventListener("focusout", this.unSelectInput);
@@ -583,7 +573,7 @@ export default {
           }
           case "transcription": {
             let transcriptionRegExp =
-              /^[ɑʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/;
+              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/;
             if (!transcriptionRegExp.test(form[key])) {
               this.errors[key] =
                 "Транскрипция может содержать только специальные символы представленные доп. клавиатурой!";
@@ -698,7 +688,7 @@ export default {
           }
           case "transcription": {
             let transcriptionRegExp =
-              /^[ɑʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/;
+              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/;
             if (!transcriptionRegExp.test(fieldData)) {
               this.errors[field] =
                 "Транскрипция может содержать только специальные символы представленные доп. клавиатурой!";
@@ -777,6 +767,9 @@ export default {
     },
     async addWord(form) {
       try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         let hasRelevance = this.userInfo?.relevance.filter((relevanceItem) => {
           if (relevanceItem.irregularVerb == false)
             return (
@@ -802,12 +795,13 @@ export default {
 
         let res = this.$store.getters.getAuth
           ? await this.$api.words.addWord(form)
-          : this.$api.offWords.addWord(form);
+          : this.$api.offline.addWord(form);
 
+        this.isLoading = false;
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         let message = res?.data?.message || res?.message;
         await this.showInfo("Добавление слова", message);
@@ -816,6 +810,7 @@ export default {
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
+        this.isLoading = false;
         if (status == 0 || status == 500) {
           message =
             "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
@@ -826,17 +821,21 @@ export default {
     },
     async updateWord(form) {
       try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         form.id = this.id;
         delete form.category;
 
         let res = this.$store.getters.getAuth
           ? await this.$api.words.updateWord(form)
-          : this.$api.offWords.updateWord(form);
+          : this.$api.offline.updateWord(form);
 
+        this.isLoading = false;
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         let message = res?.data?.message || res?.message;
         await this.showInfo("Редактирование слова", message);
@@ -844,6 +843,7 @@ export default {
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
+        this.isLoading = false;
         if (status == 0 || status == 500) {
           message =
             "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";

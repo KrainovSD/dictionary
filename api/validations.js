@@ -263,7 +263,49 @@ export const newEmailValidation = [
     .isString(),
 ];
 
-export const importDataValidation = [];
+export const userInfoValidation = [
+  body('userInfo')
+    .customSanitizer((value) => {
+      let userInfo = {
+        knownWords: value.knownWords,
+        categoriesToLearn: value.categoriesToLearn,
+        wordsToStudy: value.wordsToStudy,
+        wordsToRepeat: value.wordsToRepeat,
+        relevance: value.relevance,
+        statistics: value.statistics,
+        options: value.options,
+        signature: value.signature,
+      };
+      return userInfo;
+    })
+    .custom((value) => {
+      let validation = {
+        isValidatedKnownWords: checkKnownWords(value.knownWords),
+        isValidatedCategoriesToLearn: checkCategoriesToLearn(
+          value.categoriesToLearn
+        ),
+        isValidatedWordsToStudy: checkWordsToStudy(value.wordsToStudy),
+        isValidatedWordsToRepeat: checkWordsToRepeat(value.wordsToRepeat),
+        isValidatedRelevance: checkRelevance(value.relevance),
+        isValidatedStatistics: checkStatistics(value.statistics),
+        isValidatedOptions: checkOptions(value.options),
+        isValidatedSignature: checkSignature(value.signature),
+      };
+      console.log(validation);
+      for (let res of validation) {
+        if (!res) throw new Error('Данные повреждены');
+      }
+      return true;
+    }),
+];
+function checkKnownWords(words) {}
+function checkCategoriesToLearn(categories) {}
+function checkWordsToStudy(words) {}
+function checkWordsToRepeat(words) {}
+function checkRelevance(words) {}
+function checkStatistics(statistics) {}
+function checkOptions(options) {}
+function checkSignature(signatures) {}
 
 export const messageValidation = [
   body('userName')
@@ -410,7 +452,7 @@ export const wordValidation = [
     .withMessage('У транскрипции неверный тип данных!')
     .isLength({ max: 50 })
     .withMessage('Длина транскрипции не должна превышать более 50 символов!')
-    .matches(/^[ɑʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/)
+    .matches(/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/)
     .withMessage(
       'Транскрипция может содержать только специальные символы представленные доп. клавиатурой!'
     ),

@@ -1,5 +1,6 @@
 <template>
   <info-popup ref="info" />
+  <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" style="z-index: 4" ref="backDrop">
     <category-icon
       v-if="addIconVisible == true"
@@ -108,6 +109,7 @@ import multipleInputTooltip from "../components/multipleInputTooltip.vue";
 import categoryIcon from "../components/categoryIcon.vue";
 import infoPopup from "../components/infoPopup.vue";
 import closeModalButton from "../components/closeModalButton.vue";
+import loadingPopup from "../components/loadingPopup.vue";
 export default {
   components: {
     inputTooltip,
@@ -116,6 +118,7 @@ export default {
     categoryIcon,
     infoPopup,
     closeModalButton,
+    loadingPopup,
   },
   emits: ["close"],
   props: {
@@ -144,6 +147,7 @@ export default {
       errors: {},
       tooltip: false,
       addIconVisible: false,
+      isLoading: false,
     };
   },
   mounted() {
@@ -171,6 +175,7 @@ export default {
     },
     async showInfo(header, title) {
       await this.$refs.info.show(header, title);
+      return;
     },
     validateForm(form) {
       this.errors = {};
@@ -301,9 +306,12 @@ export default {
     },
     async addCategory(form) {
       try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         let res = this.$store.getters.getAuth
           ? await this.$api.words.addCategory(form)
-          : this.$api.offWords.addCategory(form);
+          : this.$api.offline.addCategory(form);
 
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
@@ -311,9 +319,12 @@ export default {
           localStorage.setItem("userInfo", JSON.stringify(userInfo));
         }
         let message = res?.data?.message || res?.message;
+
+        this.isLoading = false;
         await this.showInfo("Добавление категории", message);
         this.closePopup();
       } catch (err) {
+        this.isLoading = false;
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
         if (status == 0 || status == 500) {
@@ -326,20 +337,25 @@ export default {
     },
     async updateCaregory(form) {
       try {
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         form.id = this.id;
         let res = this.$store.getters.getAuth
           ? await this.$api.words.updateCategory(form)
-          : this.$api.offWords.updateCategory(form);
+          : this.$api.offline.updateCategory(form);
 
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         let message = res?.data?.message || res?.message;
+        this.isLoading = false;
         await this.showInfo("Редактирование категории", message);
         this.closePopup();
       } catch (err) {
+        this.isLoading = false;
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
         if (status == 0 || status == 500) {

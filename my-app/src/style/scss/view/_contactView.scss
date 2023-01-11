@@ -4,7 +4,7 @@
 }
 
 .contact {
-    max-width: $maxWidth;
+    @extend %variable-maxWidth;
     margin: 0 auto;
     padding: rem(30) rem(20);
     display: flex;

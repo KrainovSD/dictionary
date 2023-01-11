@@ -1,4 +1,5 @@
 <template>
+  <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" ref="backDrop" v-if="visible == true">
     <info-popup ref="info" />
     <confirm-popup ref="confirm" />
@@ -59,7 +60,7 @@
               <div class="learnCard__confirmContainer">
                 <confirm-button
                   text="Подтвердить"
-                  @click="debounceNormalConfirm"
+                  @click="throttleNormalConfirm"
                   fontSize="14"
                 />
               </div>
@@ -116,16 +117,18 @@ import confirmButton from "../components/confirmButton.vue";
 import infoPopup from "../components/infoPopup.vue";
 import confirmPopup from "../components/confirmPopup.vue";
 import interactiveInput from "../components/interactiveInput.vue";
-import { throttle } from "lodash";
 import closeModalButton from "../components/closeModalButton.vue";
+import loadingPopup from "../components/loadingPopup.vue";
 
 export default {
+  emits: ["close"],
   components: {
     confirmButton,
     infoPopup,
     interactiveInput,
     confirmPopup,
     closeModalButton,
+    loadingPopup,
   },
   data() {
     return {
@@ -138,13 +141,14 @@ export default {
       answer: "",
       correctAnswer: "",
       isCorrectAnswer: false,
-
       interactiveInput: "",
       errors: {},
       visible: false,
       timerToShowAnswer: 0,
       isVisibleAnswer: false,
       isVisibleNext: false,
+      isLoading: false,
+      isMayEnterAnswer: true,
     };
   },
   spareTranslates: [
@@ -270,21 +274,19 @@ export default {
   timeToShowAnswer: 8000,
   countTryToAnswer: 3,
   delayToEnterAnswer: 1200,
+  enterAnswerController: null,
   setTimeoutController: null,
   timerContoller: null,
-  controller: null,
+  promiseController: null,
   beforeUnmount() {
     document.removeEventListener("keyup", this.keyBoardEvent);
+    clearTimeout(this.$options.enterAnswerController);
     if (this.isVisibleAnswer == false) return;
     clearTimeout(this.$options.setTimeoutController);
     clearInterval(this.$options.timerContoller);
-    this.$options.controller.resolve(this.isCorrectAnswer);
+    this.$options.promiseController.resolve(this.isCorrectAnswer);
   },
   mounted() {
-    this.debounceNormalConfirm = throttle(
-      this.normalConfirm,
-      this.$options.delayToEnterAnswer
-    );
     document.addEventListener("keyup", this.keyBoardEvent);
   },
   computed: {
@@ -336,63 +338,6 @@ export default {
   },
 
   methods: {
-    getUserInfoFromLocalStorage() {
-      try {
-        let userInfo = {};
-        let info = JSON.parse(localStorage.getItem("userInfo"));
-        if (typeof info != "object" && info != null)
-          throw new Error("Данные повреждены");
-        if (info != null) userInfo = info;
-        else {
-          userInfo = {
-            knownWords: [],
-            wordsToStudy: [],
-            wordsToRepeat: [],
-            relevance: [],
-            options: [
-              {
-                countKnownWordsAtOneTime: 50,
-                countWrongsToAddToRepeat: 3,
-                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-                maxDateCheckRelevance: 45,
-                maxCountCheckRelevance: 3,
-              },
-            ],
-            categoriesToLearn: [],
-          };
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        }
-        return userInfo;
-      } catch (err) {
-        console.log(err);
-        (async () => {
-          await nextTick();
-          this.showInfo(
-            "Пользовательские данные",
-            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
-          );
-        })();
-        localStorage.clear();
-        let userInfo = {
-          knownWords: [],
-          wordsToStudy: [],
-          wordsToRepeat: [],
-          relevance: [],
-          options: [
-            {
-              countKnownWordsAtOneTime: 50,
-              countWrongsToAddToRepeat: 3,
-              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-              maxDateCheckRelevance: 45,
-              maxCountCheckRelevance: 3,
-            },
-          ],
-          categoriesToLearn: [],
-        };
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        return userInfo;
-      }
-    },
     randomNumber(max) {
       let random = Math.random();
       let min = 1;
@@ -407,7 +352,7 @@ export default {
 
       let userInfo = this.$store.getters.getUserInfo;
       if (Object.keys(userInfo)?.length == 0) {
-        userInfo = this.getUserInfoFromLocalStorage();
+        userInfo = this.$api.offline.getUserInfo();
       }
       if (userInfo?.wordsToStudy?.length > 20)
         wordsToStudy = [...userInfo.wordsToStudy.map((item) => item.translate)];
@@ -429,6 +374,11 @@ export default {
       }
     },
     keyBoardEvent(event) {
+      if (
+        this.$refs.confirm.isVisible == true ||
+        this.$refs.info.isVisible == true
+      )
+        return;
       let code = event.keyCode;
       if (code != 13) return;
 
@@ -439,7 +389,7 @@ export default {
         this.isVisibleAnswer == false &&
         code == 13
       )
-        return this.debounceNormalConfirm();
+        return this.throttleNormalConfirm();
     },
     async showInfo(header, title) {
       await nextTick();
@@ -472,7 +422,7 @@ export default {
       if (event !== "undefinded") {
         let res = await this.showConfirm(
           "Окончание обучения",
-          "Вы уверены, что хотите прервать сессию обучения? После возвращение вы сможете продолжить с того места, на котором остановились!"
+          "Вы уверены, что хотите прервать сессию обучения? После возвращения вы сможете продолжить с того же места, на котором остановились!"
         );
 
         if (!res) return;
@@ -508,6 +458,14 @@ export default {
       }
       delete this.errors.answer;
     },
+    throttleNormalConfirm() {
+      if (this.isMayEnterAnswer == false) return;
+      this.normalConfirm();
+      this.isMayEnterAnswer = false;
+      this.$options.enterAnswerController = setTimeout(() => {
+        this.isMayEnterAnswer = true;
+      }, this.$options.delayToEnterAnswer);
+    },
     async start(learnType, words, categoryID = "undefined") {
       try {
         this.learnType = learnType;
@@ -539,6 +497,7 @@ export default {
           this.word = word;
           this.answer = "";
           if (this.kindOfLearn == "standart") this.correctAnswer = word.word;
+
           if (this.kindOfLearn == "reverse") this.setReverseSetting(word);
           await nextTick();
           let res = await this.checkAnswer();
@@ -549,16 +508,19 @@ export default {
 
           localStorage.setItem(this.learnType, JSON.stringify(answers));
         }
+        if (this.isLoading == true) return;
+        this.isLoading = true;
 
         let data = { words: [...answers], categoryID: categoryID };
         let res = this.$store.getters.getAuth
           ? await this.$api.words[this.apiFunction](data)
-          : this.$api.offWords[this.apiFunction](data);
+          : this.$api.offline[this.apiFunction](data);
 
+        this.isLoading = false;
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         localStorage.removeItem(this.learnType);
         let message = res?.data?.message || res?.message;
@@ -568,6 +530,7 @@ export default {
         console.log(err);
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
+        this.isLoading = false;
         if (status == 0 || status == 500) {
           message =
             "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн! Повторно откройте обучение, чтобы сохранить прогресс в режиме оффлайн!";
@@ -582,7 +545,7 @@ export default {
       const cardsPromise = new Promise((ok) => {
         resolve = ok;
       });
-      this.$options.controller = { resolve };
+      this.$options.promiseController = { resolve };
       return cardsPromise;
     },
     showAnswer(correct) {
@@ -591,7 +554,7 @@ export default {
       this.setTimer();
       this.isVisibleNext = true;
       this.$options.setTimeoutController = setTimeout(() => {
-        this.$options.controller.resolve(correct);
+        this.$options.promiseController.resolve(correct);
       }, this.$options.timeToShowAnswer);
     },
     async normalConfirm() {
@@ -680,7 +643,7 @@ export default {
       this.isVisibleNext = false;
       clearTimeout(this.$options.setTimeoutController);
       clearInterval(this.$options.timerContoller);
-      this.$options.controller.resolve(this.isCorrectAnswer);
+      this.$options.promiseController.resolve(this.isCorrectAnswer);
     },
   },
   watch: {

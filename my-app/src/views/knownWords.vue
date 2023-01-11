@@ -4,19 +4,34 @@
     ref="learnCard"
     @close="learnCardVisible = false"
   />
-  <div class="learnPlace__container">
+  <info-popup ref="info" />
+  <confirm-popup ref="confirm" />
+  <loading-popup v-if="isLoading == true" />
+  <div class="learnPlace__container" @click="currentSelectedWord = {}">
     <div class="knownWords">
       <div class="knownWords__header">
         <div class="knownWords__filterContainer">
           <slide-filter
+            @click.stop=""
             :filterList="filterList"
             @change="(payload) => (filter = payload)"
           />
         </div>
         <div class="knownWords__searchContainer">
-          <search-panel v-model="search" />
+          <search-panel @click.stop="" v-model="search" />
         </div>
-
+        <button
+          class="knownWords__CRUDButton"
+          :class="
+            Object.keys(currentSelectedWord)?.length == 0 ? 'disabled' : ''
+          "
+          :disabled="
+            Object.keys(currentSelectedWord)?.length == 0 ? true : false
+          "
+          @click.stop="deleteWord"
+        >
+          Удалить
+        </button>
         <div class="knownWords__lastInfo">
           <p>
             Последнее повторение в обычном режиме:
@@ -35,8 +50,14 @@
         </div>
         <div
           class="knownWords__word"
+          @click.stop="
+            currentSelectedWord =
+              currentSelectedWord?._id == item._id ? {} : item
+          "
           v-for="(item, index) in wordsList"
           :key="index"
+          :id="item._id"
+          :class="currentSelectedWord._id == item._id ? 'selected' : ''"
         >
           <div class="knownWords__info">
             <p>{{ item.word }}</p>
@@ -111,12 +132,18 @@
 import learnCard from "../components/learnCard.vue";
 import slideFilter from "../components/slideFilter.vue";
 import searchPanel from "../components/searchPanel.vue";
+import infoPopup from "../components/infoPopup";
+import confirmPopup from "../components/confirmPopup";
+import loadingPopup from "../components/loadingPopup.vue";
 import { nextTick } from "@vue/runtime-core";
 export default {
   components: {
     learnCard,
     slideFilter,
     searchPanel,
+    infoPopup,
+    confirmPopup,
+    loadingPopup,
   },
   data() {
     return {
@@ -144,13 +171,15 @@ export default {
           "По количеству реверсивных повторений слова (по убыванию)",
       },
       learnCardVisible: false,
+      isLoading: false,
+      currentSelectedWord: {},
     };
   },
   computed: {
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
       if (Object.keys(userInfo)?.length == 0) {
-        userInfo = this.getUserInfoFromLocalStorage();
+        userInfo = this.$api.offline.getUserInfo();
       }
       return userInfo;
     },
@@ -239,7 +268,10 @@ export default {
         this.userInfo?.statistics?.[0]?.lastRepeatKnownWords /
           (1000 * 60 * 60 * 24)
       );
-      if (now > lastRepeatKnownWords) return "red";
+      if (now > lastRepeatKnownWords) {
+        if (now - lastRepeatKnownWords == 1) return "yellow";
+        return "red";
+      }
 
       return "green";
     },
@@ -251,7 +283,10 @@ export default {
         this.userInfo?.statistics?.[0]?.lastReverseRepeatKnownWords /
           (1000 * 60 * 60 * 24)
       );
-      if (now > lastReverseRepeatKnownWords) return "red";
+      if (now > lastReverseRepeatKnownWords) {
+        if (now - lastReverseRepeatKnownWords == 1) return "yellow";
+        return "red";
+      }
       return "green";
     },
   },
@@ -342,65 +377,16 @@ export default {
       };
       return functions[typeFilter];
     },
-    getUserInfoFromLocalStorage() {
-      try {
-        let userInfo = {};
-        let info = JSON.parse(localStorage.getItem("userInfo"));
-        if (typeof info != "object" && info != null)
-          throw new Error("Данные повреждены");
-        if (info != null) userInfo = info;
-        else {
-          userInfo = {
-            knownWords: [],
-            wordsToStudy: [],
-            wordsToRepeat: [],
-            relevance: [],
-            options: [
-              {
-                countKnownWordsAtOneTime: 50,
-                countWrongsToAddToRepeat: 3,
-                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-                maxDateCheckRelevance: 45,
-                maxCountCheckRelevance: 3,
-              },
-            ],
-            categoriesToLearn: [],
-          };
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        }
-        return userInfo;
-      } catch (err) {
-        console.log(err);
-        (async () => {
-          await nextTick();
-          this.showInfo(
-            "Пользовательские данные",
-            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
-          );
-        })();
-        localStorage.clear();
-        let userInfo = {
-          knownWords: [],
-          wordsToStudy: [],
-          wordsToRepeat: [],
-          relevance: [],
-          options: [
-            {
-              countKnownWordsAtOneTime: 50,
-              countWrongsToAddToRepeat: 3,
-              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-              maxDateCheckRelevance: 45,
-              maxCountCheckRelevance: 3,
-            },
-          ],
-          categoriesToLearn: [],
-        };
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        return userInfo;
-      }
+    async showInfo(header, title) {
+      await this.$refs.info.show(header, title);
+    },
+    async showConfirm(header, title) {
+      let res = await this.$refs.confirm.show(header, title);
+      return res;
     },
     async startLearn(type) {
       let words = this.userInfo.knownWords;
+      words = words.filter((item) => item?.offline != "delete");
       if (type == "known") {
         words = words.sort(this.filterWordsList("lastCommonRepeatUp"));
       }
@@ -418,10 +404,47 @@ export default {
       words = words.slice(0, countWords);
 
       words = words.sort(() => Math.random() - 0.5);
-      console.log(type);
       this.learnCardVisible = true;
       await nextTick();
       this.$refs.learnCard.start(type, words);
+    },
+    async deleteWord() {
+      try {
+        if (Object.keys(this.currentSelectedWord)?.length == 0) return;
+        let id = this.currentSelectedWord?._id;
+
+        let confirm = await this.showConfirm(
+          "Удаление слова",
+          "Вы уверены, что хотите удалить выбранное слово?"
+        );
+        if (!confirm) return;
+
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.deleteWord(id)
+          : this.$api.offline.deleteWord(id);
+
+        this.isLoading = false;
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          this.$api.offline.setSignatureAPI(userInfo);
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Удаление слова", message);
+      } catch (err) {
+        let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        this.isLoading = false;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
+        this.showInfo("Удаление слова", message);
+      }
     },
   },
   watch: {},

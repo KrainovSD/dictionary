@@ -5,12 +5,12 @@
 
 .learnType {
     width: 100%;
-    max-width: $maxWidth;
+    @extend %variable-maxWidth;
     padding: 0 rem(20);
     margin: 0 auto;
 
     &__container {
-        max-width: $maxWidth;
+        @extend %variable-maxWidth;
         margin: 0px auto;
         padding: rem(20) rem(20);
         display: flex;
@@ -40,7 +40,7 @@
 
 
     &__container {
-        max-width: $maxWidth;
+        @extend %variable-maxWidth;
         margin: 0px auto;
         padding: rem(20) rem(20);
         display: flex;

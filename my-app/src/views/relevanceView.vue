@@ -7,6 +7,7 @@
   />
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
+  <loading-popup v-if="isLoading == true" />
 
   <div class="relevance appear">
     <div style="display: flex">
@@ -134,7 +135,7 @@ import searchPanel from "../components/searchPanel.vue";
 import inputTooltip from "../components/inputTooltip.vue";
 import infoPopup from "../components/infoPopup.vue";
 import confirmPopup from "../components/confirmPopup.vue";
-import { nextTick } from "@vue/runtime-core";
+import loadingPopup from "../components/loadingPopup.vue";
 export default {
   components: {
     wordPopup,
@@ -143,6 +144,7 @@ export default {
     inputTooltip,
     infoPopup,
     confirmPopup,
+    loadingPopup,
   },
   data() {
     return {
@@ -162,13 +164,14 @@ export default {
       currentAddedWords: [],
       wordPopupVisible: false,
       categoryPopupVisible: false,
+      isLoading: false,
     };
   },
   computed: {
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
       if (Object.keys(userInfo)?.length == 0) {
-        userInfo = this.getUserInfoFromLocalStorage();
+        userInfo = this.$api.offline.getUserInfo();
       }
       return userInfo;
     },
@@ -208,63 +211,6 @@ export default {
     },
   },
   methods: {
-    getUserInfoFromLocalStorage() {
-      try {
-        let userInfo = {};
-        let info = JSON.parse(localStorage.getItem("userInfo"));
-        if (typeof info != "object" && info != null)
-          throw new Error("Данные повреждены");
-        if (info != null) userInfo = info;
-        else {
-          userInfo = {
-            knownWords: [],
-            wordsToStudy: [],
-            wordsToRepeat: [],
-            relevance: [],
-            options: [
-              {
-                countKnownWordsAtOneTime: 50,
-                countWrongsToAddToRepeat: 3,
-                regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-                maxDateCheckRelevance: 45,
-                maxCountCheckRelevance: 3,
-              },
-            ],
-            categoriesToLearn: [],
-          };
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        }
-        return userInfo;
-      } catch (err) {
-        console.log(err);
-        (async () => {
-          await nextTick();
-          this.showInfo(
-            "Пользовательские данные",
-            "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены!"
-          );
-        })();
-        localStorage.clear();
-        let userInfo = {
-          knownWords: [],
-          wordsToStudy: [],
-          wordsToRepeat: [],
-          relevance: [],
-          options: [
-            {
-              countKnownWordsAtOneTime: 50,
-              countWrongsToAddToRepeat: 3,
-              regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-              maxDateCheckRelevance: 45,
-              maxCountCheckRelevance: 3,
-            },
-          ],
-          categoriesToLearn: [],
-        };
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-        return userInfo;
-      }
-    },
     filterWordsList(typeFilter) {
       let functions = {
         letterUp: function (a, b) {
@@ -356,14 +302,18 @@ export default {
           )}?`
         );
         if (!confirm) return;
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
         let res = this.$store.getters.getAuth
           ? await this.$api.words.addRelevance({ words })
-          : this.$api.offWords.addRelevance({ words });
+          : this.$api.offline.addRelevance({ words });
 
+        this.isLoading = false;
         if (this.$store.getters.getAuth) {
           let userInfo = res?.data?.user;
           this.$store.commit("setUserInfo", userInfo);
-          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          this.$api.offline.setSignatureAPI(userInfo);
         }
         let message = res?.data?.message || res?.message;
         let addedWords = res?.data?.words || res?.words;
@@ -373,6 +323,7 @@ export default {
         this.input = "";
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
+        this.isLoading = false;
         this.showInfo("Добавление слов в актуализатор", message);
       }
     },

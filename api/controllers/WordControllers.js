@@ -1,6 +1,7 @@
 import { signedCookies } from 'cookie-parser';
 
 import User from '../models/Users.js';
+import { message } from './UserControllers.js';
 /* 
 1. StartLearnCategory: 
 - не активная категория
@@ -52,6 +53,7 @@ export const startLearnCategory = async (req, res) => {
 
     let changeFields = {
       startLearn: true,
+      dateOfStartLearn: Date.now(),
     };
     let userInfo = await setElement(
       'categoriesToLearn',
@@ -99,6 +101,7 @@ export const addCategory = async (req, res) => {
       countOfRepeat: 0,
       countOfReverseRepeat: 0,
       startLearn: false,
+      dateOfStartLearn: 0,
     };
 
     let userInfo = await pushNewElement(
@@ -211,8 +214,8 @@ export const updateCategory = async (req, res) => {
       return res.status(400).json({
         message: `Такое имя категории уже существует!`,
       });
-    hasCategory = isHasCategory(name, null, user);
-    if (!hasCategory)
+    let index = user.categoriesToLearn.findIndex((item) => item._id == id);
+    if (index == -1)
       return res.status(400).json({
         message: `Категории не существует!`,
       });
@@ -263,8 +266,8 @@ export const updateWord = async (req, res) => {
       return res.status(400).json({
         message: `Такое слово уже добавлено!`,
       });
-    hasWord = isAlreadyHasWord(word, null, user);
-    if (!hasWord)
+    let index = user.wordsToStudy.findIndex((item) => item._id == id);
+    if (index == -1)
       return res.status(400).json({
         message: `Слова не существует!`,
       });
@@ -318,7 +321,8 @@ export const deleteCategory = async (req, res) => {
     let wordsInCategory = user.wordsToStudy.filter(
       (item) => item.category == id
     );
-    wordsInCategory = user.wordsToStudy.map((item) => item._id);
+
+    wordsInCategory = wordsInCategory.map((item) => item._id);
 
     let index = user.categoriesToLearn.findIndex((item) => item._id == id);
     if (index == -1)
@@ -356,16 +360,32 @@ export const deleteWord = async (req, res) => {
     if (!id || typeof id != 'string' || id.trim()?.length == 0) {
       return res.status(400).json({ message: `Неверный тип ID!` });
     }
-    let user = await getUserInfo(req.userId, 'wordsToStudy');
+    let user = await getUserInfo(
+      req.userId,
+      'wordsToStudy categoriesToLearn knownWords'
+    );
     if (!user)
       return res
         .status(400)
         .json({ message: `Не удалось выполнить операцию!` });
 
-    let index = user.wordsToStudy.findIndex((item) => item._id == id);
+    let index = user.knownWords.findIndex((item) => item._id == id);
+    if (index != -1) {
+      return deleteKnownWord(req, res, id);
+    }
+
+    index = user.wordsToStudy.findIndex((item) => item._id == id);
     if (index == -1)
       return res.status(400).json({
         message: `Слова не существует!`,
+      });
+    let activeCategory = isActiveCategory(
+      user.wordsToStudy[index].category,
+      user
+    );
+    if (activeCategory)
+      return res.status(400).json({
+        message: `Слово в активной категории!`,
       });
 
     let userInfo = await pullElement('wordsToStudy', id, req.userId);
@@ -382,6 +402,22 @@ export const deleteWord = async (req, res) => {
     });
   }
 };
+async function deleteKnownWord(req, res, id) {
+  try {
+    let userInfo = await pullElement('knownWords', id, req.userId);
+    if (!userInfo)
+      return res.status(400).json({
+        message: `Не удалось выполнить операцию!`,
+      });
+
+    return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
+  }
+}
 
 export const addRelevance = async (req, res) => {
   try {
@@ -559,10 +595,10 @@ export const learnAnswer = async (req, res) => {
       wordsWithWrong = wordsWithWrong.join(', ');
       let message =
         'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
-      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!`;
+      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
       if (!pushWrongs.status)
         return res.status(400).json({ message: pushWrongs.message });
-      if (pushWrongs.message.length > 0) message += ` ${pushWrongs.message}`;
+      if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
       return res.json({
         message,
         user: pushWrongs.user,
@@ -607,14 +643,27 @@ export const learnAnswer = async (req, res) => {
         message: 'Не удалось выполнить операцию обновления!',
       });
 
+    let message = '';
     if (countOfRepeat == 13)
-      return res.json({
-        message:
-          'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!',
-        user: userInfo,
-      });
+      message +=
+        'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!\n';
+    else message += 'Обычное повторение категории успешно завершено!\n';
+
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
+      userInfo = checkStreak.userInfo;
+    }
+    if (checkStreak.resetStreak) {
+      userInfo = await User.findOne({ _id: req.userId });
+      if (!userInfo)
+        return res.status(400).json({ message: 'Пользователь не найден!' });
+      userInfo = getUserInfoFromDoc(userInfo._doc);
+      message += '\nК сожалению, серия повторения была прервана!';
+    }
+
     return res.json({
-      message: 'Обычное повторение категории успешно завершено!',
+      message,
       user: userInfo,
     });
   } catch (err) {
@@ -674,10 +723,10 @@ export const reLearnAnswer = async (req, res) => {
       wordsWithWrong = wordsWithWrong.join(', ');
       let message =
         'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
-      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!`;
+      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
       if (!pushWrongs.status)
         return res.status(400).json({ message: pushWrongs.message });
-      if (pushWrongs.message.length > 0) message += ` ${pushWrongs.message}`;
+      if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
       return res.json({ message, user: pushWrongs.user });
     }
     /* Проверка на количество повторений категории */
@@ -719,14 +768,27 @@ export const reLearnAnswer = async (req, res) => {
         message: 'Не удалось выполнить операцию обновления!',
       });
 
+    let message = '';
     if (countOfReverseRepeat == 13)
-      return res.json({
-        message:
-          'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!',
-        user: userInfo,
-      });
+      message +=
+        'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!\n';
+    else message += 'Реверсивное повторение категории успешно завершено!\n';
+
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
+      userInfo = checkStreak.userInfo;
+    }
+    if (checkStreak.resetStreak) {
+      userInfo = await User.findOne({ _id: req.userId });
+      if (!userInfo)
+        return res.status(400).json({ message: 'Пользователь не найден!' });
+      userInfo = getUserInfoFromDoc(userInfo._doc);
+      message += '\nК сожалению, серия повторения была прервана!';
+    }
+
     return res.json({
-      message: 'Реверсивное повторение категории успешно завершено!',
+      message,
       user: userInfo,
     });
   } catch (err) {
@@ -797,9 +859,23 @@ const pullStudiedCategory = async (req, res) => {
         .status(400)
         .json({ message: 'Не удалось перенести слова из категории!' });
 
+    let message =
+      "Категория успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!\n";
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
+      userInfo = checkStreak.userInfo;
+    }
+    if (checkStreak.resetStreak) {
+      userInfo = await User.findOne({ _id: req.userId });
+      if (!userInfo)
+        return res.status(400).json({ message: 'Пользователь не найден!' });
+      userInfo = getUserInfoFromDoc(userInfo._doc);
+      message += '\nК сожалению, серия повторения была прервана!';
+    }
+
     res.json({
-      message:
-        "Категория успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!",
+      message,
       user: userInfo,
     });
   } catch (err) {
@@ -813,8 +889,8 @@ export const knownAnswer = async (req, res) => {
   try {
     /* Сбор информации о пользователе и списке слов */
     let { words } = req.body;
-    let message = 'Слова успешно повторены!';
-    let user = await getUserInfo(req.userId, 'knownWords');
+    let message = 'Слова успешно повторены!\n';
+    let user = await getUserInfo(req.userId, 'knownWords statistics');
     if (!user)
       return res
         .status(400)
@@ -836,16 +912,25 @@ export const knownAnswer = async (req, res) => {
       );
       wordsWithWrong = wordsWithWrong.map((item) => item.word);
       wordsWithWrong = wordsWithWrong.join(', ');
-      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!`;
+      message += `В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!\n`;
       if (!pushWords.status)
         return res.status(400).json({ message: pushWords.message });
-      if (pushWords.message.length > 0) message += ` ${pushWords.message}`;
+      if (pushWords.message.length > 0) message += `${pushWords.message}`;
     }
     /* Изменение статуса последнего повторения */
     words = words.filter((item) => !item.wrong);
+
+    let historyOfRepeatKnownWords =
+      user.statistics[0].historyOfRepeatKnownWords;
+    historyOfRepeatKnownWords.push(Date.now());
     let updateStatistic = await User.findOneAndUpdate(
       { _id: req.userId },
-      { $set: { [`statistics.0.lastRepeatKnownWords`]: Date.now() } },
+      {
+        $set: {
+          [`statistics.0.lastRepeatKnownWords`]: Date.now(),
+          [`statistics.0.historyOfRepeatKnownWords`]: historyOfRepeatKnownWords,
+        },
+      },
       { new: true, rawResult: true }
     );
     if (updateStatistic.ok == 0)
@@ -880,6 +965,19 @@ export const knownAnswer = async (req, res) => {
         message: `Не удалось обновить информацию о словах!`,
       });
 
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
+      userInfo = checkStreak.userInfo;
+    }
+    if (checkStreak.resetStreak) {
+      userInfo = await User.findOne({ _id: req.userId });
+      if (!userInfo)
+        return res.status(400).json({ message: 'Пользователь не найден!' });
+      userInfo = getUserInfoFromDoc(userInfo._doc);
+      message += '\nК сожалению, серия повторения была прервана!';
+    }
+
     res.json({ message, user: userInfo });
   } catch (err) {
     console.log(err);
@@ -892,8 +990,8 @@ export const reKnownAnswer = async (req, res) => {
   try {
     /* Сбор информации о пользователе и списке слов */
     let { words } = req.body;
-    let message = 'Слова успешно повторены!';
-    let user = await getUserInfo(req.userId, 'knownWords');
+    let message = 'Слова успешно повторены!\n';
+    let user = await getUserInfo(req.userId, 'knownWords statistics');
     if (!user)
       return res
         .status(400)
@@ -914,16 +1012,26 @@ export const reKnownAnswer = async (req, res) => {
       );
       wordsWithWrong = wordsWithWrong.map((item) => item.word);
       wordsWithWrong = wordsWithWrong.join(', ');
-      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!`;
+      message += `В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!\n`;
       if (!pushWords.status)
         return res.status(400).json({ message: pushWords.message });
-      if (pushWords.message.length > 0) message += ` ${pushWords.message}`;
+      if (pushWords.message.length > 0) message += `${pushWords.message}`;
     }
     /* Изменение статуса последнего повторения */
     words = words.filter((item) => !item.wrong);
+
+    let historyOfReverseRepeatKnownWords =
+      user.statistics[0].historyOfReverseRepeatKnownWords;
+    historyOfReverseRepeatKnownWords.push(Date.now());
     let updateStatistic = await User.findOneAndUpdate(
       { _id: req.userId },
-      { $set: { [`statistics.0.lastReverseRepeatKnownWords`]: Date.now() } },
+      {
+        $set: {
+          [`statistics.0.lastReverseRepeatKnownWords`]: Date.now(),
+          [`statistics.0.historyOfReverseRepeatKnownWords`]:
+            historyOfReverseRepeatKnownWords,
+        },
+      },
       { new: true, rawResult: true }
     );
     if (updateStatistic.ok == 0)
@@ -959,6 +1067,19 @@ export const reKnownAnswer = async (req, res) => {
         message: `Не удалось обновить информацию о словах!`,
       });
 
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
+      userInfo = checkStreak.userInfo;
+    }
+    if (checkStreak.resetStreak) {
+      userInfo = await User.findOne({ _id: req.userId });
+      if (!userInfo)
+        return res.status(400).json({ message: 'Пользователь не найден!' });
+      userInfo = getUserInfoFromDoc(userInfo._doc);
+      message += '\nК сожалению, серия повторения была прервана!';
+    }
+
     res.json({ message, user: userInfo });
   } catch (err) {
     console.log(err);
@@ -971,7 +1092,7 @@ export const repeatAnswer = async (req, res) => {
   try {
     /* Получение информации о пользователе и списке слов */
     let { words } = req.body;
-    let message = 'Обучение пройдено успешно!';
+    let message = 'Обучение пройдено успешно!\n';
     let user = await getUserInfo(req.userId, 'wordsToRepeat options');
     if (!user)
       return res
@@ -989,7 +1110,7 @@ export const repeatAnswer = async (req, res) => {
 
     if (wordsWithWrong.length > 0) {
       wordsWithWrong = wordsWithWrong.join(', ');
-      message += ` В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!`;
+      message += `В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!\n`;
     }
     /* Получение новых параметров слова */
     words = words.filter((item) => !item.wrong);
@@ -1057,7 +1178,7 @@ export const repeatAnswer = async (req, res) => {
       );
       standartFinishedWords = standartFinishedWords.map((item) => item.word);
       standartFinishedWords = standartFinishedWords.join(', ');
-      message += ` Слова, в которых закончился полный цикл обычных повторений: ${standartFinishedWords}. Закончите для этих слов цикл реверсивных повторений, чтобы убрать их из категории "Повторяемые"!`;
+      message += `Слова, в которых закончился полный цикл обычных повторений: ${standartFinishedWords}. Закончите для этих слов цикл реверсивных повторений, чтобы убрать их из категории "Повторяемые"!\n`;
     }
 
     if (finishedWords.length > 0) {
@@ -1066,7 +1187,19 @@ export const repeatAnswer = async (req, res) => {
       );
       finishedWords = finishedWords.map((item) => item.word);
       finishedWords = finishedWords.join(', ');
-      message += ` Слова с полностью завершенными циклами повторений обоих типов: ${finishedWords}! Эти слова были удалены их категории "Повторяемые"`;
+      message += `Слова с полностью завершенными циклами повторений обоих типов: ${finishedWords}! Эти слова были удалены их категории "Повторяемые"\n`;
+    }
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
+      userInfo = checkStreak.userInfo;
+    }
+    if (checkStreak.resetStreak) {
+      userInfo = await User.findOne({ _id: req.userId });
+      if (!userInfo)
+        return res.status(400).json({ message: 'Пользователь не найден!' });
+      userInfo = getUserInfoFromDoc(userInfo._doc);
+      message += '\nК сожалению, серия повторения была прервана!';
     }
 
     res.json({
@@ -1084,7 +1217,7 @@ export const reRepeatAnswer = async (req, res) => {
   try {
     /* Получение информации о пользователе и списке слов */
     let { words } = req.body;
-    let message = 'Обучение пройдено успешно!';
+    let message = 'Обучение пройдено успешно!\n';
     let user = await getUserInfo(req.userId, 'wordsToRepeat options');
     if (!user)
       return res
@@ -1102,7 +1235,7 @@ export const reRepeatAnswer = async (req, res) => {
 
     if (wordsWithWrong.length > 0) {
       wordsWithWrong = wordsWithWrong.join(', ');
-      message += ` В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!`;
+      message += `В следующих словах была допущена ошибка: ${wordsWithWrong}! Слова, в которых допущена ошибка должны быть пройдены повторно!\n`;
     }
     /* Получение новых параметров слова */
     words = words.filter((item) => !item.wrong);
@@ -1172,7 +1305,7 @@ export const reRepeatAnswer = async (req, res) => {
       );
       reverseFinishedWords = reverseFinishedWords.map((item) => item.word);
       reverseFinishedWords = reverseFinishedWords.join(', ');
-      message += ` Слова, в которых закончился полный цикл реверсивных повторений: ${reverseFinishedWords}. Закончите для этих слов цикл обычных повторений, чтобы убрать их из категории "Повторяемые"!`;
+      message += `Слова, в которых закончился полный цикл реверсивных повторений: ${reverseFinishedWords}. Закончите для этих слов цикл обычных повторений, чтобы убрать их из категории "Повторяемые"!\n`;
     }
 
     if (finishedWords.length > 0) {
@@ -1181,7 +1314,19 @@ export const reRepeatAnswer = async (req, res) => {
       );
       finishedWords = finishedWords.map((item) => item.word);
       finishedWords = finishedWords.join(', ');
-      message += ` Слова с полностью завершенными циклами повторений обоих типов: ${finishedWords}! Эти слова были удалены их категории "Повторяемые"`;
+      message += `Слова с полностью завершенными циклами повторений обоих типов: ${finishedWords}! Эти слова были удалены их категории "Повторяемые"\n`;
+    }
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
+      userInfo = checkStreak.userInfo;
+    }
+    if (checkStreak.resetStreak) {
+      userInfo = await User.findOne({ _id: req.userId });
+      if (!userInfo)
+        return res.status(400).json({ message: 'Пользователь не найден!' });
+      userInfo = getUserInfoFromDoc(userInfo._doc);
+      message += '\nК сожалению, серия повторения была прервана!';
     }
 
     res.json({
@@ -1234,7 +1379,7 @@ const pushWrongsInWords = async (words, typeWords, req) => {
       );
       wordsForRepeat = wordsForRepeat.map((item) => item.word);
       wordsForRepeat = wordsForRepeat.join(', ');
-      message += ` Следующие слова были поставлены на повторения из за большого количество накопившихся ошибок: ${wordsForRepeat}!`;
+      message += `Следующие слова были поставлены на повторения из за большого количество накопившихся ошибок: ${wordsForRepeat}!`;
     }
 
     let userInfo;
@@ -1297,6 +1442,7 @@ const pushWordsInRepeat = async (wordsWithWrong, req) => {
         historyOfReverseRepeat: [],
         countOfRepeat: 0,
         countOfReverseRepeat: 0,
+        dateOfCreation: Date.now(),
       };
     });
 
@@ -1306,6 +1452,46 @@ const pushWordsInRepeat = async (wordsWithWrong, req) => {
   } catch (err) {
     console.log(err);
     return false;
+  }
+};
+export const checkStreak = async (req, res) => {
+  try {
+    let message = '';
+    let checkStreak = await isSuccessStreak(req.userId);
+    if (checkStreak.ok) {
+      message += 'Поздравляем, непрерывная серия повторения была увеличена!';
+    } else if (checkStreak.resetStreak) {
+      message += 'К сожалению, серия повторения была прервана!';
+    } else {
+      message += 'Активности не завершены!';
+    }
+
+    let userInfo = await User.findOneAndUpdate(
+      { _id: req.userId },
+      {
+        $set: {
+          [`statistics.0.lastDailyCheckStreak`]: Date.now(),
+        },
+      },
+      { new: true, rawResult: true }
+    );
+    if (userInfo.ok == 0) {
+      return res.status(400).json({
+        message:
+          'Не удалось изменить последнюю дату проверки непрерывной серии!',
+      });
+    }
+    userInfo = getUserInfoFromDoc(userInfo.value._doc);
+    console.log(userInfo);
+    res.json({
+      message,
+      user: userInfo,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: `Не удалось выполнить операцию!`,
+    });
   }
 };
 
@@ -1586,4 +1772,336 @@ function isHasCategory(name, id, userInfo) {
   );
   if (hasCategory.length == 0) return false;
   return true;
+}
+async function isSuccessStreak(userID) {
+  try {
+    const user = await getUserInfo(
+      userID,
+      'statistics categoriesToLearn wordsToRepeat knownWords options'
+    );
+    //console.log(user);
+    let dateOfLastStreak = millisecondsToDays(
+      user.statistics[0].dateOfLastStreak
+    );
+    if (dateOfLastStreak == millisecondsToDays(Date.now())) return false;
+
+    let success = true;
+
+    let checkKnownWords = await isStreakInKnownWords(
+      user.statistics[0],
+      user.knownWords.length,
+      userID
+    );
+    console.log(checkKnownWords);
+    if (!checkKnownWords) success = false;
+    if (checkKnownWords.resetStreak) return { resetStreak: true };
+    let checkWordsToStudy = await isStreakInWordsToStudy(
+      user.categoriesToLearn,
+      user.statistics[0],
+      userID
+    );
+    console.log(checkWordsToStudy);
+    if (!checkWordsToStudy) success = false;
+    if (checkWordsToStudy.resetStreak) return { resetStreak: true };
+    let checkWordsToRepeat = await isStreakInWordsToRepeat(
+      user.wordsToRepeat,
+      user.statistics[0],
+      user.options[0],
+      userID
+    );
+    console.log(checkWordsToRepeat);
+    if (!checkWordsToRepeat) success = false;
+    if (checkWordsToRepeat.resetStreak) return { resetStreak: true };
+
+    if (!success) return false;
+
+    let streak = await increaseStreak(userID, user.statistics[0]);
+    if (!streak) return false;
+
+    let userInfo = await User.findOne({ _id: userID });
+    if (!userInfo) return false;
+    userInfo = getUserInfoFromDoc(userInfo._doc);
+
+    return { ok: true, userInfo };
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function isStreakInKnownWords(info, wordsLength, userID) {
+  try {
+    if (wordsLength == 0) return true;
+
+    let lastRepeat = millisecondsToDays(info.lastRepeatKnownWords);
+    let lastReverseRepeat = millisecondsToDays(
+      info.lastReverseRepeatKnownWords
+    );
+    let now = millisecondsToDays(Date.now());
+    let historyOfRepeat = info.historyOfRepeatKnownWords.map((item) =>
+      millisecondsToDays(item)
+    );
+    let historyOfReverseRepeat = info.historyOfReverseRepeatKnownWords.map(
+      (item) => millisecondsToDays(item)
+    );
+
+    let isSuccess = true;
+    let isResetStreak = false;
+
+    if (lastRepeat == now) {
+      if (
+        historyOfRepeat.length > 1 &&
+        diffOfLastTwoElements(historyOfRepeat) > 1
+      )
+        isResetStreak = true;
+    } else isSuccess = false;
+    if (lastReverseRepeat == now) {
+      if (
+        historyOfReverseRepeat.length > 1 &&
+        diffOfLastTwoElements(historyOfReverseRepeat) > 1
+      )
+        isResetStreak = true;
+    } else isSuccess = false;
+
+    if (isResetStreak) {
+      await resetStreak(userID, info);
+      return { resetStreak: true };
+    }
+    if (!isSuccess) return false;
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function isStreakInWordsToStudy(info, statistics, userID) {
+  try {
+    info = info.filter((item) => item.startLearn == true);
+    if (info.length == 0) return true;
+    let now = millisecondsToDays(Date.now());
+    let isResetStreak = false;
+    let isSuccess = true;
+
+    for (let item of info) {
+      let lastRepeat = millisecondsToDays(item.lastRepeat);
+      let lastReverseRepeat = millisecondsToDays(item.lastReverseRepeat);
+      let nextRepeat = millisecondsToDays(item.nextRepeat);
+      let nextReverseRepeat = millisecondsToDays(item.nextReverseRepeat);
+      let historyOfRepeat = item.historyOfRepeat.map((i) =>
+        millisecondsToDays(i)
+      );
+      let historyOfReverseRepeat = item.historyOfReverseRepeat.map((i) =>
+        millisecondsToDays(i)
+      );
+      let regularityToRepeat = item.regularityToRepeat;
+      let dateOfCreation = millisecondsToDays(item.dateOfStartLearn);
+      let diffOfRepeat =
+        historyOfRepeat.length > 1
+          ? regularityToRepeat[historyOfRepeat.length - 2]
+          : 0;
+      let diffOfReverseRepeat =
+        historyOfReverseRepeat.length > 1
+          ? regularityToRepeat[historyOfReverseRepeat.length - 2]
+          : 0;
+
+      if (nextRepeat > now) {
+        if (lastRepeat == now) {
+          if (
+            historyOfRepeat.length <= 1 &&
+            historyOfRepeat?.[0] - dateOfCreation > 1
+          ) {
+            isResetStreak = true;
+            break;
+          }
+          if (
+            historyOfRepeat.length > 1 &&
+            diffOfLastTwoElements(historyOfRepeat) != diffOfRepeat
+          ) {
+            isResetStreak = true;
+            break;
+          }
+        }
+      } else isSuccess = false;
+
+      if (nextReverseRepeat > now) {
+        if (lastReverseRepeat == now) {
+          if (
+            historyOfReverseRepeat.length <= 1 &&
+            historyOfReverseRepeat?.[0] - dateOfCreation > 1
+          ) {
+            isResetStreak = true;
+            break;
+          }
+          if (
+            historyOfReverseRepeat.length > 1 &&
+            diffOfLastTwoElements(historyOfReverseRepeat) != diffOfReverseRepeat
+          ) {
+            isResetStreak = true;
+            break;
+          }
+        }
+      } else isSuccess = false;
+    }
+
+    if (isResetStreak) {
+      await resetStreak(userID, statistics);
+      return { resetStreak: true };
+    }
+    if (!isSuccess) return false;
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function isStreakInWordsToRepeat(info, statistics, options, userID) {
+  try {
+    if (info.length == 0) return true;
+    const regularityToRepeat = options.regularityToRepeat;
+    const now = millisecondsToDays(Date.now());
+    let isResetStreak = false;
+    let isSuccess = true;
+
+    for (let item of info) {
+      let lastRepeat = millisecondsToDays(item.lastRepeat);
+      let lastReverseRepeat = millisecondsToDays(item.lastReverseRepeat);
+      let nextRepeat = millisecondsToDays(item.nextRepeat);
+      let nextReverseRepeat = millisecondsToDays(item.nextReverseRepeat);
+      let historyOfRepeat = item.historyOfRepeat.map((i) =>
+        millisecondsToDays(i)
+      );
+      let historyOfReverseRepeat = item.historyOfReverseRepeat.map((i) =>
+        millisecondsToDays(i)
+      );
+      let dateOfCreation = millisecondsToDays(item.dateOfCreation);
+      let diffOfRepeat =
+        historyOfRepeat.length > 1
+          ? regularityToRepeat[historyOfRepeat.length - 2]
+          : 0;
+      let diffOfReverseRepeat =
+        historyOfReverseRepeat.length > 1
+          ? regularityToRepeat[historyOfReverseRepeat.length - 2]
+          : 0;
+
+      if (nextRepeat > now) {
+        if (lastRepeat == now) {
+          if (
+            historyOfRepeat.length <= 1 &&
+            historyOfRepeat?.[0] - dateOfCreation > 1
+          ) {
+            isResetStreak = true;
+            break;
+          }
+          if (
+            historyOfRepeat.length > 1 &&
+            diffOfLastTwoElements(historyOfRepeat) != diffOfRepeat
+          ) {
+            isResetStreak = true;
+            break;
+          }
+        }
+      } else isSuccess = false;
+
+      if (nextReverseRepeat > now) {
+        if (lastReverseRepeat == now) {
+          if (
+            historyOfReverseRepeat.length <= 1 &&
+            historyOfReverseRepeat?.[0] - dateOfCreation > 1
+          ) {
+            isResetStreak = true;
+            break;
+          }
+          if (
+            historyOfReverseRepeat.length > 1 &&
+            diffOfLastTwoElements(historyOfReverseRepeat) != diffOfReverseRepeat
+          ) {
+            isResetStreak = true;
+            break;
+          }
+        }
+      } else isSuccess = false;
+    }
+
+    if (isResetStreak) {
+      await resetStreak(userID, statistics);
+      return { resetStreak: true };
+    }
+    if (!isSuccess) return false;
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+function diffOfLastTwoElements(array) {
+  let length = array.length;
+  if (length == 1) return false;
+  return array[length - 1] - array[length - 2];
+}
+async function resetStreak(userID, statistics) {
+  try {
+    if (statistics.bestStreak < statistics.currentStreak) {
+      let bestStreak = await User.findOneAndUpdate(
+        { _id: userID },
+        {
+          $set: {
+            [`statistics.0.bestStreak`]: statistics.currentStreak,
+          },
+        },
+        { new: true, rawResult: true }
+      );
+      if (bestStreak.ok == 0) console.log('не удалось изменить бест стрик');
+    }
+
+    let currentStreak = await User.findOneAndUpdate(
+      { _id: userID },
+      {
+        $set: {
+          [`statistics.0.currentStreak`]: 0,
+          [`statistics.0.dateOfLastStreak`]: Date.now(),
+        },
+      },
+      { new: true, rawResult: true }
+    );
+    if (currentStreak.ok == 0) console.log('не удалось обнулить streak');
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function increaseStreak(userID, statistics) {
+  try {
+    let increaseStreak = await User.findOneAndUpdate(
+      { _id: userID },
+      {
+        $set: {
+          [`statistics.0.currentStreak`]: statistics.currentStreak + 1,
+          [`statistics.0.dateOfLastStreak`]: Date.now(),
+        },
+      },
+      { new: true, rawResult: true }
+    );
+    if (increaseStreak.ok == 0) {
+      console.log('не удалось инкризнуть');
+      return false;
+    }
+    if (statistics.currentStreak + 1 > statistics.bestStreak) {
+      increaseStreak = await User.findOneAndUpdate(
+        { _id: userID },
+        {
+          $set: {
+            [`statistics.0.bestStreak`]: statistics.currentStreak + 1,
+          },
+        },
+        { new: true, rawResult: true }
+      );
+      if (increaseStreak.ok == 0) {
+        console.log('не удалось инкризнуть');
+        return false;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
 }
