@@ -384,6 +384,9 @@ export default function () {
         message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
         if (!pushWrongs.status) throw new Error(pushWrongs.message);
         if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
+
+        pushWrongs.user = setSignature(pushWrongs.user);
+        if (!pushWrongs.user) throw new Error("Не удалось поставить подпись!");
         localStorage.setItem("userInfo", JSON.stringify(pushWrongs.user));
         store.commit("resetAuth");
         return { message };
@@ -476,6 +479,8 @@ export default function () {
         message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
         if (!pushWrongs.status) throw new Error(pushWrongs.message);
         if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
+        pushWrongs.user = setSignature(pushWrongs.user);
+        if (!pushWrongs.user) throw new Error("Не удалось поставить подпись!");
         localStorage.setItem("userInfo", JSON.stringify(pushWrongs.user));
         store.commit("resetAuth");
         return { message };

@@ -1,5 +1,5 @@
 <template>
-  <div class="docs appear">
+  <div class="docs appearVision">
     <div class="docs__link">
       <h2>Руководство</h2>
       <div v-for="(itemDocs, indexDocs) in docs" :key="indexDocs">

@@ -50,7 +50,7 @@ export default instance;
 function refreshToken() {
   return new Promise((resolve, reject) => {
     axios
-      .post(`${config.UI.host}/tokens`)
+      .post(`${config.UI.host}/auth/tokens`)
       .then((res) => {
         let accessToken = res.data.token;
         store.commit("setAccessToken", accessToken);

@@ -7,7 +7,10 @@
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
   <loading-popup v-if="isLoading == true" />
-  <div class="learnPlace__container" @click="currentSelectedWord = {}">
+  <div
+    class="learnPlace__container appearVision"
+    @click="currentSelectedWord = {}"
+  >
     <div class="knownWords">
       <div class="knownWords__header">
         <div class="knownWords__filterContainer">

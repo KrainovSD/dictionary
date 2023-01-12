@@ -175,7 +175,7 @@ export default {
         this.isLoading = true;
 
         let userInfo = this.$api.offline.getUserInfo();
-        let res = await this.$api.change.syncInfo(userInfo);
+        let res = await this.$api.user.syncInfo(userInfo);
 
         this.isLoading = false;
         userInfo = res?.data?.user;
@@ -266,15 +266,16 @@ export default {
           item.nextReverseRepeat / (1000 * 60 * 60 * 24)
         );
         let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-        if (nextReverseRepeat < now) return true;
+        if (nextReverseRepeat <= now) return true;
         return false;
       });
       let standartRepeatCategories = categories.filter((item) => {
         let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
         let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-        if (nextRepeat < now) return true;
+        if (nextRepeat <= now) return true;
         return false;
       });
+
       if (
         reverseRepeatCategories.length > 0 ||
         standartRepeatCategories.length > 0
@@ -298,13 +299,13 @@ export default {
           item.nextReverseRepeat / (1000 * 60 * 60 * 24)
         );
         let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-        if (nextReverseRepeat < now) return true;
+        if (nextReverseRepeat <= now) return true;
         return false;
       });
       let standartRepeatWords = repeatWords.filter((item) => {
         let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
         let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-        if (nextRepeat < now) return true;
+        if (nextRepeat <= now) return true;
         return false;
       });
       if (reverseRepeatWords.length > 0 || standartRepeatWords.length > 0)

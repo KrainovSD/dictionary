@@ -1,24 +1,27 @@
 export default function (instance, instanceToken) {
   return {
     forgot(data) {
-      return instance.post("/forgot", data);
+      return instance.post("/user/forgot", data);
     },
     password(data) {
-      return instance.post("/password", data);
+      return instance.post("/user/password", data);
     },
     info(data) {
-      return instanceToken.post("/info", data);
+      return instanceToken.post("/user/info", data);
     },
     email(data) {
-      return instanceToken.post("/email", data);
+      return instanceToken.post("/user/email", data);
     },
     avatar(data) {
-      return instanceToken.post("/avatar", data, {
+      return instanceToken.post("/user/avatar", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
     },
     export() {
-      return instanceToken.post("/export");
+      return instanceToken.post("/user/export");
+    },
+    import(data) {
+      return instanceToken.post("/user/import", data);
     },
     syncInfo(data) {
       let knownWords = data.knownWords.filter((item) => item.offline);
@@ -39,8 +42,11 @@ export default function (instance, instanceToken) {
         statistics.length > 0 ||
         options.length > 0
       )
-        return instanceToken.post("/syncInfo", { userInfo: data });
+        return instanceToken.post("/user/syncInfo", { userInfo: data });
       throw new Error("Синхронизация не требуется!");
+    },
+    message(data) {
+      return instanceToken.post("/user/message", data);
     },
   };
 }

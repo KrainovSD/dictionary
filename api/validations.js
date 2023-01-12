@@ -1,11 +1,10 @@
 import { body } from 'express-validator';
-/*USER */
 
-export const confirmValidation = [
+const confirmValidation = [
   body('key', 'Key не прошел проверку на подлинность').isString(),
 ];
 
-export const loginValidation = [
+const loginValidation = [
   body(
     'nickName',
     'NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания, а так же длина NickName не должна превышать 25 символов или быть меньше, чем 3 символа!'
@@ -36,7 +35,7 @@ export const loginValidation = [
     .withMessage('Минимальная длина пароля 8 символов!'),
 ];
 
-export const registerValidation = [
+const registerValidation = [
   body('email', 'Неверный формат почты')
     .trim()
     .toLowerCase()
@@ -81,8 +80,13 @@ export const registerValidation = [
       'NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания!'
     ),
 ];
+export const authValidation = {
+  confirm: confirmValidation,
+  login: loginValidation,
+  register: registerValidation,
+};
 
-export const forgotPasswordValidation = [
+const forgotPasswordValidation = [
   body('email', 'Неверный формат почты')
     .trim()
     .toLowerCase()
@@ -105,7 +109,7 @@ export const forgotPasswordValidation = [
     ),
 ];
 
-export const newPasswordValidation = [
+const newPasswordValidation = [
   body('password', '')
     .trim()
     .not()
@@ -124,7 +128,7 @@ export const newPasswordValidation = [
     .withMessage('У key неверный тип данных!'),
 ];
 
-export const infoValidation = [
+const infoValidation = [
   body('nickName', '')
     .optional()
     .trim()
@@ -239,7 +243,7 @@ export const infoValidation = [
   }),
 ];
 
-export const newEmailValidation = [
+const newEmailValidation = [
   body('password', '')
     .trim()
     .not()
@@ -263,51 +267,7 @@ export const newEmailValidation = [
     .isString(),
 ];
 
-export const userInfoValidation = [
-  body('userInfo')
-    .customSanitizer((value) => {
-      let userInfo = {
-        knownWords: value.knownWords,
-        categoriesToLearn: value.categoriesToLearn,
-        wordsToStudy: value.wordsToStudy,
-        wordsToRepeat: value.wordsToRepeat,
-        relevance: value.relevance,
-        statistics: value.statistics,
-        options: value.options,
-        signature: value.signature,
-      };
-      return userInfo;
-    })
-    .custom((value) => {
-      let validation = {
-        isValidatedKnownWords: checkKnownWords(value.knownWords),
-        isValidatedCategoriesToLearn: checkCategoriesToLearn(
-          value.categoriesToLearn
-        ),
-        isValidatedWordsToStudy: checkWordsToStudy(value.wordsToStudy),
-        isValidatedWordsToRepeat: checkWordsToRepeat(value.wordsToRepeat),
-        isValidatedRelevance: checkRelevance(value.relevance),
-        isValidatedStatistics: checkStatistics(value.statistics),
-        isValidatedOptions: checkOptions(value.options),
-        isValidatedSignature: checkSignature(value.signature),
-      };
-      console.log(validation);
-      for (let res of validation) {
-        if (!res) throw new Error('Данные повреждены');
-      }
-      return true;
-    }),
-];
-function checkKnownWords(words) {}
-function checkCategoriesToLearn(categories) {}
-function checkWordsToStudy(words) {}
-function checkWordsToRepeat(words) {}
-function checkRelevance(words) {}
-function checkStatistics(statistics) {}
-function checkOptions(options) {}
-function checkSignature(signatures) {}
-
-export const messageValidation = [
+const messageValidation = [
   body('userName')
     .trim()
     .not()
@@ -345,9 +305,704 @@ export const messageValidation = [
     .withMessage('Длина сообщения не должна превышать 600 символов!'),
 ];
 
+const userInfoValidation = [
+  body('userInfo')
+    .customSanitizer((value) => {
+      let userInfo = {
+        knownWords: value.knownWords,
+        categoriesToLearn: value.categoriesToLearn,
+        wordsToStudy: value.wordsToStudy,
+        wordsToRepeat: value.wordsToRepeat,
+        relevance: value.relevance,
+        statistics: value.statistics,
+        options: value.options,
+        signature: value.signature,
+      };
+      return userInfo;
+    })
+    .custom((value) => {
+      let validation = {
+        isValidatedKnownWords: checkKnownWords(value.knownWords),
+        isValidatedCategoriesToLearn: checkCategoriesToLearn(
+          value.categoriesToLearn
+        ),
+        isValidatedWordsToStudy: checkWordsToStudy(value.wordsToStudy),
+        isValidatedWordsToRepeat: checkWordsToRepeat(value.wordsToRepeat),
+        isValidatedRelevance: checkRelevance(value.relevance),
+        isValidatedStatistics: checkStatistics(value.statistics),
+        isValidatedOptions: checkOptions(value.options),
+        isValidatedSignature: checkSignature(value.signature),
+      };
+      for (let key in validation) {
+        if (!validation[key]) throw new Error('Данные повреждены!');
+      }
+      return true;
+    })
+    .withMessage('Данные повреждены!'),
+];
+function checkKnownWords(words) {
+  if (!Array.isArray(words)) return false;
+  if (words.length == 0) return true;
+  let knownWords = words.map((item) => {
+    let { offline, ...newArray } = item;
+    return newArray;
+  });
+  const knownFields = [
+    'word',
+    'translate',
+    'transcription',
+    'description',
+    'example',
+    'wrongs',
+    'irregularVerb',
+    'lastRepeat',
+    'lastReverseRepeat',
+    'historyOfRepeat',
+    'historyOfReverseRepeat',
+    'dateOfKnown',
+    '_id',
+  ];
+  for (let word of knownWords) {
+    if (typeof word != 'object') return false;
+    if (Array.isArray(word)) return false;
+    if (Object.keys(word).length != 13) return false;
+    for (let field in word) {
+      if (!knownFields.includes(field)) return false;
+      let fieldData = word[field];
+      switch (field) {
+        case 'word': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[a-zA-Z -]+$/.test(fieldData)) return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'translate': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Я \-,]+$/.test(fieldData)) return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'transcription': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/.test(
+              fieldData
+            )
+          )
+            return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'description': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData)) return false;
+          if (fieldData.length > 164) return false;
+          break;
+        }
+        case 'example': {
+          if (!Array.isArray(fieldData)) return false;
+          if (fieldData.length != 3) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (typeof item != 'string') error = true;
+            if (!/^[a-zA-Z  \-.,!?]+$/.test(item) && item != '') error = true;
+            if (item.length > 100) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+        case 'wrongs': {
+          if (fieldData === '') return false;
+          fieldData = +fieldData;
+          if (typeof fieldData != 'number') return false;
+          if (fieldData < 0) return false;
+          break;
+        }
+        case 'irregularVerb': {
+          if (typeof fieldData != 'boolean') return false;
+          break;
+        }
+        case '_id': {
+          if (
+            !fieldData ||
+            typeof fieldData != 'string' ||
+            fieldData.trim()?.length == 0
+          )
+            return false;
+          break;
+        }
+        case ['lastRepeat', 'lastReverseRepeat', 'dateOfKnown'].find(
+          (item) => item === fieldData
+        ): {
+          if (fieldData === '') return false;
+          fieldData = +fieldData;
+          if (typeof fieldData != 'number') return false;
+          if (fieldData < 0) return false;
+          break;
+        }
+        case ['historyOfRepeat', 'historyOfReverseRepeat'].find(
+          (item) => item === fieldData
+        ): {
+          if (!Array.isArray(fieldData)) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (item === '') error = true;
+            item = +item;
+            if (typeof item != 'number') error = true;
+            if (item < 0) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+function checkCategoriesToLearn(categories) {
+  if (!Array.isArray(categories)) return false;
+  if (categories.length == 0) return true;
+  let studyCategories = categories.map((item) => {
+    let { offline, ...newArray } = item;
+    return newArray;
+  });
+  const categoriesFields = [
+    'name',
+    'regularityToRepeat',
+    'icon',
+    'lastRepeat',
+    'lastReverseRepeat',
+    'nextRepeat',
+    'nextReverseRepeat',
+    'historyOfRepeat',
+    'historyOfReverseRepeat',
+    'countOfRepeat',
+    'countOfReverseRepeat',
+    'startLearn',
+    'dateOfStartLearn',
+    '_id',
+  ];
+  for (let category of studyCategories) {
+    if (typeof category != 'object') return false;
+    if (Array.isArray(category)) return false;
+    if (Object.keys(category).length != 14) return false;
+    for (let field in category) {
+      if (!categoriesFields.includes(field)) return false;
+      let fieldData = category[field];
+      switch (field) {
+        case 'name': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (fieldData.length > 20 || fieldData.length < 5) return false;
+          if (!/^[A-Za-zА-Яа-я0-9\- ]+$/.test(fieldData)) return false;
+          break;
+        }
+        case 'regularityToRepeat': {
+          if (!Array.isArray(fieldData)) return false;
+          if (fieldData.length != 12) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (item === '') error = true;
+            item = +item;
+            if (typeof item != 'number') error = true;
+            if (item > 16 || item < 1) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+        case 'icon': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[A-Za-z\-.]+$/.test(fieldData)) return false;
+          break;
+        }
+        case 'startLearn': {
+          if (typeof fieldData != 'boolean') return false;
+          break;
+        }
+        case '_id': {
+          if (
+            !fieldData ||
+            typeof fieldData != 'string' ||
+            fieldData.trim()?.length == 0
+          )
+            return false;
+          break;
+        }
+        case [
+          'lastRepeat',
+          'lastReverseRepeat',
+          'nextRepeat',
+          'nextReverseRepeat',
+          'countOfRepeat',
+          'countOfReverseRepeat',
+          'dateOfStartLearn',
+        ].find((item) => item === fieldData): {
+          if (fieldData === '') return false;
+          fieldData = +fieldData;
+          if (typeof fieldData != 'number') return false;
+          if (fieldData < 0) return false;
+          break;
+        }
+        case ['historyOfRepeat', 'historyOfReverseRepeat'].find(
+          (item) => item === fieldData
+        ): {
+          if (!Array.isArray(fieldData)) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (item === '') error = true;
+            item = +item;
+            if (typeof item != 'number') error = true;
+            if (item < 0) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+function checkWordsToStudy(words) {
+  if (!Array.isArray(words)) return false;
+  if (words.length == 0) return true;
+  let studyWords = words.map((item) => {
+    let { offline, ...newArray } = item;
+    return newArray;
+  });
+  const studyFields = [
+    'word',
+    'translate',
+    'transcription',
+    'description',
+    'example',
+    'wrongs',
+    'irregularVerb',
+    'category',
+    '_id',
+  ];
+  for (let word of studyWords) {
+    if (typeof word != 'object') return false;
+    if (Array.isArray(word)) return false;
+    if (Object.keys(word).length != 9) return false;
+    for (let field in word) {
+      if (!studyFields.includes(field)) return false;
+      let fieldData = word[field];
+      switch (field) {
+        case 'word': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[a-zA-Z -]+$/.test(fieldData)) return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'translate': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Я \-,]+$/.test(fieldData)) return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'transcription': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/.test(
+              fieldData
+            )
+          )
+            return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'description': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData)) return false;
+          if (fieldData.length > 164) return false;
+          break;
+        }
+        case 'example': {
+          if (!Array.isArray(fieldData)) return false;
+          if (fieldData.length != 3) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (typeof item != 'string') error = true;
+            if (!/^[a-zA-Z  \-.,!?]+$/.test(item) && item != '') error = true;
+            if (item.length > 100) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+        case 'wrongs': {
+          if (fieldData === '') return false;
+          fieldData = +fieldData;
+          if (typeof fieldData != 'number') return false;
+          if (fieldData < 0) return false;
+          break;
+        }
+        case 'irregularVerb': {
+          if (typeof fieldData != 'boolean') return false;
+          break;
+        }
+        case ['_id', 'category'].find((item) => item === fieldData): {
+          if (
+            !fieldData ||
+            typeof fieldData != 'string' ||
+            fieldData.trim()?.length == 0
+          )
+            return false;
+          break;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+function checkWordsToRepeat(words) {
+  if (!Array.isArray(words)) return false;
+  if (words.length == 0) return true;
+  let repeatWords = words.map((item) => {
+    let { offline, ...newArray } = item;
+    return newArray;
+  });
+  const repeatFields = [
+    'word',
+    'translate',
+    'transcription',
+    'description',
+    'example',
+    'irregularVerb',
+    'lastRepeat',
+    'lastReverseRepeat',
+    'nextRepeat',
+    'nextReverseRepeat',
+    'historyOfRepeat',
+    'historyOfReverseRepeat',
+    'countOfRepeat',
+    'countOfReverseRepeat',
+    'dateOfCreation',
+    '_id',
+  ];
+  for (let word of repeatWords) {
+    if (typeof word != 'object') return false;
+    if (Array.isArray(word)) return false;
+    if (Object.keys(word).length != 16) return false;
+    for (let field in word) {
+      if (!repeatFields.includes(field)) return false;
+      let fieldData = word[field];
+
+      switch (field) {
+        case 'word': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[a-zA-Z -]+$/.test(fieldData)) return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'translate': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Я \-,]+$/.test(fieldData)) return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'transcription': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/.test(
+              fieldData
+            )
+          )
+            return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'description': {
+          if (fieldData === '' || typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData)) return false;
+          if (fieldData.length > 164) return false;
+          break;
+        }
+        case 'example': {
+          if (!Array.isArray(fieldData)) return false;
+          if (fieldData.length != 3) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (typeof item != 'string') error = true;
+            if (!/^[a-zA-Z  \-.,!?]+$/.test(item) && item != '') error = true;
+            if (item.length > 100) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+        case 'irregularVerb': {
+          if (typeof fieldData != 'boolean') return false;
+          break;
+        }
+        case '_id': {
+          if (
+            !fieldData ||
+            typeof fieldData != 'string' ||
+            fieldData.trim()?.length == 0
+          )
+            return false;
+          break;
+        }
+        case [
+          'lastRepeat',
+          'lastReverseRepeat',
+          'nextRepeat',
+          'nextReverseRepeat',
+          'countOfRepeat',
+          'countOfReverseRepeat',
+          'dateOfCreation',
+        ].find((item) => item === fieldData): {
+          if (fieldData === '') return false;
+          fieldData = +fieldData;
+          if (typeof fieldData != 'number') return false;
+          if (fieldData < 0) return false;
+          break;
+        }
+        case ['historyOfRepeat', 'historyOfReverseRepeat'].find(
+          (item) => item === fieldData
+        ): {
+          if (!Array.isArray(fieldData)) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (item === '') error = true;
+            item = +item;
+            if (typeof item != 'number') error = true;
+            if (item < 0) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+function checkRelevance(words) {
+  if (!Array.isArray(words)) return false;
+  if (words.length == 0) return true;
+  let relevanceWords = words.map((item) => {
+    let { offline, ...newArray } = item;
+    return newArray;
+  });
+  const relevanceFileds = [
+    'word',
+    'dateOfCreation',
+    'dateOfDetected',
+    'irregularVerb',
+    '_id',
+  ];
+  for (let word of relevanceWords) {
+    if (typeof word != 'object') return false;
+    if (Array.isArray(word)) return false;
+    if (Object.keys(word).length != 5) return false;
+    for (let field in word) {
+      if (!relevanceFileds.includes(field)) return false;
+      let fieldData = word[field];
+      switch (field) {
+        case 'word': {
+          if (typeof fieldData != 'string' || fieldData === '') return false;
+          if (!/^[a-zA-Z -]+$/.test(fieldData)) return false;
+          if (fieldData.length > 50) return false;
+          break;
+        }
+        case 'dateOfCreation': {
+          if (fieldData === '') return false;
+          fieldData = +fieldData;
+          if (typeof fieldData != 'number') return false;
+          if (fieldData < 0) return false;
+          break;
+        }
+        case 'dateOfDetected': {
+          if (!Array.isArray(fieldData)) return false;
+          let error = false;
+          fieldData.forEach((item) => {
+            if (item === '') error = true;
+            item = +item;
+            if (typeof item != 'number') error = true;
+            if (item < 0) error = true;
+          });
+          if (error) return false;
+          break;
+        }
+        case 'irregularVerb': {
+          if (typeof fieldData != 'boolean') return false;
+          break;
+        }
+        case '_id': {
+          if (
+            !fieldData ||
+            typeof fieldData != 'string' ||
+            fieldData.trim()?.length == 0
+          )
+            return false;
+          break;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+function checkStatistics(statistics) {
+  if (!Array.isArray(statistics)) return false;
+  if (statistics.length != 1) return false;
+  let statisticItems = statistics.map((item) => {
+    let { offline, ...newArray } = item;
+    return newArray;
+  });
+  statisticItems = statisticItems[0];
+  if (typeof statisticItems != 'object') return false;
+  if (Array.isArray(statisticItems)) return false;
+  if (Object.keys(statisticItems).length != 8) return false;
+  const statisticFields = [
+    'bestStreak',
+    'lastRepeatKnownWords',
+    'lastReverseRepeatKnownWords',
+    'historyOfRepeatKnownWords',
+    'historyOfReverseRepeatKnownWords',
+    'currentStreak',
+    'dateOfLastStreak',
+    'lastDailyCheckStreak',
+  ];
+  for (let field in statisticItems) {
+    if (!statisticFields.includes(field)) return false;
+    let fieldData = statisticItems[field];
+    if (
+      field != 'historyOfRepeatKnownWords' &&
+      field != 'historyOfReverseRepeatKnownWords'
+    ) {
+      if (fieldData === '') return false;
+      fieldData = +fieldData;
+      if (typeof fieldData != 'number') return false;
+      if (fieldData < 0) return false;
+    } else {
+      if (!Array.isArray(fieldData)) return false;
+      let error = false;
+      fieldData.forEach((item) => {
+        if (item === '') error = true;
+        item = +item;
+        if (typeof item != 'number') error = true;
+        if (item < 0) error = true;
+      });
+      if (error) return false;
+    }
+  }
+
+  return true;
+}
+function checkOptions(options) {
+  if (!Array.isArray(options)) return false;
+  if (options.length != 1) return false;
+  let optionItems = options.map((item) => {
+    let { offline, ...newArray } = item;
+    return newArray;
+  });
+  optionItems = optionItems[0];
+  if (typeof optionItems != 'object') return false;
+  if (Array.isArray(optionItems)) return false;
+  if (Object.keys(optionItems).length != 5) return false;
+  const optionFields = [
+    'countKnownWordsAtOneTime',
+    'countWrongsToAddToRepeat',
+    'regularityToRepeat',
+    'maxDateCheckRelevance',
+    'maxCountCheckRelevance',
+  ];
+
+  for (let field in optionItems) {
+    if (!optionFields.includes(field)) return false;
+    let fieldData = optionItems[field];
+    if (field != 'regularityToRepeat') {
+      if (fieldData === '') return false;
+      fieldData = +fieldData;
+      if (typeof fieldData != 'number') return false;
+      if (fieldData < 0) return false;
+    }
+    switch (field) {
+      case 'countKnownWordsAtOneTime': {
+        if (fieldData < 20 || fieldData > 99) {
+          return false;
+        }
+        break;
+      }
+      case 'countWrongsToAddToRepeat': {
+        if (fieldData < 3 || fieldData > 9) {
+          return false;
+        }
+        break;
+      }
+      case 'maxCountCheckRelevance': {
+        if (fieldData < 3 || fieldData > 9) {
+          return false;
+        }
+        break;
+      }
+      case 'maxDateCheckRelevance': {
+        if (fieldData < 10 || fieldData > 90) {
+          return false;
+        }
+        break;
+      }
+      case 'regularityToRepeat': {
+        if (!Array.isArray(fieldData)) return false;
+        if (fieldData.length != 8) return false;
+        let error = false;
+        fieldData.forEach((item) => {
+          if (item === '') {
+            error = true;
+          }
+          item = +item;
+          if (typeof item != 'number') {
+            error = true;
+          }
+
+          if (item > 16 || item < 1) {
+            error = true;
+          }
+        });
+        if (error) return false;
+        break;
+      }
+    }
+  }
+
+  return true;
+}
+function checkSignature(signatures) {
+  if (typeof signatures != 'object') return false;
+  if (Array.isArray(signatures)) return false;
+  if (Object.keys(signatures).length != 8) return false;
+  let signatureFields = [
+    'knownWords',
+    'categoriesToLearn',
+    'wordsToStudy',
+    'wordsToRepeat',
+    'relevance',
+    'statistics',
+    'options',
+    'data',
+  ];
+  for (let field in signatures) {
+    if (!signatureFields.includes(field)) return false;
+    if (typeof signatures[field] != 'string' || signatures[field] === '')
+      return false;
+  }
+  return true;
+}
+export const userValidation = {
+  forgotPass: forgotPasswordValidation,
+  newPass: newPasswordValidation,
+  info: infoValidation,
+  newEmail: newEmailValidation,
+  message: messageValidation,
+  userInfo: userInfoValidation,
+};
+
 /* WORDS  */
 
-export const categoryValidation = [
+const categoryValidation = [
   body('id')
     .optional()
     .trim()
@@ -394,7 +1049,7 @@ export const categoryValidation = [
     return true;
   }),
 ];
-export const wordValidation = [
+const wordValidation = [
   body('id')
     .optional()
     .trim()
@@ -495,7 +1150,7 @@ export const wordValidation = [
     return true;
   }),
 ];
-export const relevanceValidation = [
+const relevanceValidation = [
   body('words.*')
     .trim()
     .toLowerCase()
@@ -517,7 +1172,7 @@ export const relevanceValidation = [
     return true;
   }),
 ];
-export const answerValidation = [
+const answerValidation = [
   body('words.*.word')
     .trim()
     .not()
@@ -537,14 +1192,14 @@ export const answerValidation = [
     .custom((value) => {
       if (value != 'undefined' && typeof value != 'string')
         throw new Error('Неверный формат ответа!');
-      if (value == '') throw new Error('Неверный формат ответа!');
+      if (value === '') throw new Error('Неверный формат ответа!');
       return true;
     }),
 ];
 
-export const postCreateValidation = [
-  body('title', 'Введите заголовок статьи').isLength({ min: 3 }).isString(),
-  body('text', 'Введите текст статьи').isLength({ min: 3 }).isString(),
-  body('tags', 'Неверный формат тэгов').optional().isString(),
-  body('imageUrl', 'Неверная ссылка на изображение').optional().isString(),
-];
+export const wordsValidation = {
+  category: categoryValidation,
+  word: wordValidation,
+  relevance: relevanceValidation,
+  answer: answerValidation,
+};

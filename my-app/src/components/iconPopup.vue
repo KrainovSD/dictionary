@@ -114,7 +114,7 @@ export default {
         let formData = new FormData();
         formData.append("avatar", file);
 
-        let res = await this.$api.change.avatar(formData);
+        let res = await this.$api.user.avatar(formData);
         let user = res?.data?.user;
         let message = res?.data?.message;
         this.isLoading = false;

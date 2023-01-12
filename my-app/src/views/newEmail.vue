@@ -161,7 +161,7 @@ export default {
         if (this.isLoading == true) return;
         this.isLoading = true;
 
-        let res = await this.$api.change.email(form);
+        let res = await this.$api.user.email(form);
         this.isLoading = false;
         this.showInfo("Смена Email", res?.data?.message);
       } catch (err) {

@@ -152,7 +152,7 @@ export default {
         if (this.isLoading == true) return;
         this.isLoading = true;
 
-        let res = await this.$api.change.password(form);
+        let res = await this.$api.user.password(form);
 
         let message = res?.data?.message;
         this.isLoading = false;

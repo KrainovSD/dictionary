@@ -9,7 +9,7 @@
   <confirm-popup ref="confirm" />
   <loading-popup v-if="isLoading == true" />
 
-  <div class="relevance appear">
+  <div class="relevance appearVision">
     <div style="display: flex">
       <div style="position: relative; width: 45%; height: 100px">
         <input-tooltip

@@ -22,34 +22,31 @@ const countWordsToActiveCategory = 2;
 export const startLearnCategory = async (req, res) => {
   try {
     let { id } = req.body;
-    if (!id || typeof id != 'string' || id.trim()?.length == 0) {
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
-    }
+    if (!id || typeof id != 'string' || id.trim()?.length == 0)
+      return sendResponseError(req, res);
+
     let user = await getUserInfo(req.userId, 'wordsToStudy categoriesToLearn');
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (!user) return sendResponseError(req, res);
 
     let index = user.categoriesToLearn.findIndex((item) => item._id == id);
     if (index == -1)
-      return res.status(400).json({
-        message: `Категории не существует!`,
-      });
+      return sendResponseError(req, res, 'Категории не существует!');
 
     let hasWordsInCategories = isHasWordsInCategories(id, user);
     if (!hasWordsInCategories)
-      return res.status(400).json({
-        message: `В категории меньше ${countWordsToActiveCategory} слов!`,
-      });
+      return sendResponseError(
+        req,
+        res,
+        `В категории меньше ${countWordsToActiveCategory} слов!`
+      );
 
     let activeCategory = isActiveCategory(id, user);
     if (activeCategory)
-      return res
-        .status(400)
-        .json({ message: `Категория уже поставлена на обучение!` });
+      return sendResponseError(
+        req,
+        res,
+        'Категория уже поставлена на обучение!'
+      );
 
     let changeFields = {
       startLearn: true,
@@ -61,14 +58,11 @@ export const startLearnCategory = async (req, res) => {
       changeFields,
       req.userId
     );
-    if (!userInfo)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (!userInfo) return sendResponseError(req, res);
 
     res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -82,11 +76,8 @@ export const addCategory = async (req, res) => {
       _id: req.userId,
       'categoriesToLearn.name': name,
     });
-    if (user) {
-      return res
-        .status(400)
-        .json({ message: `Такое имя категории уже существует!` });
-    }
+    if (user)
+      return sendResponseError(req, res, 'Имя категории уже существует!');
 
     let newCategory = {
       name: name,
@@ -109,14 +100,11 @@ export const addCategory = async (req, res) => {
       newCategory,
       req.userId
     );
-    if (!userInfo)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -136,24 +124,24 @@ export const addWord = async (req, res) => {
       req.userId,
       'categoriesToLearn knownWords wordsToStudy relevance'
     );
-    if (!user) {
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
-    }
+    if (!user) return sendResponseError(req, res);
 
     let statusCategory = isActiveCategory(category, user);
-    if (statusCategory) {
-      return res.status(400).json({
-        message: `Категория, в которую вы пытаетесь добавить слово, уже поставлена на изучение!`,
-      });
-    }
+    if (statusCategory)
+      return sendResponseError(
+        req,
+        res,
+        'Категория, в которую вы пытаетесь добавить слово, уже поставлена на изучение!'
+      );
+
     let hasWord = isAlreadyHasWord(word, null, user);
-    if (hasWord) {
-      return res.status(400).json({
-        message: 'Такое слово уже на изучении или изучено!',
-      });
-    }
+    if (hasWord)
+      return sendResponseError(
+        req,
+        res,
+        'Такое слово уже на изучении или изучено!'
+      );
+
     let hasRelevance = isHasRelevance(word, user);
     if (hasRelevance) {
       let relevanceID = hasRelevance?.[0]?._id;
@@ -162,11 +150,7 @@ export const addWord = async (req, res) => {
         relevanceID,
         req.userId
       );
-      if (!resultDelete) {
-        return res.status(400).json({
-          message: `Не удалось выполнить операцию!`,
-        });
-      }
+      if (!resultDelete) return sendResponseError(req, res);
     }
 
     let newWord = {
@@ -181,14 +165,11 @@ export const addWord = async (req, res) => {
     };
 
     let resultPush = await pushNewElement('wordsToStudy', newWord, req.userId);
-    if (!resultPush)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!resultPush) return sendResponseError(req, res);
 
     res.json({ message: 'Операция успешно выполнена!', user: resultPush });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -199,26 +180,23 @@ export const updateCategory = async (req, res) => {
   try {
     let { id, name, icon, regularityToRepeat } = req.body;
     let user = await getUserInfo(req.userId, 'categoriesToLearn');
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (!user) return sendResponseError(req, res);
 
     let activeCategory = isActiveCategory(id, user);
     if (activeCategory)
-      return res.status(400).json({
-        message: `Категория уже поставлена на изучение!`,
-      });
+      return sendResponseError(
+        req,
+        res,
+        'Категория уже поставлена на изучение!'
+      );
+
     let hasCategory = isHasCategory(name, id, user);
     if (hasCategory)
-      return res.status(400).json({
-        message: `Такое имя категории уже существует!`,
-      });
+      return sendResponseError(req, res, 'Имя категории уже существует!');
+
     let index = user.categoriesToLearn.findIndex((item) => item._id == id);
     if (index == -1)
-      return res.status(400).json({
-        message: `Категории не существует!`,
-      });
+      return sendResponseError(req, res, 'Категории не существует!');
 
     let changeFields = {
       name,
@@ -231,14 +209,11 @@ export const updateCategory = async (req, res) => {
       changeFields,
       req.userId
     );
-    if (!userInfo)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (!userInfo) return sendResponseError(req, res);
 
     res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -255,27 +230,22 @@ export const updateWord = async (req, res) => {
       req.userId,
       'wordsToStudy knownWords relevance'
     );
-    if (!user) {
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
-    }
+    if (!user) return sendResponseError(req, res);
 
     let hasWord = isAlreadyHasWord(word, id, user);
     if (hasWord)
-      return res.status(400).json({
-        message: `Такое слово уже добавлено!`,
-      });
+      return sendResponseError(req, res, 'Такое слово уже добавлено!');
+
     let index = user.wordsToStudy.findIndex((item) => item._id == id);
-    if (index == -1)
-      return res.status(400).json({
-        message: `Слова не существует!`,
-      });
+    if (index == -1) return sendResponseError(req, res, 'Слова не существует!');
+
     let hasRelevance = isHasRelevance(word, user);
     if (hasRelevance)
-      return res.status(400).json({
-        message: 'Такое слово находится в Актуализаторе!',
-      });
+      return sendResponseError(
+        req,
+        res,
+        'Такое слово находится в актуализаторе!'
+      );
 
     let changeFields = {
       word,
@@ -292,14 +262,11 @@ export const updateWord = async (req, res) => {
       req.userId
     );
 
-    if (!userInfo)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (!userInfo) return sendResponseError(req, res);
 
     res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -311,13 +278,11 @@ export const deleteCategory = async (req, res) => {
     let { id } = req.params;
 
     if (!id || typeof id != 'string' || id.trim()?.length == 0)
-      return res.status(400).json({ message: `Неверный тип ID!` });
+      return sendResponseError(req, res, 'Неверный тип ID');
 
     let user = await getUserInfo(req.userId, 'wordsToStudy categoriesToLearn');
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (!user) return sendResponseError(req, res);
+
     let wordsInCategory = user.wordsToStudy.filter(
       (item) => item.category == id
     );
@@ -326,28 +291,21 @@ export const deleteCategory = async (req, res) => {
 
     let index = user.categoriesToLearn.findIndex((item) => item._id == id);
     if (index == -1)
-      return res.status(400).json({
-        message: `Категории не существует!`,
-      });
+      return sendResponseError(req, res, 'Категории не существует!');
 
     let userInfo = await pullElement('categoriesToLearn', id, req.userId);
-    if (!userInfo)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     userInfo = await multiPullElement(
       'wordsToStudy',
       wordsInCategory,
       req.userId
     );
-    if (!userInfo)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!userInfo) return sendResponseError(req, res);
+
     return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -357,17 +315,14 @@ export const deleteWord = async (req, res) => {
   try {
     let { id } = req.params;
 
-    if (!id || typeof id != 'string' || id.trim()?.length == 0) {
-      return res.status(400).json({ message: `Неверный тип ID!` });
-    }
+    if (!id || typeof id != 'string' || id.trim()?.length == 0)
+      return sendResponseError(req, res, 'Неверный тип ID!');
+
     let user = await getUserInfo(
       req.userId,
       'wordsToStudy categoriesToLearn knownWords'
     );
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (!user) return sendResponseError(req, res);
 
     let index = user.knownWords.findIndex((item) => item._id == id);
     if (index != -1) {
@@ -375,28 +330,21 @@ export const deleteWord = async (req, res) => {
     }
 
     index = user.wordsToStudy.findIndex((item) => item._id == id);
-    if (index == -1)
-      return res.status(400).json({
-        message: `Слова не существует!`,
-      });
+    if (index == -1) return sendResponseError(req, res, 'Слова не существует!');
+
     let activeCategory = isActiveCategory(
       user.wordsToStudy[index].category,
       user
     );
     if (activeCategory)
-      return res.status(400).json({
-        message: `Слово в активной категории!`,
-      });
+      return sendResponseError(req, res, 'Слово в активной категории!');
 
     let userInfo = await pullElement('wordsToStudy', id, req.userId);
-    if (!userInfo)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -405,14 +353,11 @@ export const deleteWord = async (req, res) => {
 async function deleteKnownWord(req, res, id) {
   try {
     let userInfo = await pullElement('knownWords', id, req.userId);
-    if (!userInfo)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -428,10 +373,7 @@ export const addRelevance = async (req, res) => {
       req.userId,
       'knownWords wordsToStudy relevance'
     );
-    if (!user)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!user) return sendResponseError(req, res);
 
     /* Находим уже имеюшиеся слова, которые добавлять не нужно*/
     let hasWords = words.filter((item) => {
@@ -470,10 +412,7 @@ export const addRelevance = async (req, res) => {
         newRelevances,
         req.userId
       );
-      if (!pushNewRelevances)
-        return res.status(400).json({
-          message: `Не удалось выполнить операцию!`,
-        });
+      if (!pushNewRelevances) return sendResponseError(req, res);
     }
     /* Обновляем дату детекта уже имеющихся в актуализаторе слов */
     if (hasRelevances?.length > 0) {
@@ -481,10 +420,7 @@ export const addRelevance = async (req, res) => {
         hasRelevances,
         req.userId
       );
-      if (!setOldRelevances)
-        return res.status(400).json({
-          message: `Не удалось выполнить операцию!`,
-        });
+      if (!setOldRelevances) return sendResponseError(req, res);
     }
 
     /* Формируем сообщение */
@@ -538,7 +474,7 @@ export const addRelevance = async (req, res) => {
       words: addedWords,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -550,27 +486,21 @@ export const learnAnswer = async (req, res) => {
     /* Получение данных от пользователя и информации о пользователе */
     let { categoryID, words } = req.body;
     let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: 'Не удалось найти информацию о пользователе!' });
-    }
+    if (!user) return sendResponseError(req, res);
     /* Проверка на активность категории */
     let activeCategory = isActiveCategory(categoryID, user);
-    if (!activeCategory) {
-      return res.status(400).json({ message: 'Категория не активна!' });
-    }
+    if (!activeCategory)
+      return sendResponseError(req, res, 'Категория не активна!');
     /* Проверка на сущесвтование категории */
     let index = user.categoriesToLearn.findIndex(
       (item) => item._id == categoryID
     );
     if (index == -1)
-      return res.status(400).json({
-        message: 'Категории не существует!',
-      });
+      return sendResponseError(req, res, 'Категории не существует!');
     /* Проверка на актуальность повторения */
     let category = user.categoriesToLearn[index];
     let nextRepeat = millisecondsToDays(category.nextRepeat);
+
     if (millisecondsToDays(Date.now()) < nextRepeat)
       return res.json({
         message:
@@ -597,7 +527,7 @@ export const learnAnswer = async (req, res) => {
         'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
       message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
       if (!pushWrongs.status)
-        return res.status(400).json({ message: pushWrongs.message });
+        return sendResponseError(req, res, pushWrongs.message);
       if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
       return res.json({
         message,
@@ -638,10 +568,7 @@ export const learnAnswer = async (req, res) => {
       changeFields,
       req.userId
     );
-    if (!userInfo)
-      return res.status(400).json({
-        message: 'Не удалось выполнить операцию обновления!',
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     let message = '';
     if (countOfRepeat == 13)
@@ -656,8 +583,7 @@ export const learnAnswer = async (req, res) => {
     }
     if (checkStreak.resetStreak) {
       userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo)
-        return res.status(400).json({ message: 'Пользователь не найден!' });
+      if (!userInfo) return sendResponseError(req, res);
       userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
@@ -667,7 +593,7 @@ export const learnAnswer = async (req, res) => {
       user: userInfo,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -678,24 +604,17 @@ export const reLearnAnswer = async (req, res) => {
     /* Получение данных от пользователя и информации о пользователе */
     let { categoryID, words } = req.body;
     let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: 'Не удалось найти данные пользователя!' });
-    }
+    if (!user) return sendResponseError(req, res);
     /* Проверка на активность категории */
     let activeCategory = isActiveCategory(categoryID, user);
-    if (!activeCategory) {
-      return res.status(400).json({ message: 'Категория не активна!' });
-    }
+    if (!activeCategory)
+      return sendResponseError(req, res, 'Категория не активна!');
     /* Проверка на сущесвтование категории */
     let index = user.categoriesToLearn.findIndex(
       (item) => item._id == categoryID
     );
     if (index == -1)
-      return res.status(400).json({
-        message: 'Категория не существует!',
-      });
+      return sendResponseError(req, res, 'Категории не существует!');
     /* Проверка на актуальность повторения */
     let category = user.categoriesToLearn[index];
     let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
@@ -725,7 +644,7 @@ export const reLearnAnswer = async (req, res) => {
         'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
       message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
       if (!pushWrongs.status)
-        return res.status(400).json({ message: pushWrongs.message });
+        return sendResponseError(req, res, pushWrongs.message);
       if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
       return res.json({ message, user: pushWrongs.user });
     }
@@ -763,10 +682,7 @@ export const reLearnAnswer = async (req, res) => {
       changeFields,
       req.userId
     );
-    if (!userInfo)
-      return res.status(400).json({
-        message: 'Не удалось выполнить операцию обновления!',
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     let message = '';
     if (countOfReverseRepeat == 13)
@@ -781,8 +697,7 @@ export const reLearnAnswer = async (req, res) => {
     }
     if (checkStreak.resetStreak) {
       userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo)
-        return res.status(400).json({ message: 'Пользователь не найден!' });
+      if (!userInfo) return sendResponseError(req, res);
       userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
@@ -792,7 +707,7 @@ export const reLearnAnswer = async (req, res) => {
       user: userInfo,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -806,10 +721,7 @@ const pullStudiedCategory = async (req, res) => {
       req.userId,
       'categoriesToLearn wordsToStudy knownWords'
     );
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Не удалось найти данные пользователя!' });
+    if (!user) return sendResponseError(req, res);
     /* Проверка нет ли слов из категории во вкладке Изученные */
     let words = user.wordsToStudy.filter((item) => item.category == categoryID);
     let wordsName = words.map((item) => item.word);
@@ -817,9 +729,11 @@ const pullStudiedCategory = async (req, res) => {
       wordsName.includes(item.word)
     );
     if (knownWords.length > 0)
-      return res.status(400).json({
-        message: 'Слово из категории присутствует во вкладке "Изученные"',
-      });
+      return sendResponseError(
+        req,
+        res,
+        "Слово из категории присутствует во вкладке 'Изученные'"
+      );
 
     /* Удаление категории */
     let userInfo = await pullElement(
@@ -827,14 +741,12 @@ const pullStudiedCategory = async (req, res) => {
       categoryID,
       req.userId
     );
-    if (!userInfo)
-      return res.status(400).json({ message: 'Не удалось удалить категорию!' });
+    if (!userInfo) return sendResponseError(req, res);
 
     /* Удаление слов из категории Изучаемые */
     let wordsID = words.map((item) => item._id);
     userInfo = await multiPullElement('wordsToStudy', wordsID, req.userId);
-    if (!userInfo)
-      return res.status(400).json({ message: 'Не удалось удалить слова!' });
+    if (!userInfo) return sendResponseError(req, res);
     /* Добавление слов в категорию Изученные */
     let newWords = words.map((item) => {
       return {
@@ -854,10 +766,7 @@ const pullStudiedCategory = async (req, res) => {
       };
     });
     userInfo = await multiPushNewElement('knownWords', newWords, req.userId);
-    if (!userInfo)
-      return res
-        .status(400)
-        .json({ message: 'Не удалось перенести слова из категории!' });
+    if (!userInfo) return sendResponseError(req, res);
 
     let message =
       "Категория успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!\n";
@@ -868,8 +777,7 @@ const pullStudiedCategory = async (req, res) => {
     }
     if (checkStreak.resetStreak) {
       userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo)
-        return res.status(400).json({ message: 'Пользователь не найден!' });
+      if (!userInfo) return sendResponseError(req, res);
       userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
@@ -879,7 +787,7 @@ const pullStudiedCategory = async (req, res) => {
       user: userInfo,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -891,10 +799,7 @@ export const knownAnswer = async (req, res) => {
     let { words } = req.body;
     let message = 'Слова успешно повторены!\n';
     let user = await getUserInfo(req.userId, 'knownWords statistics');
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Информация о пользователе не найдена!' });
+    if (!user) return sendResponseError(req, res);
     /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter((item) => {
       if (item.wrong && typeof item?.wrong == 'boolean') return true;
@@ -914,7 +819,7 @@ export const knownAnswer = async (req, res) => {
       wordsWithWrong = wordsWithWrong.join(', ');
       message += `В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!\n`;
       if (!pushWords.status)
-        return res.status(400).json({ message: pushWords.message });
+        return sendResponseError(req, res, pushWords.message);
       if (pushWords.message.length > 0) message += `${pushWords.message}`;
     }
     /* Изменение статуса последнего повторения */
@@ -933,10 +838,7 @@ export const knownAnswer = async (req, res) => {
       },
       { new: true, rawResult: true }
     );
-    if (updateStatistic.ok == 0)
-      return res.status(400).json({
-        message: `Не удалось обновить статистику!`,
-      });
+    if (updateStatistic.ok == 0) return sendResponseError(req, res);
     /* Получение новых параметров слов */
     words = words.map((item) => item.word);
     let multiSetOptions = [];
@@ -960,10 +862,7 @@ export const knownAnswer = async (req, res) => {
       multiSetOptions,
       req.userId
     );
-    if (!userInfo)
-      return res.status(400).json({
-        message: `Не удалось обновить информацию о словах!`,
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     let checkStreak = await isSuccessStreak(req.userId);
     if (checkStreak.ok) {
@@ -972,15 +871,14 @@ export const knownAnswer = async (req, res) => {
     }
     if (checkStreak.resetStreak) {
       userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo)
-        return res.status(400).json({ message: 'Пользователь не найден!' });
+      if (!userInfo) return sendResponseError(req, res);
       userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
 
     res.json({ message, user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -992,10 +890,7 @@ export const reKnownAnswer = async (req, res) => {
     let { words } = req.body;
     let message = 'Слова успешно повторены!\n';
     let user = await getUserInfo(req.userId, 'knownWords statistics');
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Информация о пользователе не найдена!' });
+    if (!user) return sendResponseError(req, res);
     /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter(
       (item) => item.wrong && typeof item?.wrong == 'boolean'
@@ -1014,7 +909,7 @@ export const reKnownAnswer = async (req, res) => {
       wordsWithWrong = wordsWithWrong.join(', ');
       message += `В следуюших словах была допущена ошибка: ${wordsWithWrong}! Прогресс слов, в которых допущена ошибка, не изменяется!\n`;
       if (!pushWords.status)
-        return res.status(400).json({ message: pushWords.message });
+        return sendResponseError(req, res, pushWords.message);
       if (pushWords.message.length > 0) message += `${pushWords.message}`;
     }
     /* Изменение статуса последнего повторения */
@@ -1034,10 +929,7 @@ export const reKnownAnswer = async (req, res) => {
       },
       { new: true, rawResult: true }
     );
-    if (updateStatistic.ok == 0)
-      return res.status(400).json({
-        message: `Не удалось обновить статистику!`,
-      });
+    if (updateStatistic.ok == 0) return sendResponseError(req, res);
     /* Получение новых параметров слов */
     words = words.map((item) => item.word);
     let multiSetOptions = [];
@@ -1062,10 +954,7 @@ export const reKnownAnswer = async (req, res) => {
       multiSetOptions,
       req.userId
     );
-    if (!userInfo)
-      return res.status(400).json({
-        message: `Не удалось обновить информацию о словах!`,
-      });
+    if (!userInfo) return sendResponseError(req, res);
 
     let checkStreak = await isSuccessStreak(req.userId);
     if (checkStreak.ok) {
@@ -1074,15 +963,14 @@ export const reKnownAnswer = async (req, res) => {
     }
     if (checkStreak.resetStreak) {
       userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo)
-        return res.status(400).json({ message: 'Пользователь не найден!' });
+      if (!userInfo) return sendResponseError(req, res);
       userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
 
     res.json({ message, user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -1094,10 +982,7 @@ export const repeatAnswer = async (req, res) => {
     let { words } = req.body;
     let message = 'Обучение пройдено успешно!\n';
     let user = await getUserInfo(req.userId, 'wordsToRepeat options');
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Информация о пользователе не найдена!' });
+    if (!user) return sendResponseError(req, res);
     /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter(
       (item) => item.wrong && typeof item?.wrong == 'boolean'
@@ -1158,8 +1043,7 @@ export const repeatAnswer = async (req, res) => {
         multiSetOptions,
         req.userId
       );
-      if (!userInfo)
-        return res.status(400).json({ message: 'Не удалось обработать слова' });
+      if (!userInfo) return sendResponseError(req, res);
     }
     /* Удаление повторенных слов */
     if (finishedWords.length > 0) {
@@ -1168,8 +1052,7 @@ export const repeatAnswer = async (req, res) => {
         finishedWords,
         req.userId
       );
-      if (!userInfo)
-        return res.status(400).json({ message: 'Не удалось обработать слова' });
+      if (!userInfo) return sendResponseError(req, res);
     }
     /* Формирование ответа */
     if (standartFinishedWords.length > 0) {
@@ -1196,8 +1079,7 @@ export const repeatAnswer = async (req, res) => {
     }
     if (checkStreak.resetStreak) {
       userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo)
-        return res.status(400).json({ message: 'Пользователь не найден!' });
+      if (!userInfo) return sendResponseError(req, res);
       userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
@@ -1207,7 +1089,7 @@ export const repeatAnswer = async (req, res) => {
       user: userInfo,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -1219,10 +1101,7 @@ export const reRepeatAnswer = async (req, res) => {
     let { words } = req.body;
     let message = 'Обучение пройдено успешно!\n';
     let user = await getUserInfo(req.userId, 'wordsToRepeat options');
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Информация о пользователе не найдена!' });
+    if (!user) return sendResponseError(req, res);
     /* Обработка слов с ошибками */
     let wordsWithWrong = words.filter(
       (item) => item.wrong && typeof item?.wrong == 'boolean'
@@ -1285,8 +1164,7 @@ export const reRepeatAnswer = async (req, res) => {
         multiSetOptions,
         req.userId
       );
-      if (!userInfo)
-        return res.status(400).json({ message: 'Не удалось обработать слова' });
+      if (!userInfo) return sendResponseError(req, res);
     }
     /* Удаление повторенных слов */
     if (finishedWords.length > 0) {
@@ -1295,8 +1173,7 @@ export const reRepeatAnswer = async (req, res) => {
         finishedWords,
         req.userId
       );
-      if (!userInfo)
-        return res.status(400).json({ message: 'Не удалось обработать слова' });
+      if (!userInfo) return sendResponseError(req, res);
     }
     /* Формирование ответа */
     if (reverseFinishedWords.length > 0) {
@@ -1323,8 +1200,7 @@ export const reRepeatAnswer = async (req, res) => {
     }
     if (checkStreak.resetStreak) {
       userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo)
-        return res.status(400).json({ message: 'Пользователь не найден!' });
+      if (!userInfo) return sendResponseError(req, res);
       userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
@@ -1334,7 +1210,7 @@ export const reRepeatAnswer = async (req, res) => {
       user: userInfo,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -1394,7 +1270,7 @@ const pushWrongsInWords = async (words, typeWords, req) => {
 
     return { message, status: true, user: userInfo };
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -1475,12 +1351,8 @@ export const checkStreak = async (req, res) => {
       },
       { new: true, rawResult: true }
     );
-    if (userInfo.ok == 0) {
-      return res.status(400).json({
-        message:
-          'Не удалось изменить последнюю дату проверки непрерывной серии!',
-      });
-    }
+    if (userInfo.ok == 0) return sendResponseError(req, res);
+
     userInfo = getUserInfoFromDoc(userInfo.value._doc);
     console.log(userInfo);
     res.json({
@@ -1488,13 +1360,22 @@ export const checkStreak = async (req, res) => {
       user: userInfo,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
   }
 };
 
+function sendResponseError(
+  req,
+  res,
+  message = 'Не удалось выполнить операцию!',
+  status = 400
+) {
+  req.err = new Error(`${message}`);
+  return res.status(status).json({ message });
+}
 /* MONGO OPERATION */
 async function getUserInfo(userID, showFields = '') {
   try {

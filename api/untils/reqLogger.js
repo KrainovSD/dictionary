@@ -13,12 +13,17 @@ export default (req, res, next) => {
     try {
       logJSON.userId = req.userId || 'not authorized';
       logJSON.resCode = res.statusCode;
-      const logString = `${logJSON.date} | ${logJSON.reqType} | ${logJSON.reqPath} | ${logJSON.protocol} | ${logJSON.userAgent} | ${logJSON.ip} | ${logJSON.userId} | ${logJSON.resCode} \n`;
+      logJSON.error = req.err ? req.err.stack : 'no error';
+      let logString = `${logJSON.date} | ${logJSON.reqType} | ${logJSON.reqPath} | ${logJSON.protocol} | ${logJSON.userAgent} | ${logJSON.ip} | ${logJSON.userId} | ${logJSON.resCode} \n ${logJSON.error}\n`;
       console.log('______________________');
       console.log(logString);
-      fs.appendFileSync('logs/reqLogJSON.txt', `${JSON.stringify(logJSON)}\n`);
+      fs.appendFileSync(
+        'logs/reqLogJSON.txt',
+        `${JSON.stringify(logJSON)}\n\n`
+      );
       fs.appendFileSync('logs/reqLogString.txt', logString);
       if (res.statusCode === 500) {
+        console.log(req.err);
         fs.appendFileSync('logs/reqLogErrors.txt', logString);
       }
     } catch (error) {

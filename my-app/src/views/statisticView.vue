@@ -1,5 +1,5 @@
 <template>
-  <div class="statistic">
+  <div class="statistic appearVision">
     <div class="statistic__bestStreak">
       Лучшая непрерывная серия изучения: {{ bestStreak }}
     </div>

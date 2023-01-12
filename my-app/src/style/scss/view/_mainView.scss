@@ -13,8 +13,12 @@ body {
     background-color: whitesmoke;
 }
 
-.appear {
-    animation: appearPage 0.3s linear;
+.appearFly {
+    animation: appearFlyPage 0.3s linear;
+}
+
+.appearVision {
+    animation: appearVisionPage 0.4s linear;
 }
 
 .hidden {

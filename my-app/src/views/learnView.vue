@@ -1,5 +1,5 @@
 <template>
-  <div class="learnType appear">
+  <div class="learnType appearFly">
     <div class="learnType__container">
       <div class="learnType__linkContainer">
         <router-link

@@ -1,6 +1,6 @@
 <template>
   <info-popup ref="info" />
-  <div class="contact appear">
+  <div class="contact appearVision">
     <p class="contact__info">
       Вы можете оставить отзыв или внести предложение по улучшению работы
       сервиса, воспользовавшись формой для отправки сообщения ниже.
@@ -219,7 +219,7 @@ export default {
     },
     async sendMessage(form) {
       try {
-        let res = await this.$api.message(form);
+        let res = await this.$api.user.message(form);
         let message = res?.data?.message;
         await this.showInfo("Отправка сообщения", message);
 

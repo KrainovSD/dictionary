@@ -4,7 +4,7 @@
     ref="learnCard"
     @close="learnCardVisible = false"
   />
-  <div class="learnPlace__container">
+  <div class="learnPlace__container appearVision">
     <div class="repeatWords">
       <div class="repeatWords__header">
         <div class="knownWords__filterContainer">

@@ -327,7 +327,7 @@ export default {
         this.isLoading = true;
 
         let userInfo = this.$api.offline.getUserInfo();
-        let res = await this.$api.change.syncInfo(userInfo);
+        let res = await this.$api.user.syncInfo(userInfo);
 
         this.isLoading = false;
         userInfo = res?.data?.user;
@@ -355,8 +355,7 @@ export default {
 
         this.$store.commit("setUserInfo", user);
         res = await this.syncUserInfoWithServer();
-        if (!res) console.log(user);
-        //this.$api.offline.setSignatureAPI(userInfo);
+        if (!res) this.$api.offline.setSignatureAPI(user);
         this.$store.commit("setAccessToken", token);
         this.$emit("close");
       } catch (err) {

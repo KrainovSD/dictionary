@@ -204,6 +204,7 @@
             class="hidden"
             @change="importData"
             ref="import"
+            :disabled="isLoading == true ? true : false"
           />
           <label for="import" class="setting__backupButton import"
             >Импортировать</label
@@ -469,7 +470,7 @@ export default {
         if (this.isLoading == true) return;
         this.isLoading = true;
 
-        let res = await this.$api.change.info(form);
+        let res = await this.$api.user.info(form);
         let message = res?.data?.message;
         let user = res?.data?.user;
 
@@ -497,7 +498,7 @@ export default {
         if (this.isLoading == true) return;
         this.isLoading = true;
 
-        let res = await this.$api.change.export();
+        let res = await this.$api.user.export();
         let userData = res?.data?.message;
         this.isLoading = false;
 
@@ -518,9 +519,6 @@ export default {
     },
     async importData(event) {
       try {
-        if (this.isLoading == true) return;
-        this.isLoading = true;
-
         let file = event.target.files[0];
         this.$refs.import.value = null;
         let type = file.type;
@@ -529,19 +527,23 @@ export default {
         if (type != "text/plain" || size > maxSize) {
           throw new Error("Неверный тип данных!");
         }
-        let data = await file.text();
-        data = JSON.parse(data);
+        let userInfo = await file.text();
+        userInfo = JSON.parse(userInfo);
 
         let confirm = await this.$refs.confirm.show(
-          "Import",
+          "Импорт",
           "Вы уверены что хотите заменить данные об изученных словах? Если вы используете старую резеврную копию, то весь достигнутый с этой даты прогресс будет утерян."
         );
         if (!confirm) return;
+        if (this.isLoading == true) return;
+        this.isLoading = true;
 
+        let res = await this.$api.user.import({ userInfo });
         this.isLoading = false;
-
-        localStorage.setItem("userInfo", JSON.stringify(data));
-        this.showInfo("Импорт", "Файл успешно испортирован!");
+        userInfo = res?.data?.user;
+        this.$store.commit("setUserInfo", userInfo);
+        this.$api.offline.setSignatureAPI(userInfo);
+        this.showInfo("Импорт", "Файл успешно импортирован!");
       } catch (err) {
         console.log(err);
         this.isLoading = false;

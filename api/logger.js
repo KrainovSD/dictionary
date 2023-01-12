@@ -2,7 +2,8 @@ import fs from 'fs';
 
 export default async (error, area) => {
   let date = dateFormat(new Date());
-  let log = `${date} | ${area} | ${error} \n`;
+
+  let log = `${date} | ${area} | ${error.message}\n ${error.stack}\n\n`;
   try {
     fs.appendFileSync('logs/errorLog.txt', log);
   } catch (err) {

@@ -19,7 +19,7 @@
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
   <loading-popup v-if="isLoading == true" />
-  <div class="learnPlace__container">
+  <div class="learnPlace__container appearVision">
     <div class="categories">
       <div class="CRUDpanel">
         <button

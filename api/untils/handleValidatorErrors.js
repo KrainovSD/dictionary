@@ -54,7 +54,7 @@ export default (req, res, next) => {
       errorsMessage += ` ${errorsObject[key]}`;
       return;
     });
-
+    req.errorMessage = errorsMessage;
     return res.status(400).json({ message: errorsMessage });
   }
   next();

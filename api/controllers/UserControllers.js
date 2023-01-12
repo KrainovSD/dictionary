@@ -11,7 +11,8 @@ const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;
 
 import User from '../models/Users.js';
 
-import Utf8 from 'crypto-js/enc-utf8';
+import Utf8 from 'crypto-js/enc-utf8.js';
+import AES from 'crypto-js/aes.js';
 import crypto from 'node:crypto';
 const iterations = 10000;
 import { pbkdf2, pbkdf2Sync } from 'crypto';
@@ -42,11 +43,8 @@ export const register = async (req, res) => {
     let users = await User.find({
       $or: [{ nickName: nickName }, { email: email }],
     });
-    if (users.length > 0) {
-      return res.status(400).json({
-        message: isHasEmailOrNickname(users, req.body),
-      });
-    }
+    if (users.length > 0)
+      return sendResponseError(req, res, isHasEmailOrNickname(users, req.body));
 
     let { salt, hash } = getHash(password);
     let confirmKey = getCheckKey();
@@ -113,7 +111,7 @@ export const register = async (req, res) => {
         'Регистрация прошла успешно! На вашу почту выслано сообщение с инструкцией по активации аккаунта!',
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: 'Не удалось выполнить операцию!',
     });
@@ -124,22 +122,19 @@ export const login = async (req, res) => {
   try {
     let { nickName, password } = req.body;
     let user = await User.findOne({ nickName: nickName });
-    if (!user) {
-      return res.status(400).json({
-        message: 'Неправльный логин или пароль!',
-      });
-    }
+    if (!user)
+      return sendResponseError(req, res, 'Неправильный логин или пароль!');
+
     let { hash } = getHash(password, user.salt);
-    if (hash != user.hash) {
-      return res.status(400).json({
-        message: 'Неправльный логин или пароль!',
-      });
-    }
-    if (user.confirmed == false) {
-      return res.status(400).json({
-        message: 'Аккаунт не подтвержден! Следуйте инструкции на почте!',
-      });
-    }
+    if (hash != user.hash)
+      return sendResponseError(req, res, 'Неправильный логин или пароль!');
+
+    if (user.confirmed == false)
+      return sendResponseError(
+        req,
+        res,
+        'Аккаунт не подтвержден! Следуйте инструкции на почте!'
+      );
 
     let { refreshToken, accessToken } = getTokens(user._id);
 
@@ -155,11 +150,7 @@ export const login = async (req, res) => {
         upsert: false,
       }
     );
-    if (update.modifiedCount == 0) {
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
-    }
+    if (update.modifiedCount == 0) return sendResponseError(req, res);
 
     const timeExistCookies = getTimeExistCoockies();
     if (!PRODUCTION) {
@@ -179,10 +170,9 @@ export const login = async (req, res) => {
     }
 
     let userData = getUserInfoFromDoc(user._doc);
-    console.log(userData);
     return res.json({ user: userData, token: accessToken });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: "Couldn't login",
     });
@@ -193,17 +183,13 @@ export const logout = async (req, res) => {
   try {
     console.log(req.userId);
     let refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) {
-      return res.status(401).json({
-        message: 'Вы не авторизованы!',
-      });
-    }
+    if (!refreshToken)
+      return sendResponseError(req, res, 'Вы не авторизованы!', 401);
+
     try {
       let decoded = jwt.verify(refreshToken, secretRefreshToken);
     } catch (err) {
-      return res.status(401).json({
-        message: 'Вы не авторизованы!',
-      });
+      return sendResponseError(req, res, 'Вы не авторизованы!', 401);
     }
     let user = await User.updateOne(
       {
@@ -217,15 +203,13 @@ export const logout = async (req, res) => {
       }
     );
     if (user.modifiedCount == 0) {
-      return res.status(401).json({
-        message: 'Вы не авторизованы!',
-      });
+      return sendResponseError(req, res, 'Вы не авторизованы!', 401);
     }
     return res.json({
       message: 'Вы успешно вышли из системы!',
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: 'Не удалось выполнить операцию!',
     });
@@ -235,27 +219,19 @@ export const logout = async (req, res) => {
 export const updateAccessToken = async (req, res) => {
   try {
     let refreshTokenFromCoockies = req.cookies?.refreshToken;
-    if (!refreshTokenFromCoockies) {
-      return res.status(401).json({
-        message: 'Требуется авторизация!',
-      });
-    }
+    if (!refreshTokenFromCoockies)
+      return sendResponseError(req, res, 'Требуется авторизация!', 401);
 
     try {
       let decoded = jwt.verify(refreshTokenFromCoockies, secretRefreshToken);
     } catch (err) {
-      console.log(err);
-      return res.status(401).json({
-        message: 'Требуется авторизация!',
-      });
+      return sendResponseError(req, res, 'Требуется авторизация!', 401);
     }
 
     let user = await User.findOne({ refreshToken: refreshTokenFromCoockies });
-    if (!user) {
-      return res.status(401).json({
-        message: 'Требуется авторизация!',
-      });
-    }
+    if (!user)
+      return sendResponseError(req, res, 'Требуется авторизация!', 401);
+
     let update = await User.updateOne(
       { refreshToken: refreshTokenFromCoockies },
       { lastLogin: Date.now() },
@@ -268,7 +244,7 @@ export const updateAccessToken = async (req, res) => {
       user: userData,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: 'Не удалось выполнить операцию!',
     });
@@ -279,20 +255,21 @@ export const confirm = async (req, res) => {
   try {
     let user = await User.findOne({ confirmKey: req.body.key });
     if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Ключ не прошел проверку подлинности!' });
+      return sendResponseError(
+        req,
+        res,
+        'Ключ не прошел проверку подлинности!'
+      );
 
-    if (user.emailToConfirm == '') {
-      return res.status(400).json({
-        message: 'Ключ не прошел проверку подлинности!',
-      });
-    }
-    if (!(user.confirmTime == 0 || user.confirmTime > Date.now())) {
-      return res.status(400).json({
-        message: 'Время операции истекло!',
-      });
-    }
+    if (user.emailToConfirm == '')
+      return sendResponseError(
+        req,
+        res,
+        'Ключ не прошел проверку подлинности!'
+      );
+
+    if (!(user.confirmTime == 0 || user.confirmTime > Date.now()))
+      return sendResponseError(req, res, 'Время операции истекло!');
 
     let update = await User.updateOne(
       {
@@ -310,14 +287,11 @@ export const confirm = async (req, res) => {
         upsert: false, // Если не будет найдена запись, проигнорирует обновление, если true добавит запись новую запись со значением
       }
     );
-    if (update.modifiedCount == 0) {
-      return res
-        .status(400)
-        .json({ message: 'Не удалось выполнить операцию!' });
-    }
+    if (update.modifiedCount == 0) return sendResponseError(req, res);
+
     return res.json({ message: 'Аккаунт успешно подтвержден!' });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({ message: 'Не удалось выполнить операцию!' });
   }
 };
@@ -327,41 +301,41 @@ export const changeEmail = async (req, res) => {
     let { password, email, key } = req.body;
 
     let user = await User.findOne({ _id: req.userId });
-    if (!user) {
-      return res.status(400).json({
-        message: 'Невозможно выполнить операцию!',
-      });
-    }
+    if (!user) return sendResponseError(req, res);
 
-    if (user.emailToConfirm != '') {
-      return res.status(400).json({
-        message: `Вы уже отправляли заявку на смену Email. Перейдите на почту и проверьте сообщение! Если вы указали неверный адресс электронной почты, повторите процесс смены Email с самого начала немного позже!`,
-      });
-    }
+    if (user.emailToConfirm != '')
+      return sendResponseError(
+        req,
+        res,
+        'Вы уже отправляли заявку на смену Email. Перейдите на почту и проверьте сообщение! Если вы указали неверный адресс электронной почты, повторите процесс смены Email с самого начала немного позже!'
+      );
+
     if (user.confirmKey != key)
-      return res.status(400).json({
-        message: 'Неверный пароль или ключ подтверждения!',
-      });
+      return sendResponseError(
+        req,
+        res,
+        'Неверный пароль или ключ подтверждения!'
+      );
 
     let { hash } = getHash(password, user.salt);
 
-    if (hash != user.hash) {
-      return res.status(400).json({
-        message: 'Неверный пароль или ключ подтверждения!',
-      });
-    }
-    if (user.confirmTime < Date.now()) {
-      return res.status(400).json({
-        message: `Время операции истекло!`,
-      });
-    }
+    if (hash != user.hash)
+      return sendResponseError(
+        req,
+        res,
+        'Неверный пароль или ключ подтверждения!'
+      );
+
+    if (user.confirmTime < Date.now())
+      return sendResponseError(req, res, 'Время операции истекло!');
 
     let hasEmail = await User.findOne({ email: email });
-    if (hasEmail) {
-      return res.status(400).json({
-        message: 'Email уже используется другим пользователем!',
-      });
-    }
+    if (hasEmail)
+      return sendResponseError(
+        req,
+        res,
+        'Email уже используется другим пользователем!'
+      );
 
     let emailToConfirm = email;
     let confirmKey = getCheckKey();
@@ -376,11 +350,8 @@ export const changeEmail = async (req, res) => {
       },
       { upsert: false }
     );
-    if (update.modifiedCount == 0) {
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
-    }
+    if (update.modifiedCount == 0) return sendResponseError(req, res);
+
     const message = {
       from: process.env.POST_LOGIN,
       to: email,
@@ -395,7 +366,7 @@ export const changeEmail = async (req, res) => {
         'На почту была отправлена дальнейшая инструкция по смене почты! Проследуйте по ссылке в инструкции!',
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -406,26 +377,33 @@ export const forgotPassword = async (req, res) => {
   try {
     let { nickName, email } = req.body;
     let user = await User.findOne({ nickName: nickName });
-    if (!user) {
-      return res.status(400).json({
-        message: `Не верный email или Nickname!`,
-      });
-    }
-    if (user.email != email) {
-      return res.status(400).json({
-        message: `Не верный email или Nickname!`,
-      });
-    }
-    if (isNowDay(user.dateOfPassword)) {
-      return res.status(400).json({
-        message: `Изменять пароль можно не чаще, чем один раз в день!`,
-      });
-    }
-    if (user.resetPasswordTime > Date.now()) {
-      return res.status(400).json({
-        message: `Вы не завершили попытку смены пароля! Следуйте инструкции на почте!`,
-      });
-    }
+    if (!user)
+      return sendResponseError(
+        req,
+        res,
+        'Неверный Email или Nick пользователя!'
+      );
+
+    if (user.email != email)
+      return sendResponseError(
+        req,
+        res,
+        'Неверный Email или Nick пользователя!'
+      );
+
+    if (isNowDay(user.dateOfPassword))
+      return sendResponseError(
+        req,
+        res,
+        'Смену пароля можно производить не чаще, чем один раз в день!'
+      );
+
+    if (user.resetPasswordTime > Date.now())
+      return sendResponseError(
+        req,
+        res,
+        'Вы не завершили попытку смены пароля! Следуйте инструкциям на почте!'
+      );
 
     let resetPasswordKey = getCheckKey();
     let resetPasswordTime = getTimeForCheckKey();
@@ -441,11 +419,8 @@ export const forgotPassword = async (req, res) => {
         upsert: false,
       }
     );
-    if (update.modifiedCount == 0) {
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
-    }
+    if (update.modifiedCount == 0) return sendResponseError(req, res);
+
     const message = {
       from: process.env.POST_LOGIN,
       to: req.body.email,
@@ -460,7 +435,7 @@ export const forgotPassword = async (req, res) => {
         'На ваше почту было отправлено сообщение с инструкцией по смене вашего пароля!',
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: 'Не удалось выполнить операцию!',
     });
@@ -471,16 +446,16 @@ export const newPassword = async (req, res) => {
   try {
     let { password, key } = req.body;
     let user = await User.findOne({ resetPasswordKey: key });
-    if (!user) {
-      return res.status(400).json({
-        message: `Ключ не прошел порверку подлинности!`,
-      });
-    }
-    if (user.resetPasswordTime < Date.now()) {
-      return res.status(400).json({
-        message: `Время выполнения операции истекло!`,
-      });
-    }
+    if (!user)
+      return sendResponseError(
+        req,
+        res,
+        'Ключ не прошел проверку подлинности!'
+      );
+
+    if (user.resetPasswordTime < Date.now())
+      return sendResponseError(req, res, 'Время выполнения операции истекло!');
+
     let { salt, hash } = getHash(password);
 
     let update = await User.updateOne(
@@ -494,14 +469,11 @@ export const newPassword = async (req, res) => {
       },
       { upsert: false }
     );
-    if (update.modifiedCount == 0) {
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
-    }
+    if (update.modifiedCount == 0) return sendResponseError(req, res);
+
     res.json({ message: 'Пароль успешно изменен!' });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: 'Не удалось выполнить операцию!',
     });
@@ -511,24 +483,16 @@ export const newPassword = async (req, res) => {
 export const changeAvatar = async (req, res) => {
   try {
     let file = req?.file;
-    if (!file)
-      return res
-        .status(400)
-        .json({ message: 'Не удалось выполнить операцию!' });
+    if (!file) return sendResponseError(req, res);
 
     let user = await User.findOne({ _id: req.userId });
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Не удалось выполнить операцию!' });
-    let nickName = user.nickName;
+    if (!user) return sendResponseError(req, res);
 
+    let nickName = user.nickName;
     if (file.size > maxSizeAvatar) {
       let dir = `${__dirname}/../uploads/${nickName}`;
       if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
-      return res
-        .status(400)
-        .json({ message: 'Не удалось выполнить операцию!' });
+      return sendResponseError(req, res);
     }
 
     user = await User.findOneAndUpdate(
@@ -539,10 +503,7 @@ export const changeAvatar = async (req, res) => {
         rawResult: true,
       }
     );
-    if (user.ok == 0)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (user.ok == 0) return sendResponseError(req, res);
 
     let userData = getUserInfoFromDoc(user.value._doc);
 
@@ -551,7 +512,7 @@ export const changeAvatar = async (req, res) => {
       user: userData,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -573,11 +534,9 @@ export const changeInfo = async (req, res) => {
     else if (field == 'password') return changeInfoPassword(req, res);
     else if (field == 'email') return changeInfoEmail(req, res);
     else if (field == 'nickName') return changeInfoNickName(req, res);
-    return res.status(400).json({
-      message: `Не удалось выполнить операцию!`,
-    });
+    return sendResponseError(req, res);
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -594,10 +553,7 @@ const changeInfoUserName = async (req, res) => {
         rawResult: true,
       }
     );
-    if (user.ok == 0)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (user.ok == 0) return sendResponseError(req, res);
 
     let userData = getUserInfoFromDoc(user.value._doc);
     return res.json({
@@ -605,7 +561,7 @@ const changeInfoUserName = async (req, res) => {
       user: userData,
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -614,25 +570,26 @@ const changeInfoUserName = async (req, res) => {
 const changeInfoEmail = async (req, res) => {
   try {
     let user = await User.findOne({ _id: req.userId });
-    if (!user)
-      return res.status(400).json({
-        message: `Невозможно выполнить операцию!`,
-      });
+    if (!user) return sendResponseError(req, res);
+
     let email = req.body?.email;
     if (user.email != email)
-      return res.status(400).json({ message: 'Неправильно введен Email!' });
+      return sendResponseError(req, res, 'Некорректно введен Email!');
 
     let dateOfConfirm = user.dateOfConfirm;
-    if (isNowDay(dateOfConfirm)) {
-      return res.status(400).json({
-        message: `Невозможно имзенять Email чаще одного раза в день!`,
-      });
-    }
-    if (user.confirmTime > Date.now()) {
-      return res.status(400).json({
-        message: `Вы уже отправляли заявку на смену Email. Перейдите на почту и проверьте сообщение!`,
-      });
-    }
+    if (isNowDay(dateOfConfirm))
+      return sendResponseError(
+        req,
+        res,
+        'Невозможно производить смену Email чаще, чем один раз в день!'
+      );
+
+    if (user.confirmTime > Date.now())
+      return sendResponseError(
+        req,
+        res,
+        'Вы уже отправляли заявку на смену Email. Следуйте инструкциям на электронной почте!'
+      );
 
     let confirmKey = getCheckKey();
     let confirmTime = getTimeForCheckKey();
@@ -646,11 +603,8 @@ const changeInfoEmail = async (req, res) => {
       },
       { upsert: false }
     );
-    if (update.modifiedCount == 0) {
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
-    }
+    if (update.modifiedCount == 0) return sendResponseError(req, res);
+
     const message = {
       from: process.env.POST_LOGIN,
       to: email,
@@ -664,7 +618,7 @@ const changeInfoEmail = async (req, res) => {
       message: 'На почту отправлено сообщение с инструкцией по смене Email!',
     });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -673,15 +627,12 @@ const changeInfoEmail = async (req, res) => {
 const changeInfoPassword = async (req, res) => {
   try {
     let user = await User.findOne({ _id: req.userId });
-    if (!user)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (!user) return sendResponseError(req, res);
 
     let nickName = user._doc.nickName;
     let email = req.body?.password;
     if (user.email != email)
-      return res.status(400).json({ message: 'Неверный email!' });
+      return sendResponseError(req, res, 'Некорретно введен Email!');
 
     let data = {
       body: {
@@ -691,7 +642,7 @@ const changeInfoPassword = async (req, res) => {
     };
     return forgotPassword(data, res);
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -702,15 +653,10 @@ const changeInfoNickName = async (req, res) => {
     let { nickName } = req.body;
     let user = await User.findOne({ nickName: nickName });
     if (user)
-      return res.status(400).json({
-        message: `NickName уже занят!`,
-      });
+      return sendResponseError(req, res, 'Nick пользователя уже используется!');
 
     user = await User.findOne({ _id: req.userId });
-    if (!user)
-      return res
-        .status(400)
-        .json({ message: 'Не удалось выполнить операцию!' });
+    if (!user) return sendResponseError(req, res);
 
     let oldNickName = user.nickName;
     let dir = `${__dirname}/../uploads/${nickName}`;
@@ -723,15 +669,12 @@ const changeInfoNickName = async (req, res) => {
       { nickName: nickName },
       { new: true, rawResult: true }
     );
-    if (user.ok == 0)
-      return res
-        .status(400)
-        .json({ message: `Не удалось выполнить операцию!` });
+    if (user.ok == 0) return sendResponseError(req, res);
 
     let userInfo = getUserInfoFromDoc(user.value._doc);
     res.json({ message: 'NickName успешно изменен!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -747,15 +690,12 @@ const changeInfoOptions = async (req, res) => {
       { $set: { [`options.0.${field}`]: fieldData } },
       { new: true, rawResult: true }
     );
-    if (user.ok == 0)
-      return res.status(400).json({
-        message: `Не удалось выполнить операцию!`,
-      });
+    if (user.ok == 0) return sendResponseError(req, res);
 
     let userInfo = getUserInfoFromDoc(user.value._doc);
     res.json({ message: 'Операция выполнена успешно!', user: userInfo });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -765,40 +705,34 @@ const changeInfoOptions = async (req, res) => {
 export const exportUserData = async (req, res) => {
   try {
     let user = await User.findOne({ _id: req.userId });
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: 'Не удалось выполнить операцию!' });
-    }
+    if (!user) return sendResponseError(req, res);
+
     let {
-      _id,
-      userName,
-      nickName,
-      email,
-      hash,
-      salt,
-      role,
-      dateOfPassword,
-      resetPasswordKey,
-      resetPasswordTime,
-      confirmed,
-      dateOfConfirm,
-      confirmKey,
-      confirmTime,
-      emailToConfirm,
-      dateRegistration,
-      avatar,
-      refreshToken,
-      lastLogin,
-      ...userData
+      knownWords,
+      categoriesToLearn,
+      relevance,
+      wordsToStudy,
+      wordsToRepeat,
+      options,
+      statistics,
     } = user._doc;
 
-    let signature = getSignature(userData);
-    userData.signature = signature;
+    let userInfo = {
+      knownWords,
+      categoriesToLearn,
+      relevance,
+      wordsToStudy,
+      wordsToRepeat,
+      options,
+      statistics,
+    };
 
-    res.json({ message: JSON.stringify(userData) });
+    let signature = getSignature(userInfo);
+    userInfo.signature = signature;
+
+    res.json({ message: JSON.stringify(userInfo) });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -808,12 +742,27 @@ export const exportUserData = async (req, res) => {
 export const importUserData = async (req, res) => {
   try {
     let { userInfo } = req.body;
-    let correctSignature = isCorrectSignatureImport(userInfo);
-    if (!correctSignature)
-      return res.status(400).json({ message: 'Данные повреждены!' });
+    if (!isCorrectSignatureImport(userInfo))
+      return sendResponseError(req, res, 'Данные повреждены!');
 
-    res.json('sosi');
+    let user = await User.findOneAndUpdate(
+      { _id: req.userId },
+      {
+        $set: {
+          knownWords: userInfo.knownWords,
+          categoriesToLearn: userInfo.categoriesToLearn,
+          wordsToStudy: userInfo.wordsToStudy,
+          relevance: userInfo.relevance,
+        },
+      },
+      { new: true, rawResult: true }
+    );
+    if (!user) return sendResponseError(req, res);
+    user = getUserInfoFromDoc(user.value._doc);
+
+    res.json({ user });
   } catch (err) {
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -822,12 +771,91 @@ export const importUserData = async (req, res) => {
 export const syncInfo = async (req, res) => {
   try {
     let { userInfo } = req.body;
-    let correctSignature = isCorrectSignatureSync(userInfo);
-    if (!correctSignature)
-      return res.status(400).json({ message: 'Данные повреждены!' });
+    if (!isCorrectSignatureSync(userInfo))
+      return sendResponseError(req, res, 'Данные повреждены!');
 
-    res.json('sosi');
+    let fields = requireSyncFields(userInfo);
+    if (Object.keys(fields).length == 0)
+      return sendResponseError(req, res, 'Синхронизация не требуется!');
+
+    const wordFields = [
+      'knownWords',
+      'categoriesToLearn',
+      'wordsToStudy',
+      'wordsToRepeat',
+      'relevance',
+    ];
+    for (let field in fields) {
+      if (!wordFields.includes(field)) continue;
+      let itemsForAdd = []; // items
+      let itemsForUpdate = []; // [{elementID: 'id', changeFields: { name: 'name'}}, {}, {}]
+      let itemsForDelete = []; // elementsID
+      for (let item of fields[field]) {
+        if (item.offline == 'add') {
+          itemsForAdd.push(item);
+        } else if (item.offline == 'update') {
+          let elementID = item._id;
+          let changeFields = {};
+          for (let key in item) {
+            if (key == 'offline' || key == '_id') continue;
+            changeFields[key] = item[key];
+          }
+          itemsForUpdate.push({ elementID, changeFields });
+        } else if (item.offline == 'delete') {
+          itemsForDelete.push(item._id);
+        }
+      }
+      if (itemsForAdd.length > 0) {
+        let addItems = await multiPushNewElement(
+          field,
+          itemsForAdd,
+          req.userId
+        );
+        if (!addItems) return sendResponseError(req, res);
+      }
+      if (itemsForUpdate.length > 0) {
+        let updateItems = await multiSetElement(
+          field,
+          itemsForUpdate,
+          req.userId
+        );
+        if (!updateItems) return sendResponseError(req, res);
+      }
+      if (itemsForDelete.length > 0) {
+        let deleteItems = await multiPullElement(
+          field,
+          itemsForDelete,
+          req.userId
+        );
+        if (!deleteItems) return sendResponseError(req, res);
+      }
+      delete fields[field];
+    }
+    const infoFields = ['statistics', 'options'];
+    for (let field in fields) {
+      console.log(field);
+      if (!infoFields.includes(field)) continue;
+      let changeFields = {};
+      let item = fields[field][0];
+      for (let key in item) {
+        if (key == 'offline') continue;
+        changeFields[[`${field}.0.${key}`]] = item[key]; // [`statistics.0.bestStreak`] : res
+      }
+      console.log(changeFields);
+      let updateItem = await User.findOneAndUpdate(
+        { _id: req.userId },
+        { $set: changeFields },
+        { rawResult: true, new: true }
+      );
+      if (updateItem.ok == 0) return sendResponseError(req, res);
+    }
+
+    let user = await User.findOne({ _id: req.userId });
+    if (!user) return sendResponseError(req, res);
+    user = getUserInfoFromDoc(user._doc);
+    res.json({ message: 'Синхронизация выполнена успешно', user });
   } catch (err) {
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
@@ -847,12 +875,93 @@ export const message = async (req, res) => {
     await transporter.sendMail(messagePost);
     res.json({ message: 'Операция выполнена успешно!' });
   } catch (err) {
-    console.log(err);
+    req.err = err;
     return res.status(500).json({
       message: `Не удалось выполнить операцию!`,
     });
   }
 };
+
+function sendResponseError(
+  req,
+  res,
+  message = 'Не удалось выполнить операцию!',
+  status = 400
+) {
+  req.err = new Error(`${message}`);
+  return res.status(status).json({ message });
+}
+async function multiPushNewElement(field, newElements, userID) {
+  try {
+    let query = { _id: userID };
+    let action = {
+      $push: {
+        [`${field}`]: {
+          $each: newElements,
+        },
+      },
+    };
+    let option = { new: true, rawResult: true };
+
+    let user = await User.findOneAndUpdate(query, action, option);
+    if (user.ok == 0) return false;
+    let userInfo = getUserInfoFromDoc(user.value._doc);
+    return userInfo;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+// [{elementID: 'dsdsd', changeFields: { name: 'role'}}, ]
+async function multiSetElement(field, multiSetOptions, userID) {
+  try {
+    let success = true;
+    for (let multiSetOption of multiSetOptions) {
+      if (!success) return false;
+      let setOption = {};
+      for (let key in multiSetOption?.changeFields) {
+        setOption[`${field}.$.${key}`] = multiSetOption?.changeFields[key];
+      }
+      let query = { _id: userID, [`${field}._id`]: multiSetOption?.elementID };
+      let action = { $set: setOption };
+      let option = { upsert: false };
+      let user = await User.updateOne(query, action, option);
+      if (user.modifiedCount == 0) {
+        success = false;
+      }
+    }
+
+    if (success) {
+      success = await User.findOne({ _id: userID });
+      success = getUserInfoFromDoc(success._doc);
+    }
+    return success;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function multiPullElement(field, elementsID, userID) {
+  try {
+    let query = { _id: userID };
+    let action = {
+      $pull: {
+        [field]: { _id: { $in: elementsID } },
+      },
+    };
+    let option = { new: true, rawResult: true };
+
+    let user = await User.findOneAndUpdate(query, action, option);
+    if (user.ok == 0) {
+      return false;
+    }
+    let userInfo = getUserInfoFromDoc(user.value._doc);
+    return userInfo;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
 
 function getTokens(userID) {
   const accessToken = jwt.sign(
@@ -873,7 +982,7 @@ function getHash(password, salt = '') {
   if (salt == '') salt = crypto.randomBytes(128).toString('base64');
   let hash = pbkdf2Sync(
     password + salt,
-    secretPassword,
+    secretPassword + salt,
     iterations,
     512,
     'sha512'
@@ -924,25 +1033,17 @@ function getTimeExistCoockies() {
   return timeExistToken;
 }
 function getSignature(userInfo) {
-  let user = {
-    knownWords: userInfo.knownWords,
-    categoriesToLearn: userInfo.categoriesToLearn,
-    wordsToStudy: userInfo.wordsToStudy,
-    wordsToRepeat: userInfo.wordsToRepeat,
-    relevance: userInfo.relevance,
-    options: userInfo.options,
-    statistics: userInfo.statistics,
-  };
+  let user = JSON.parse(JSON.stringify(userInfo));
 
   let info = {
     knownWords: JSON.stringify(userInfo.knownWords).split(''),
     categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(''),
     wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(''),
-    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(''),
     relevance: JSON.stringify(userInfo.relevance).split(''),
+    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(''),
     options: JSON.stringify(userInfo.options).split(''),
     statistics: JSON.stringify(userInfo.statistics).split(''),
-    data: JSON.stringify(user).split(''),
+    data: [JSON.stringify(user).split('').length],
   };
   for (let key in info) {
     let amountDiffSymbol = {};
@@ -957,32 +1058,32 @@ function getSignature(userInfo) {
     let { hash } = getSignatureHash(info[key]);
     signature[key] = hash;
   }
-  console.log(signature);
   return signature;
 }
+
 function isCorrectSignatureImport(userInfo) {
-  let user = {
-    knownWords: userInfo.knownWords,
-    categoriesToLearn: userInfo.categoriesToLearn,
-    wordsToStudy: userInfo.wordsToStudy,
-    wordsToRepeat: userInfo.wordsToRepeat,
-    relevance: userInfo.relevance,
-    options: userInfo.options,
-    statistics: userInfo.statistics,
-  };
+  let { signature, ...user } = userInfo;
+
   let info = {
     knownWords: JSON.stringify(userInfo.knownWords).split(''),
     categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(''),
     wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(''),
-    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(''),
     relevance: JSON.stringify(userInfo.relevance).split(''),
+    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(''),
     options: JSON.stringify(userInfo.options).split(''),
     statistics: JSON.stringify(userInfo.statistics).split(''),
-    data: JSON.stringify(user).split(''),
+    data: [JSON.stringify(user).split('').length],
   };
   for (let key in info) {
+    let amountDiffSymbol = {};
+    info[key].forEach((x) => {
+      amountDiffSymbol[x] = (amountDiffSymbol[x] || 0) + 1;
+    });
+    info[key] = JSON.stringify(amountDiffSymbol);
+  }
+  for (let key in info) {
     let { hash } = getSignatureHash(info[key]);
-    if (hash != userInfo.signature[key]) return false;
+    if (hash != signature[key]) return false;
   }
   return true;
 }
@@ -1006,6 +1107,14 @@ function isCorrectSignatureSync(userInfo) {
     statistics: JSON.stringify(userInfo.statistics).split(''),
     data: JSON.stringify(user).split(''),
   };
+  for (let key in info) {
+    let amountDiffSymbol = {};
+    info[key].forEach((x) => {
+      amountDiffSymbol[x] = (amountDiffSymbol[x] || 0) + 1;
+    });
+    info[key] = JSON.stringify(amountDiffSymbol);
+  }
+
   for (let key in userInfo.signature) {
     let hash = userInfo.signature[key];
     let descrypt = AES.decrypt(hash, secretSyncSignature);
@@ -1014,7 +1123,25 @@ function isCorrectSignatureSync(userInfo) {
   }
   return true;
 }
-
+function requireSyncFields(userInfo) {
+  let allowedFields = [
+    'knownWords',
+    'categoriesToLearn',
+    'wordsToStudy',
+    'wordsToRepeat',
+    'relevance',
+    'options',
+    'statistics',
+  ];
+  let fields = {};
+  for (let field in userInfo) {
+    if (!allowedFields.includes(field)) continue;
+    let requireSyncField = userInfo[field].filter((item) => item.offline);
+    if (requireSyncField.length == 0) continue;
+    fields[field] = requireSyncField;
+  }
+  return fields;
+}
 function isNowDay(date) {
   let dateToDay = millisecondToDay(date);
   let now = millisecondToDay(Date.now());
@@ -1025,7 +1152,6 @@ function millisecondToDay(millisecond) {
   let day = 1000 * 60 * 60 * 24;
   return Math.floor(millisecond / day);
 }
-
 function isHasEmailOrNickname(users, reqData) {
   let similarEmail = false;
   let similarNickName = false;
@@ -1046,24 +1172,6 @@ function isHasEmailOrNickname(users, reqData) {
   } else if (similarEmail) {
     return 'Email уже используется другим пользователем!';
   }
-}
-
-function dateFormat(date) {
-  date = new Date(date);
-  let minute = date.getMinutes();
-  let hour = date.getHours();
-  const day = date.getDate();
-  const month = date.getMonth() + 1;
-  const year = date.getFullYear();
-
-  if (minute >= 0 && minute < 10) {
-    minute = `0${minute}`;
-  }
-  if (hour >= 0 && hour < 10) {
-    hour = `0${hour}`;
-  }
-
-  return `${hour}:${minute} ${day}-${month}-${year}`;
 }
 
 function getUserInfoFromDoc(doc) {

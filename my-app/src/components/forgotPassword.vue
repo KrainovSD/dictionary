@@ -155,7 +155,7 @@ export default {
       try {
         if (this.isLoading == true) return;
         this.isLoading = true;
-        let res = await this.$api.change.forgot(form);
+        let res = await this.$api.user.forgot(form);
         let message = res?.data?.message || "";
         this.isLoading = false;
         await this.showInfo("Смена пароля", message);
