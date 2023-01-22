@@ -1,10 +1,6 @@
 <template>
-  <div
-    class="modal__backDrop"
-    style="z-index: 1000"
-    ref="backDrop"
-    v-if="isVisible"
-  >
+  <div class="modal__backDrop z15" ref="backDrop" v-if="isVisible"></div>
+  <div class="modal__container info z16" v-if="isVisible">
     <div class="infoPopup">
       <h1 class="infoPopup__header">{{ header }}</h1>
       <div class="infoPopup__line"></div>
@@ -20,7 +16,7 @@
       </div>
       <div class="infoPopup__line"></div>
       <div class="infoPopup__confirmContainer">
-        <confirm-button text="OK" @click="closePopup" fontSize="1vw" />
+        <confirm-button text="OK" @click="closePopup" fontSize="16px" />
       </div>
     </div>
   </div>
@@ -83,7 +79,6 @@ export default {
 <style>
 .infoPopup {
   margin: auto;
-  z-index: 2;
   background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
   display: flex;
   flex-direction: column;
@@ -91,18 +86,28 @@ export default {
   max-width: 60%;
   padding: 20px;
 }
+@media (max-width: 1023px) {
+  .infoPopup {
+    min-width: none;
+    max-width: 100vw;
+    width: auto;
+  }
+}
 .infoPopup__header {
   font-weight: 700;
-  font-size: 1.8vw;
+  font-size: 24px;
   margin: 0 auto;
+  text-align: center;
+  width: 100%;
 }
 .infoPopup__titleContainer {
   margin: 0 auto;
+  width: 100%;
 }
 .infoPopup__title {
-  text-align: justify;
-  font-size: 1.3vw;
+  font-size: 18px;
   font-family: "Times New Roman", Times, serif;
+  text-align: center;
 }
 .infoPopup__title._enter {
   margin-top: 10px;

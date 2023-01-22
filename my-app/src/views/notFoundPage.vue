@@ -15,4 +15,14 @@ export default {};
   max-width: 1200px;
   margin: 0 auto;
 }
+@media (max-width: 767px) {
+  .notFound {
+    font-size: 100px;
+  }
+}
+@media (max-width: 479px) {
+  .notFound {
+    font-size: 80px;
+  }
+}
 </style>

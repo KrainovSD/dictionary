@@ -1,14 +1,15 @@
 <template>
   <div class="homeImg">
-    <div class="homeImg__container">
-      <h1 class="homeImg__header anim-item">
-        Сервис для изучения <br />
-        иностранных слов
-      </h1>
-      <p class="homeImg__title anim-item">
-        Удобная настройка временных патернов для повторения и закрепления <br />
-        как новых слов, так и уже изученных.
-      </p>
+    <div class="homeImg__headerContainer">
+      <div class="homeImg__container">
+        <h1 class="homeImg__header anim-item">
+          Сервис для изучения иностранных слов
+        </h1>
+        <p class="homeImg__title anim-item">
+          Удобная настройка временных патернов для повторения и закрепления как
+          новых слов, так и уже изученных.
+        </p>
+      </div>
     </div>
   </div>
 

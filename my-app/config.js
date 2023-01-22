@@ -1,5 +1,5 @@
 export default {
-    UI:{
-        host: 'http://localhost:3000',
-    },
-}
+  UI: {
+    host: "http://192.168.0.103:3000",
+  },
+};

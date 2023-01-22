@@ -36,7 +36,14 @@ router.put(
   untils.handleValidationErrors,
   WordController.updateWord
 );
-router.delete('/word/:id', untils.checkAuth, WordController.deleteWord);
+//router.delete('/word/:id', untils.checkAuth, WordController.deleteWord);
+router.post(
+  '/delete-words',
+  untils.checkAuth,
+  wordsValidation.id,
+  untils.handleValidationErrors,
+  WordController.deleteWord
+);
 router.post(
   '/startLearnCategory',
   untils.checkAuth,

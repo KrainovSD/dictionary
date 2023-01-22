@@ -15,24 +15,58 @@
     "
     @noAuth="noAuth"
   />
+  <test-panel v-if="isTestVisible" @close="isTestVisible = false" />
 
   <div class="header">
     <div class="headerContainer">
-      <img src="@/assets/KrainovLogo.png" alt="" class="header__logo" />
-      <div class="header__titles">
-        <router-link :to="{ name: 'home' }" class="header__title">
+      <div
+        class="header__subMenu menuMobile"
+        ref="subMenu"
+        @click="toggleSubMenu"
+      >
+        <div class="bar1 menuMobile"></div>
+        <div class="bar2 menuMobile"></div>
+        <div class="bar3 menuMobile"></div>
+      </div>
+
+      <img
+        src="@/assets/KrainovLogo.png"
+        alt=""
+        class="header__logo"
+        @click="openTestPanel"
+      />
+      <img src="@/assets/logoBlack.png" alt="" class="header__logoMobile" />
+
+      <div class="header__titles" ref="titles">
+        <router-link
+          :to="{ name: 'home' }"
+          @click="toggleSubMenu"
+          class="header__title"
+        >
           Главная</router-link
         >
-        <router-link :to="{ name: 'statistic' }" class="header__title"
+        <router-link
+          :to="{ name: 'statistic' }"
+          @click="toggleSubMenu"
+          class="header__title"
           >Изучение</router-link
         >
-        <router-link :to="{ name: 'actual' }" class="header__title"
+        <router-link
+          :to="{ name: 'actual' }"
+          @click="toggleSubMenu"
+          class="header__title"
           >Актуальность</router-link
         >
-        <router-link :to="{ name: 'documentation' }" class="header__title"
+        <router-link
+          :to="{ name: 'documentation' }"
+          @click="toggleSubMenu"
+          class="header__title"
           >Документация</router-link
         >
-        <router-link :to="{ name: 'contacts' }" class="header__title"
+        <router-link
+          :to="{ name: 'contacts' }"
+          @click="toggleSubMenu"
+          class="header__title"
           >Контакты</router-link
         >
       </div>
@@ -72,7 +106,7 @@
       </div>
     </div>
   </div>
-  <div class="workplace">
+  <div class="workplace" @click="toggleSubMenu">
     <router-view />
   </div>
 </template>
@@ -82,6 +116,7 @@ import signForm from "../components/signForm.vue";
 import infoPopup from "../components/infoPopup";
 import settingPopup from "../components/settingPopup.vue";
 import loadingPopup from "../components/loadingPopup.vue";
+import testPanel from "../components/testPanel.vue";
 
 export default {
   components: {
@@ -89,6 +124,7 @@ export default {
     signForm,
     settingPopup,
     loadingPopup,
+    testPanel,
   },
   data() {
     return {
@@ -97,6 +133,8 @@ export default {
       userMenuVisible: false,
       settingPopupVisible: false,
       isLoading: false,
+      testCombination: [],
+      isTestVisible: false,
     };
   },
   async mounted() {
@@ -146,6 +184,43 @@ export default {
       this.signType = "login";
       this.signVisible = true;
       this.showInfo("Авторизация", "Требуется авторизация!");
+    },
+    toggleSubMenu(e) {
+      let subMenu = this.$refs.subMenu;
+      let styleOfSubMenu = window.getComputedStyle(subMenu);
+      if (styleOfSubMenu.display == "none") return;
+      if (
+        !subMenu.classList.contains("change") &&
+        !e.target.classList.contains("menuMobile")
+      )
+        return;
+      let titles = this.$refs.titles;
+      if (e.target.classList.contains("header__title"))
+        return setTimeout(() => {
+          if (!subMenu.classList.contains("change")) return;
+          subMenu.classList.toggle("change");
+          titles.classList.toggle("_visible");
+        }, 400);
+      subMenu.classList.toggle("change");
+      titles.classList.toggle("_visible");
+    },
+    openTestPanel() {
+      /* alt x2, ctrl x3, click, alt*/
+      this.isTestVisible = true;
+
+      /*let pattern = this.testCombination.length;
+      if (pattern == 0 || pattern == 1 || pattern == 6) {
+        if (e.altKey && !e.ctrlKey) this.testCombination.push(true);
+        else this.testCombination = [];
+      } else if (pattern == 2 || pattern == 3 || pattern == 4) {
+        if (!e.altKey && e.ctrlKey) this.testCombination.push(true);
+        else this.testCombination = [];
+      } else if (pattern == 5) {
+        if (!e.altKey && !e.ctrlKey) this.testCombination.push(true);
+        else this.testCombination = [];
+      }
+
+      if (this.testCombination.length == 7) this.isTestVisible = true;*/
     },
     openLogin() {
       let login = this.$refs.login;
@@ -217,6 +292,17 @@ export default {
         );
         let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
         if (this.isLoading == true || lastDailyCheckStreak == now) return;
+
+        let allWords = [
+          ...this.userInfo.knownWords,
+          ...this.userInfo.wordsToRepeat,
+        ];
+        let allCategories = [...this.userInfo.categoriesToLearn];
+        allWords = allWords.filter((item) => item.offline != "delete");
+        allCategories = allCategories.filter(
+          (item) => item.offline != "delete" && item.startLearn == true
+        );
+        if (allWords.length == 0 && allCategories == 0) return;
         this.isLoading = true;
 
         let res = this.$store.getters.getAuth
@@ -236,9 +322,8 @@ export default {
         let status = err?.response?.status;
         this.isLoading = false;
         if (status == 0 || status == 500) {
-          message =
-            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
           this.$store.commit("resetAuth");
+          return await this.dailyCheckStreak();
         }
         await this.showInfo("Непрерывная серия повторения", message);
       }

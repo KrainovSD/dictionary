@@ -19,9 +19,92 @@
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
   <loading-popup v-if="isLoading == true" />
-  <div class="learnPlace__container appearVision">
+  <div class="newWords__workPlace appearVision" ref="workPlace">
+    <div class="mobileSearchContainer">
+      <search-panel v-model="search" />
+    </div>
+    <div
+      class="addButtonMobile"
+      ref="addButtonMobile"
+      @click="
+        this.$refs.workPlace.classList.contains('_openWordList')
+          ? openWordPopup('add')
+          : openCategoryPopup('add')
+      "
+    >
+      Добавить
+    </div>
+    <!-- CATEGORY -->
     <div class="categories">
-      <div class="CRUDpanel">
+      <div class="categories__startLearn mobile">
+        <button
+          class="categories__startButton normal"
+          @click="startLearn('learn')"
+          :class="[
+            standartModeButtonColor,
+            isActiveCategory
+              ? ''
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToRepeat
+              ? ''
+              : 'disabled',
+          ]"
+          :disabled="
+            isActiveCategory
+              ? false
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToRepeat
+              ? false
+              : true
+          "
+        >
+          Обычный режим
+        </button>
+        <button
+          class="categories__startButton reverse"
+          @click="startLearn('reLearn')"
+          :class="[
+            reverseModeButtonColor,
+            isActiveCategory
+              ? ''
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToReverseRepeat
+              ? ''
+              : 'disabled',
+          ]"
+          :disabled="
+            isActiveCategory
+              ? false
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToReverseRepeat
+              ? false
+              : true
+          "
+        >
+          Обратный режим
+        </button>
+      </div>
+      <div class="CRUDpanel" ref="CRUD">
+        <button
+          class="CRUDpanel__toolsButton start"
+          :class="
+            isActiveCategory ||
+            !isHaveCategory ||
+            wordsList?.length < $options.countWordsToActiveCategory
+              ? 'disabled'
+              : ''
+          "
+          :disabled="
+            isActiveCategory ||
+            !isHaveCategory ||
+            wordsList?.length < $options.countWordsToActiveCategory
+              ? true
+              : false
+          "
+          @click="startLearnCategory()"
+        >
+          Начать учить
+        </button>
         <button
           class="CRUDpanel__toolsButton create"
           @click="openCategoryPopup('add')"
@@ -55,7 +138,7 @@
         >
           Categories
         </div>
-        <template v-if="userInfo?.categoriesToLearn?.length != 0">
+        <template v-else>
           <div
             class="category"
             :class="[categoryColor(item), isSelectedCategory(item._id)]"
@@ -64,14 +147,57 @@
             :key="index"
             @click="
               currentSelectedCategory =
-                currentSelectedCategory?._id == item?._id ? {} : item
+                currentSelectedCategory._id == item._id ? {} : item;
+              isActiveCategory ||
+              Object.keys(currentSelectedCategory).length == 0
+                ? ''
+                : openWordsListMobile();
             "
           >
-            <img :src="categoryIcon(item.icon)" alt="" class="category__icon" />
-            <p class="category__name">{{ item.name }}</p>
-            <p class="category__countWords">
-              words: {{ categoryCountWords(item._id) }}
-            </p>
+            <div class="category__infoContainer">
+              <img
+                :src="categoryIcon(item.icon)"
+                alt=""
+                class="category__icon"
+              />
+              <p class="category__name">{{ item.name }}</p>
+              <p class="category__countWords">
+                words: {{ categoryCountWords(item._id) }}
+              </p>
+            </div>
+            <div
+              class="category__footer"
+              v-if="
+                isActiveCategory == true &&
+                currentSelectedCategory._id == item._id
+              "
+            >
+              <div class="category__subInfoContainer">
+                <p><b>Info:</b></p>
+                <p>
+                  Осталось обычных повторений:
+                  {{ 13 - item.countOfRepeat }}
+                </p>
+                <p>
+                  Осталось реверсивных повторений:
+                  {{ 13 - item.countOfReverseRepeat }}
+                </p>
+                <p>
+                  Следующее обычное повторение:
+                  {{ item.infoNextRepeat }}
+                </p>
+                <p>
+                  Следующее реверсивное повторение:
+                  {{ item.infoNextReverseRepeat }}
+                </p>
+              </div>
+              <img
+                src="@/assets/play.png"
+                alt=""
+                class="category__enter"
+                @click.stop="openWordsListMobile"
+              />
+            </div>
           </div>
         </template>
       </div>
@@ -79,8 +205,23 @@
         <button
           class="categories__startButton normal"
           @click="startLearn('learn')"
-          :class="[standartModeButtonColor, isActiveCategory ? '' : 'disabled']"
-          :disabled="isActiveCategory ? false : true"
+          :class="[
+            standartModeButtonColor,
+            isActiveCategory
+              ? ''
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToRepeat
+              ? ''
+              : 'disabled',
+          ]"
+          :disabled="
+            isActiveCategory
+              ? false
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToRepeat
+              ? false
+              : true
+          "
         >
           Обычный режим
         </button>
@@ -107,14 +248,67 @@
         <button
           class="categories__startButton reverse"
           @click="startLearn('reLearn')"
-          :class="[reverseModeButtonColor, isActiveCategory ? '' : 'disabled']"
-          :disabled="isActiveCategory ? false : true"
+          :class="[
+            reverseModeButtonColor,
+            isActiveCategory
+              ? ''
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToReverseRepeat
+              ? ''
+              : 'disabled',
+          ]"
+          :disabled="
+            isActiveCategory
+              ? false
+              : Object.keys(currentSelectedCategory).length == 0 &&
+                isCategoryReadyToReverseRepeat
+              ? false
+              : true
+          "
         >
           Обратный режим
         </button>
       </div>
     </div>
+    <!-- WORDS -->
+    <div class="newWords__categoryInfoMobile" ref="categoryInfoMobile">
+      <img
+        src="@/assets/back.png"
+        alt=""
+        class="newWords__backMobile"
+        v-if="currentMultiSelectedWords.length == 0"
+        @click="
+          closeWordsListMobile();
+          this.currentSelectedCategory = {};
+          this.search = '';
+        "
+      />
+      <img
+        src="@/assets/cancel.png"
+        alt=""
+        class="newWords__cancelMobile"
+        v-if="currentMultiSelectedWords.length > 0"
+        @click="this.currentMultiSelectedWords = []"
+      />
 
+      <p class="newWords__selectedCategoryMobile">
+        <b>{{ selectedCategory }}</b>
+      </p>
+      <img
+        src="@/assets/pointMenu.png"
+        alt=""
+        class="newWords__CRUDmobile"
+        v-if="currentMultiSelectedWords.length == 0"
+        @click="this.$refs.CRUD.classList.toggle('_active')"
+      />
+      <img
+        src="@/assets/delete.png"
+        alt=""
+        v-if="currentMultiSelectedWords.length > 0"
+        class="newWords__deleteMobile"
+        @click="deleteWord"
+      />
+    </div>
     <div class="newWords">
       <div class="CRUDpanel reverse">
         <button
@@ -144,14 +338,18 @@
           class="CRUDpanel__toolsButton delete reverse"
           :class="
             Object.keys(currentSelectedWord)?.length == 0
-              ? 'disabled'
+              ? currentMultiSelectedWords.length > 0
+                ? ''
+                : 'disabled'
               : isWordInActiveCategory == true
               ? 'disabled'
               : ''
           "
           :disabled="
             Object.keys(currentSelectedWord)?.length == 0
-              ? true
+              ? currentMultiSelectedWords.length > 0
+                ? false
+                : true
               : isWordInActiveCategory == true
               ? true
               : false
@@ -161,68 +359,33 @@
           Удалить
         </button>
       </div>
-      <div class="newWords__list" @click.self="currentSelectedWord = {}">
-        <div class="newWords__wordPlaceholder" v-if="wordsList?.length == 0">
-          WORDS
-        </div>
-        <div v-else>
-          <div
-            class="newWords__word"
-            v-for="(item, index) in wordsList"
-            :class="[currentSelectedWord?._id == item._id ? 'selected' : '']"
-            :key="index"
-            :id="item._id"
-            @click="
-              currentSelectedWord =
-                currentSelectedWord?._id == item._id ? {} : item
-            "
-          >
-            <div class="newWords__info">
-              <p>{{ item.word }}</p>
-              <p>{{ item.translate }}</p>
-              <p>{{ item.transcription }}</p>
-            </div>
-            <p class="newWords__description">
-              Description: {{ item.description }}
-            </p>
-            <div class="newWords_examples" v-if="item.example?.length > 0">
-              <p>Examples:</p>
-              <p
-                v-for="(itemExample, indexExample) in item.example"
-                :key="indexExample"
-              >
-                {{ itemExample }}
-              </p>
-            </div>
-            <div class="newWords__sub">
-              <p>
-                Количество ошибок, допущенных в слове: {{ item.wrongs }}
-                {{ captionOfCountWrongs(item.wrongs) }}
-              </p>
-            </div>
-          </div>
-          <template v-if="isActiveCategory == true">
-            <p>
-              Осталось обычных повторений:
-              {{ 13 - currentSelectedCategory.countOfRepeat }}
-            </p>
-            <p>
-              Осталось реверсивных повторений:
-              {{ 13 - currentSelectedCategory.countOfReverseRepeat }}
-            </p>
-            <p>
-              Следующее обычное повторение:
-              {{ currentSelectedCategory.infoNextRepeat }}
-            </p>
-            <p>
-              Следующее реверсивное повторение:
-              {{ currentSelectedCategory.infoNextReverseRepeat }}
-            </p>
-          </template>
-        </div>
+      <!-- WORD LIST -->
+      <div class="newWords__wordContainer">
+        <word-card
+          :wordsList="wordsList"
+          :currentMultiSelectedWords="currentMultiSelectedWords"
+          @changeCurrentSelectedWord="
+            (payload) => (currentSelectedWordID = payload)
+          "
+          @changeMultiSelected="
+            (payload) => (currentMultiSelectedWords = payload)
+          "
+          @update="
+            (payload) => {
+              currentSelectedWordID = payload;
+              openWordPopup('update');
+            }
+          "
+          @delete="
+            (payload) => {
+              currentSelectedWordID = payload;
+              deleteWord();
+            }
+          "
+        />
       </div>
-      <p class="newWords__nameCategory">
-        Выбранная категория: {{ selectedCaregory }}
+      <p class="newWords__categoryInfo">
+        Выбранная категория: {{ selectedCategory }}
       </p>
     </div>
   </div>
@@ -236,6 +399,7 @@ import searchPanel from "../components/searchPanel";
 import infoPopup from "../components/infoPopup";
 import confirmPopup from "../components/confirmPopup";
 import loadingPopup from "../components/loadingPopup.vue";
+import wordCard from "../components/wordCard";
 import { nextTick } from "@vue/runtime-core";
 export default {
   countWordsToActiveCategory: 2,
@@ -247,11 +411,13 @@ export default {
     infoPopup,
     confirmPopup,
     loadingPopup,
+    wordCard,
   },
   data() {
     return {
       currentSelectedCategory: {},
-      currentSelectedWord: {},
+      currentSelectedWordID: "",
+      currentMultiSelectedWords: [],
       categoryPopupVisible: false,
       wordPopupVisible: false,
       wordPopupType: "",
@@ -261,7 +427,25 @@ export default {
       search: "",
       learnCardVisible: false,
       isLoading: false,
+      scrollPosition: 0,
+      categoryInfoMobileOffSetHeight: 0,
     };
+  },
+
+  categoryInfoMobileTop: null,
+  mounted() {
+    let categoryInfoMobile = this.$refs.categoryInfoMobile;
+    let { top } = this.getCoords(categoryInfoMobile);
+    this.$options.categoryInfoMobileTop = top;
+
+    window.addEventListener("wheel", this.toggleAddButtonMobile);
+    window.addEventListener("touchmove", this.toggleAddButtonMobileTouch);
+    window.addEventListener("scroll", this.toggleFixedMobileItems);
+  },
+  beforeUnmount() {
+    window.removeEventListener("wheel", this.toggleAddButtonMobile);
+    window.removeEventListener("touchmove", this.toggleAddButtonMobileTouch);
+    window.removeEventListener("scroll", this.toggleFixedMobileItems);
   },
 
   computed: {
@@ -303,7 +487,7 @@ export default {
       }
       return categories;
     },
-    selectedCaregory() {
+    selectedCategory() {
       if (Object.keys(this?.currentSelectedCategory)?.length == 0)
         return "не выбрана";
       return this.currentSelectedCategory?.name;
@@ -332,6 +516,49 @@ export default {
         return false;
       }
       return true;
+    },
+    isCategoryReadyToRepeat() {
+      let categories = this.userInfo.categoriesToLearn.filter(
+        (item) => item.offline != "delete" && item.startLearn == true
+      );
+      let readyCategories = [];
+      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      for (let category of categories) {
+        let nextRepeat = Math.floor(
+          category.nextRepeat / (1000 * 60 * 60 * 24)
+        );
+
+        if (nextRepeat == now || nextRepeat < now)
+          readyCategories.push(category);
+      }
+      if (readyCategories.length > 0) return true;
+      return false;
+    },
+    isCategoryReadyToReverseRepeat() {
+      let categories = this.userInfo.categoriesToLearn.filter(
+        (item) => item.offline != "delete" && item.startLearn == true
+      );
+      let readyCategories = [];
+      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      for (let category of categories) {
+        let nextReverseRepeat = Math.floor(
+          category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        );
+
+        if (nextReverseRepeat == now || nextReverseRepeat < now)
+          readyCategories.push(category);
+      }
+      if (readyCategories.length > 0) return true;
+      return false;
+    },
+    currentSelectedWord() {
+      if (this.currentSelectedWordID == "") return {};
+      let index = this.wordsList.findIndex(
+        (item) => item._id == this.currentSelectedWordID
+      );
+      if (index == -1) return {};
+      let currentSelectedWord = this.wordsList[index];
+      return currentSelectedWord;
     },
     isWordInActiveCategory() {
       if (Object.keys(this?.currentSelectedWord)?.length == 0) return false;
@@ -372,32 +599,78 @@ export default {
         wordsList = wordsList.filter(
           (word) => word.category == this.currentSelectedCategory?._id
         );
+
+      let categories = this.userInfo.categoriesToLearn.filter(
+        (item) => item.offline != "delete"
+      );
+
+      let nameCategoryList = {};
+      for (let category of categories) {
+        nameCategoryList[category._id] = category.name;
+      }
+
+      let activeCategoryList = categories.filter(
+        (item) => item.startLearn == true
+      );
+      activeCategoryList = activeCategoryList.map((item) => item._id);
+
       wordsList = wordsList.map((item) => {
-        let example = [];
+        let infoExample = [];
         for (let itemExample of item.example) {
           if (itemExample == "") continue;
-          example.push(itemExample);
+          infoExample.push(itemExample);
         }
+        let infoCategory = nameCategoryList[item.category];
+        let infoMultiSelect = !activeCategoryList.includes(item.category);
         return {
           _id: item._id,
           word: item.word,
           translate: item.translate,
           transcription: item.transcription,
           description: item.description,
-          example,
+          example: item.example,
           wrongs: item.wrongs,
           irregularVerb: item.irregularVerb,
           category: item.category,
+          infoExample,
+          infoCategory,
+          infoMultiSelect,
         };
       });
 
       return wordsList;
     },
+
     standartModeButtonColor() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0) return "";
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      if (Object.keys(this.currentSelectedCategory)?.length == 0) {
+        let categories = this.userInfo.categoriesToLearn.filter(
+          (item) => item.offline != "delete" && item.startLearn == true
+        );
+        let red = false;
+        let yellow = false;
+        for (let category of categories) {
+          let nextRepeat = Math.floor(
+            category.nextRepeat / (1000 * 60 * 60 * 24)
+          );
+          let dateOfStartLearn = Math.floor(
+            category.dateOfStartLearn / (1000 * 60 * 60 * 24)
+          );
+          if (nextRepeat == now) yellow = true;
+          if (nextRepeat < now) {
+            if (now - dateOfStartLearn <= 1) yellow = true;
+            else red = true;
+          }
+        }
+        if (red) return "red";
+        if (yellow) return "yellow";
+        return "";
+      }
+
       let index = this.userInfo.categoriesToLearn.findIndex(
-        (item) => item._id == this.currentSelectedCategory._id
+        (item) =>
+          item._id == this.currentSelectedCategory._id &&
+          item.startLearn == true
       );
       if (index == -1) {
         return "";
@@ -419,8 +692,31 @@ export default {
       return "green";
     },
     reverseModeButtonColor() {
-      if (Object.keys(this.currentSelectedCategory)?.length == 0) return "";
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      if (Object.keys(this.currentSelectedCategory)?.length == 0) {
+        let categories = this.userInfo.categoriesToLearn.filter(
+          (item) => item.offline != "delete" && item.startLearn == true
+        );
+        let red = false;
+        let yellow = false;
+        for (let category of categories) {
+          let nextReverseRepeat = Math.floor(
+            category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+          );
+          let dateOfStartLearn = Math.floor(
+            category.dateOfStartLearn / (1000 * 60 * 60 * 24)
+          );
+
+          if (nextReverseRepeat == now) yellow = true;
+          if (nextReverseRepeat < now) {
+            if (now - dateOfStartLearn <= 1) yellow = true;
+            else red = true;
+          }
+        }
+        if (red) return "red";
+        if (yellow) return "yellow";
+        return "";
+      }
       let index = this.userInfo.categoriesToLearn.findIndex(
         (item) => item._id == this.currentSelectedCategory._id
       );
@@ -445,6 +741,77 @@ export default {
     },
   },
   methods: {
+    toggleAddButtonMobile(e) {
+      if (window.innerWidth > 1023) return;
+      let delta = e.deltaY;
+      let button = this.$refs.addButtonMobile;
+      if (delta < 0 && button.classList.contains("_hidden")) {
+        button.classList.remove("_hidden");
+      } else if (delta > 0 && !button.classList.contains("_hidden")) {
+        button.classList.add("_hidden");
+      }
+    },
+    toggleAddButtonMobileTouch(e) {
+      if (window.innerWidth > 1023) return;
+      let button = this.$refs.addButtonMobile;
+      let currentPosition = e.changedTouches[0].clientY;
+      if (
+        this.scrollPosition < currentPosition &&
+        button.classList.contains("_hidden")
+      ) {
+        button.classList.remove("_hidden");
+      } else if (
+        this.scrollPosition > currentPosition &&
+        !button.classList.contains("_hidden")
+      ) {
+        button.classList.add("_hidden");
+      }
+
+      this.scrollPosition = currentPosition;
+    },
+    openWordsListMobile() {
+      this.$refs.workPlace.classList.add("_openWordList");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    closeWordsListMobile() {
+      this.$refs.workPlace.classList.remove("_openWordList");
+      this.$refs.CRUD.classList.remove("_active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    getCoords(elem) {
+      let box = elem.getBoundingClientRect();
+      return {
+        top: box.top + scrollY,
+        left: box.left + scrollX,
+        right: box.right + scrollX,
+        bottom: box.bottom + scrollY,
+      };
+    },
+    toggleFixedMobileItems() {
+      let categoryInfoMobile = this.$refs.categoryInfoMobile;
+      let CRUD = this.$refs.CRUD;
+      if (
+        window.innerWidth > 1023 ||
+        !this.$refs.workPlace.classList.contains("_openWordList")
+      )
+        return;
+      let objectTop = this.$options.categoryInfoMobileTop;
+      const headerHeight = 65;
+      const pageTop = window.scrollY + headerHeight;
+      if (
+        objectTop > pageTop &&
+        categoryInfoMobile.classList.contains("_fixed")
+      ) {
+        CRUD.classList.remove("_fixed");
+        categoryInfoMobile.classList.remove("_fixed");
+      } else if (
+        objectTop <= pageTop &&
+        !categoryInfoMobile.classList.contains("_fixed")
+      ) {
+        CRUD.classList.add("_fixed");
+        categoryInfoMobile.classList.add("_fixed");
+      }
+    },
     dateFormatter(date) {
       date = new Date(date);
       let minute = date.getMinutes();
@@ -461,10 +828,6 @@ export default {
       }
 
       return `${day}-${month}-${year}`;
-    },
-    captionOfCountWrongs(wrongs) {
-      if (wrongs == 2 || wrongs == 3 || wrongs == 4) return "раза";
-      return "раз";
     },
     categoryIcon(icon) {
       return require(`../assets/category/${icon}.png`);
@@ -610,21 +973,31 @@ export default {
     },
     async deleteWord() {
       try {
-        if (Object.keys(this.currentSelectedWord)?.length == 0) return;
-        let id = this.currentSelectedWord?._id;
+        let id;
+        if (this.currentSelectedWordID == "") {
+          id = this.currentMultiSelectedWords;
+          let confirm = await this.showConfirm(
+            "Удаление слова",
+            "Вы уверены, что хотите удалить выбранные слова?"
+          );
+          if (!confirm) return;
+        } else {
+          id = [this.currentSelectedWordID];
 
-        let confirm = await this.showConfirm(
-          "Удаление слова",
-          "Вы уверены, что хотите удалить выбранное слово?"
-        );
-        if (!confirm) return;
+          let confirm = await this.showConfirm(
+            "Удаление слова",
+            "Вы уверены, что хотите удалить выбранное слово?"
+          );
+          if (!confirm) return;
+        }
+        this.currentMultiSelectedWords = [];
 
         if (this.isLoading == true) return;
         this.isLoading = true;
 
         let res = this.$store.getters.getAuth
-          ? await this.$api.words.deleteWord(id)
-          : this.$api.offline.deleteWord(id);
+          ? await this.$api.words.multipleDeleteWord({ id })
+          : this.$api.offline.multipleDeleteWord({ id });
 
         this.isLoading = false;
         if (this.$store.getters.getAuth) {
@@ -635,6 +1008,7 @@ export default {
         let message = res?.data?.message || res?.message;
         await this.showInfo("Удаление слова", message);
       } catch (err) {
+        console.log(err);
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
         this.isLoading = false;
@@ -646,10 +1020,56 @@ export default {
         this.showInfo("Удаление слова", message);
       }
     },
+    getReadyCategoryToRepeat() {
+      let categories = this.userInfo.categoriesToLearn.filter(
+        (item) => item.offline != "delete" && item.startLearn == true
+      );
+      let readyCategories = [];
+      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      for (let category of categories) {
+        let nextRepeat = Math.floor(
+          category.nextRepeat / (1000 * 60 * 60 * 24)
+        );
+
+        if (nextRepeat == now || nextRepeat < now)
+          readyCategories.push(category);
+      }
+      readyCategories = readyCategories.map((item) => item._id);
+      if (readyCategories.length > 0) return readyCategories;
+      return [];
+    },
+    getReadyCategoryToReverseRepeat() {
+      let categories = this.userInfo.categoriesToLearn.filter(
+        (item) => item.offline != "delete" && item.startLearn == true
+      );
+      let readyCategories = [];
+      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      for (let category of categories) {
+        let nextReverseRepeat = Math.floor(
+          category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        );
+
+        if (nextReverseRepeat == now || nextReverseRepeat < now)
+          readyCategories.push(category);
+      }
+      readyCategories = readyCategories.map((item) => item._id);
+      if (readyCategories.length > 0) return readyCategories;
+      return [];
+    },
     async startLearn(type) {
-      let categoryID = this.currentSelectedCategory._id;
+      let allCategoriesToRepeat =
+        type == "learn"
+          ? this.getReadyCategoryToRepeat()
+          : this.getReadyCategoryToReverseRepeat();
+      let categoryID = [];
+      this.currentSelectedCategory._id
+        ? categoryID.push(this.currentSelectedCategory._id)
+        : categoryID.push(...allCategoriesToRepeat);
+      if (categoryID.length == 0) return;
+
       let words = this.userInfo.wordsToStudy.filter(
-        (item) => item.category == categoryID && item?.offline != "delete"
+        (item) =>
+          categoryID.includes(item.category) && item?.offline != "delete"
       );
       words = words.sort(() => Math.random() - 0.5);
       this.learnCardVisible = true;
@@ -658,12 +1078,6 @@ export default {
     },
   },
   watch: {
-    currentSelectedCategory: {
-      handler: function () {
-        this.currentSelectedWord = {};
-      },
-      deep: true,
-    },
     userInfo() {
       if (Object.keys(this.currentSelectedCategory)?.length == 0) return;
       let index = this.userInfo.categoriesToLearn.findIndex(
@@ -676,6 +1090,20 @@ export default {
         return;
       }
       this.currentSelectedCategory = this.userInfo.categoriesToLearn[index];
+    },
+    search() {
+      let workPlace = this.$refs.workPlace;
+      if (
+        this.search.trim() != "" &&
+        !workPlace.classList.contains("_openWordList")
+      )
+        this.openWordsListMobile();
+      else if (
+        this.search.trim() == "" &&
+        workPlace.classList.contains("_openWordList") &&
+        Object.keys(this.currentSelectedCategory).length == 0
+      )
+        this.closeWordsListMobile();
     },
   },
 };

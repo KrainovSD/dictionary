@@ -9,7 +9,8 @@
           }"
           class="learnType__button"
         >
-          Изученные
+          <img src="@/assets/known.png" alt="" class="learnType__linkIcon" />
+          <p>Изученные</p>
         </router-link>
         <p>Всего слов: {{ countKnownWords }}</p>
       </div>
@@ -23,7 +24,8 @@
           }"
           class="learnType__button"
         >
-          Изучаемые
+          <img src="@/assets/study.png" alt="" class="learnType__linkIcon" />
+          <p>Изучаемые</p>
         </router-link>
         <p>Всего слов: {{ countCategoriesWords }}</p>
       </div>
@@ -37,7 +39,8 @@
           }"
           class="learnType__button"
         >
-          Повторяемые
+          <img src="@/assets/repeat.png" alt="" class="learnType__linkIcon" />
+          <p>Повторяемые</p>
         </router-link>
         <p>Всего слов: {{ countRepeatWords }}</p>
       </div>

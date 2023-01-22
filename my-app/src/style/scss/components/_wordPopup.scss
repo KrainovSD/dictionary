@@ -4,12 +4,13 @@
 }
 
 .wordPopup {
-    margin: rem(30) auto 0 auto;
+    margin: auto auto auto auto;
     z-index: 2;
     background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
     display: flex;
     flex-direction: column;
-    width: rem(450);
+    max-width: rem(450);
+    width: 100vw;
 
     &__containerCategory {
         width: 100%;
@@ -53,17 +54,20 @@
 
     &__subCategory {
         position: absolute;
-        right: 0;
+        left: 0;
         z-index: 3;
         background-color: #fff;
         border-radius: 0.4rem rem;
         box-shadow: 0 0.1rem 2rem #04061c1a;
         padding: rem(15) 0;
         margin-top: rem(20);
-        width: rem(300);
+        width: rem(250);
+        box-shadow: 0px 0px 16px -2px rgb(34 60 80 / 20%);
         transition: all 0.3s ease;
         overflow: hidden;
         color: black;
+
+
 
         &._close {
             height: 0;
@@ -114,6 +118,75 @@
         width: rem(20);
         height: rem(20);
         margin-left: rem(8);
+    }
+
+    &__adviceWord {
+        font-size: rem(16);
+        margin: 5px 0;
+        width: 100%;
+        flex-wrap: wrap;
+        line-height: 1.5;
+        display: none;
+
+        @media (max-width: 1199px) {
+            display: flex;
+        }
+
+        & p {
+            background-color: red;
+            padding: 0 5px;
+            margin-bottom: 5px;
+            margin-left: 5px;
+            line-height: 1.5;
+            cursor: pointer;
+            color: white;
+        }
+    }
+
+    &__adviceTranslate {
+        font-size: rem(16);
+        margin: 5px 0;
+        width: 100%;
+        flex-wrap: wrap;
+        line-height: 1.5;
+        display: none;
+
+        @media (max-width: 1199px) {
+            display: flex;
+        }
+
+        & p {
+            background-color: green;
+            padding: 0 5px;
+            margin-bottom: 5px;
+            margin-left: 5px;
+            line-height: 1.5;
+            cursor: pointer;
+            color: white;
+        }
+    }
+
+    &__adviceTranscription {
+        font-size: rem(16);
+        margin: 5px 0;
+        width: 100%;
+        flex-wrap: wrap;
+        line-height: 1.5;
+        display: none;
+
+        @media (max-width: 1199px) {
+            display: flex;
+        }
+
+        & p {
+            background-color: orange;
+            padding: 0 5px;
+            margin-bottom: 5px;
+            margin-left: 5px;
+            line-height: 1.5;
+            cursor: pointer;
+            color: white;
+        }
     }
 
     &__inputContainer {
@@ -235,103 +308,7 @@
         cursor: pointer;
     }
 
-    &__tooltipAdvice {
-        position: absolute;
-        left: -112%;
-        top: 50%;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        font-size: rem(16);
-        width: 350px;
-        border-radius: 5px;
-        padding: 9px 9px;
-        margin-left: 8px;
-        transform: translateX(0%) translateY(-50%);
 
-        &::before {
-            content: "";
-            position: absolute;
-            border-width: 4px 6px 0 6px;
-            border-style: solid;
-            border-color: rgba(0, 0, 0, 0.7) transparent transparent transparent;
-            left: 98.9%;
-            top: 50%;
-            transform: translatey(-50%) rotate(-90deg);
-        }
-    }
-
-    &__adviceWordContainer {
-        margin-top: rem(7);
-        margin-bottom: rem(7);
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-
-        & p {
-            display: inline-block;
-            line-height: 1.5;
-            vertical-align: middle;
-            margin-left: rem(5);
-        }
-    }
-
-    &__adviceWord {
-        background-color: red;
-        padding: 0 rem(5);
-        margin-bottom: rem(5);
-        margin-left: rem(5);
-        line-height: 1.5;
-        cursor: pointer;
-    }
-
-    &__adviceTranscriptionContainer {
-        margin-top: rem(7);
-        margin-bottom: rem(7);
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-
-        & p {
-            display: inline-block;
-            line-height: 1.5;
-            vertical-align: middle;
-            margin-left: rem(5);
-        }
-
-    }
-
-    &__adviceTranscription {
-        background-color: orange;
-        padding: 0 rem(5);
-        margin-bottom: rem(5);
-        margin-left: rem(5);
-        line-height: 1.5;
-        cursor: pointer;
-    }
-
-    &__adviceTranslateContainer {
-        margin-top: rem(7);
-        margin-bottom: rem(7);
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-
-        & p {
-            display: inline-block;
-            line-height: 1.5;
-            vertical-align: middle;
-            margin-left: rem(5);
-        }
-    }
-
-    &__adviceTranslate {
-        background-color: green;
-        padding: 0 rem(5);
-        margin-bottom: rem(5);
-        margin-left: rem(5);
-        line-height: 1.5;
-        cursor: pointer;
-    }
 
 
 }

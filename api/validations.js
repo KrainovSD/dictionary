@@ -333,6 +333,7 @@ const userInfoValidation = [
         isValidatedOptions: checkOptions(value.options),
         isValidatedSignature: checkSignature(value.signature),
       };
+      console.log(validation);
       for (let key in validation) {
         if (!validation[key]) throw new Error('Данные повреждены!');
       }
@@ -394,8 +395,9 @@ function checkKnownWords(words) {
           break;
         }
         case 'description': {
-          if (fieldData === '' || typeof fieldData != 'string') return false;
-          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData)) return false;
+          if (fieldData !== '' && typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) && fieldData !== '')
+            return false;
           if (fieldData.length > 164) return false;
           break;
         }
@@ -582,10 +584,13 @@ function checkWordsToStudy(words) {
     '_id',
   ];
   for (let word of studyWords) {
+    console.log(word);
+    console.log('___');
     if (typeof word != 'object') return false;
     if (Array.isArray(word)) return false;
     if (Object.keys(word).length != 9) return false;
     for (let field in word) {
+      console.log(field);
       if (!studyFields.includes(field)) return false;
       let fieldData = word[field];
       switch (field) {
@@ -613,8 +618,9 @@ function checkWordsToStudy(words) {
           break;
         }
         case 'description': {
-          if (fieldData === '' || typeof fieldData != 'string') return false;
-          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData)) return false;
+          if (fieldData !== '' && typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) && fieldData !== '')
+            return false;
           if (fieldData.length > 164) return false;
           break;
         }
@@ -714,8 +720,9 @@ function checkWordsToRepeat(words) {
           break;
         }
         case 'description': {
-          if (fieldData === '' || typeof fieldData != 'string') return false;
-          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData)) return false;
+          if (fieldData !== '' && typeof fieldData != 'string') return false;
+          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) && fieldData !== '')
+            return false;
           if (fieldData.length > 164) return false;
           break;
         }
@@ -1001,7 +1008,21 @@ export const userValidation = {
 };
 
 /* WORDS  */
-
+const idValidation = [
+  body('id')
+    .custom((value) => {
+      if (value.length == 0) throw new Error('Пустой массив');
+      return true;
+    })
+    .withMessage('id не должно быть пустым!'),
+  body('id.*')
+    .trim()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('id не должно быть пустым!')
+    .isString()
+    .withMessage('У id неверный тип данных!'),
+];
 const categoryValidation = [
   body('id')
     .optional()
@@ -1113,9 +1134,6 @@ const wordValidation = [
     ),
   body('description')
     .trim()
-    .not()
-    .isEmpty({ ignore_whitespace: true })
-    .withMessage('Описание не должно быть пустым!')
     .isString()
     .withMessage('У описания неверный тип данных!')
     .isLength({ max: 164 })
@@ -1187,7 +1205,7 @@ const answerValidation = [
     .withMessage('Неверный формат ответа!')
     .isBoolean()
     .withMessage('Неверный формат ответа!'),
-  body('categoryID')
+  body('categoryID.*')
     .trim()
     .custom((value) => {
       if (value != 'undefined' && typeof value != 'string')
@@ -1202,4 +1220,5 @@ export const wordsValidation = {
   word: wordValidation,
   relevance: relevanceValidation,
   answer: answerValidation,
+  id: idValidation,
 };

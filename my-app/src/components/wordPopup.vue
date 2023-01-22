@@ -7,7 +7,8 @@
     categoryPopupType="add"
     @close="categoryPopupVisible = false"
   />
-  <div class="modal__backDrop" ref="backDrop">
+  <div class="modal__backDrop" ref="backDrop"></div>
+  <div class="modal__container">
     <div class="wordPopup">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">
@@ -19,7 +20,7 @@
         <p class="sign__description" v-else>
           Редактирование слова из выбранной категории
         </p>
-
+        <!-- CATEGORY -->
         <div
           class="wordPopup__containerCategory"
           ref="category"
@@ -67,126 +68,113 @@
             ref="arrow"
           />
         </div>
-
+        <!-- WORD -->
         <div class="wordPopup__inputContainer" style="position: relative">
           <input-tooltip
             type="input"
             v-model="word"
-            field="word"
             fontSize="16"
-            :errors="errors"
+            :error="errors?.word"
             placeholder="*Word"
-            @input="translateApi"
             @keyup.enter="operationWithWord"
           />
-          <div
-            class="wordPopup__tooltipAdvice"
-            v-if="
-              !errors?.word &&
-              ((adviceWord.length > 0 && this.word != this.adviceWord) ||
-                (adviceTranscription.length > 0 &&
-                  this.transcription != this.adviceTranscription) ||
-                (adviceTranslate.length > 0 && adviceTranslateUsed != true))
+          <translate-tooltip
+            :word="word"
+            :translate="translate"
+            :transcription="transcription"
+            :error="errors?.word"
+            @changeTranslate="
+              (item) => {
+                this.translate =
+                  this.translate.length > 0
+                    ? `${this.translate}, ${item}`
+                    : `${item}`;
+              }
             "
-          >
-            <div
-              class="wordPopup__adviceWordContainer"
-              v-if="adviceWord.length > 0 && this.word != this.adviceWord"
-            >
-              <p>Возможно вы имели ввиду:</p>
-
-              <div
-                @click="
-                  this.word = this.adviceWord;
-                  this.translateApi();
-                "
-                class="wordPopup__adviceWord"
-              >
-                {{ adviceWord }}
-              </div>
-            </div>
-            <div
-              class="wordPopup__adviceTranscriptionContainer"
-              v-if="
-                adviceTranscription.length > 0 &&
-                this.transcription != this.adviceTranscription
-              "
-            >
-              <p>Транскрипция:</p>
-
-              <div
-                class="wordPopup__adviceTranscription"
-                @click="
-                  this.$refs.transcription.value = this.adviceTranscription;
-                  this.transcription = this.adviceTranscription;
-                "
-              >
-                {{ adviceTranscription }}
-              </div>
-            </div>
-            <div
-              class="wordPopup__adviceTranslateContainer"
-              v-if="adviceTranslate.length > 0 && adviceTranslateUsed != true"
-            >
-              <p>Варианты перевода:</p>
-
-              <template v-for="(item, index) in adviceTranslate" :key="index">
-                <div
-                  class="wordPopup__adviceTranslate"
-                  v-if="!translateList.includes(item)"
-                  @click="
-                    this.translate =
-                      this.translate.length > 0
-                        ? `${this.translate}, ${item}`
-                        : `${item}`
-                  "
-                >
-                  {{ item }}
-                </div>
-              </template>
-            </div>
-          </div>
+            @changeTranscription="
+              (item) => {
+                this.transcription = item;
+              }
+            "
+            @changeWord="
+              (item) => {
+                this.word = item;
+              }
+            "
+            @changeAdviceWord="
+              (item) => {
+                this.adviceWord = item;
+              }
+            "
+            @changeAdviceTranslate="
+              (item) => {
+                this.adviceTranslate = item;
+              }
+            "
+            @changeAdviceTranscription="
+              (item) => {
+                this.adviceTranscription = item;
+              }
+            "
+          />
         </div>
-
+        <div
+          class="wordPopup__adviceWord"
+          v-if="adviceWord.length > 0 && this.word != this.adviceWord"
+        >
+          Возможно вы имели ввиду:
+          <p @click="word = adviceWord">{{ adviceWord }}</p>
+        </div>
+        <!-- TRANSLATE -->
         <div class="wordPopup__inputContainer">
           <input-tooltip
             type="input"
             v-model="translate"
-            field="translate"
             fontSize="16"
-            :errors="errors"
+            :error="errors?.translate"
             placeholder="*Translate"
             @keyup.enter="operationWithWord"
           />
+        </div>
+        <div
+          class="wordPopup__adviceTranslate"
+          v-if="adviceTranslate.length > 0 && adviceTranslateUsed != true"
+        >
+          Варианты перевода:
+          <template v-for="(item, index) in adviceTranslate" :key="index">
+            <p
+              v-if="!translateList.includes(item)"
+              @click="
+                this.translate =
+                  this.translate.length > 0
+                    ? `${this.translate}, ${item}`
+                    : `${item}`
+              "
+            >
+              {{ item }}
+            </p>
+          </template>
         </div>
 
         <!-- TRANSCTIPTION -->
         <div style="position: relative">
           <transcription-keyboard
-            v-if="currentFocusInput == 'transcription'"
-            @enterKey="(payload) => enterTranscription(payload)"
+            :error="errors?.transcription"
+            :transcription="transcription"
+            @changeTranscription="(payload) => (this.transcription = payload)"
           />
-          <input
-            type="text"
-            class="wordPopup__input"
-            :class="errors.transcription ? '_error' : ''"
-            placeholder="*Transcription"
-            name="transcription"
-            @keypress.prevent=""
-            @keyup="enterTranscription"
-            @input="
-              (e) => {
-                this.transcription = e.target.value;
-              }
-            "
-            autocomplete="off"
-            ref="transcription"
-          />
-          <div
-            class="wordPopup__tooltip"
-            v-if="errors.transcription && currentFocusInput == 'transcription'"
-            :tooltip="errors.transcription"
-          ></div>
+        </div>
+        <div
+          class="wordPopup__adviceTranscription"
+          v-if="
+            adviceTranscription.length > 0 &&
+            this.transcription != this.adviceTranscription
+          "
+        >
+          Транскрипция:
+          <p @click="transcription = adviceTranscription">
+            {{ adviceTranscription }}
+          </p>
         </div>
         <!-- DESCRIPTION -->
         <div class="wordPopup__textareaContainer">
@@ -194,44 +182,27 @@
             type="textarea"
             maxLength="164"
             v-model="description"
-            field="description"
             fontSize="16"
-            :errors="errors"
+            :error="errors?.description"
             placeholder="Description"
           />
         </div>
         <!-- EXAMPLE -->
         <div
+          class="wordPopup__inputContainer"
           style="position: relative"
           v-for="(item, index) in example"
           :key="index"
         >
-          <img
-            src="@/assets/plus.png"
-            alt=""
-            class="wordPopup__addExample"
-            @click="addExample"
-            v-if="exampleCount - 1 == index && exampleCount < 3"
-          />
-          <input
-            type="text"
-            class="wordPopup__input example"
-            :class="errors?.example?.[index] ? '_error' : ''"
-            placeholder="Example"
-            :name="`example${index}`"
-            autocomplete="off"
+          <input-tooltip
+            type="input"
             v-model="example[index]"
-            v-if="exampleCount - 1 >= index"
-            :id="`example${index}`"
+            fontSize="16"
+            :error="errors?.example?.[index]"
+            placeholder="Example"
             @keyup.enter="operationWithWord"
+            v-if="isShowExample(index)"
           />
-          <div
-            class="wordPopup__tooltip"
-            v-if="
-              errors?.example?.[index] && currentFocusInput == `example${index}`
-            "
-            :tooltip="errors?.example?.[index]"
-          ></div>
         </div>
         <!-- CONFIRM BUTTON -->
         <div
@@ -260,7 +231,6 @@
 </template>
 
 <script>
-import { nextTick } from "@vue/runtime-core";
 import categoryPopup from "../components/categoryPopup.vue";
 import inputTooltip from "../components/inputTooltip";
 import confirmButton from "../components/confirmButton";
@@ -269,6 +239,7 @@ import confirmPopup from "../components/confirmPopup";
 import closeModalButton from "../components/closeModalButton.vue";
 import loadingPopup from "../components/loadingPopup.vue";
 import transcriptionKeyboard from "../components/transcriptionKeyboard.vue";
+import translateTooltip from "../components/translateTooltip.vue";
 
 export default {
   components: {
@@ -280,6 +251,7 @@ export default {
     closeModalButton,
     loadingPopup,
     transcriptionKeyboard,
+    translateTooltip,
   },
   emits: ["close"],
   props: {
@@ -288,7 +260,6 @@ export default {
   },
   data() {
     return {
-      currentFocusInput: "",
       category: "",
       word: "",
       translate: "",
@@ -297,7 +268,6 @@ export default {
       example: ["", "", ""],
       id: "",
       errors: {},
-      exampleCount: 1,
       categoryPopupVisible: false,
       isLoading: false,
       adviceWord: "",
@@ -305,63 +275,12 @@ export default {
       adviceTranscription: "",
     };
   },
-  timerAPIController: null,
-  delayAPI: 2000,
   mounted() {
     if (Object.keys(this.options)?.length != 0) {
       for (let key in this.options) {
-        if (key == "example") {
-          (async () => {
-            let examplesOption = this.options.example;
-            while (examplesOption.length < 3) examplesOption.push("");
-            this[key] = examplesOption;
-            let count = 1;
-            for (let index in examplesOption) {
-              let example = examplesOption[index];
-              if (index == 0) continue;
-              if (example.length > 0) count++;
-            }
-            this.exampleCount = count;
-            await nextTick();
-            if (count > 1) {
-              for (let i = 2; i <= count; i++) {
-                let id = `example${i - 1}`;
-                let input = document.querySelector(`#${id}`);
-                input.addEventListener("focus", this.selectInput);
-                input.addEventListener("focusout", this.unSelectInput);
-              }
-            }
-          })();
-          continue;
-        }
-        if (key == "transcription")
-          this.$refs.transcription.value = this.options[key];
         this[key] = this.options[key];
       }
     }
-    if (this.word.length > 0) this.translateApi();
-
-    let input = Array.from(document.querySelectorAll("input"));
-    let textArea = Array.from(document.querySelectorAll("textarea"));
-    let inputs = [...input, ...textArea];
-
-    inputs.forEach((input) => {
-      input.addEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.addEventListener("focusout", this.unSelectInput);
-    });
-  },
-  beforeUnmount() {
-    let input = Array.from(document.querySelectorAll("input"));
-    let textArea = Array.from(document.querySelectorAll("textarea"));
-    let inputs = [...input, ...textArea];
-    inputs.forEach((input) => {
-      input.removeEventListener("focus", this.selectInput);
-    });
-    inputs.forEach((input) => {
-      input.removeEventListener("focusout", this.unSelectInput);
-    });
   },
   computed: {
     userInfo() {
@@ -406,27 +325,6 @@ export default {
     },
   },
   methods: {
-    async translateApi() {
-      clearTimeout(this.$options.timerAPIController);
-      this.$options.timerAPIController = setTimeout(async () => {
-        try {
-          let res = await this.$api.words.translateAPI(
-            this.word.toLowerCase().trim()
-          );
-          let { adviceWord, adviceTranslate, adviceTranscription } = res;
-          this.adviceWord = adviceWord.length > 0 ? adviceWord : "";
-          this.adviceTranscription =
-            adviceTranscription.length > 0 ? adviceTranscription : "";
-          this.adviceTranslate =
-            adviceTranslate.length > 0 ? adviceTranslate : [];
-        } catch (err) {
-          this.adviceWord = "";
-          this.adviceTranscription = "";
-          this.adviceTranslate = [];
-          console.log(err);
-        }
-      }, this.$options.delayAPI);
-    },
     closePopup() {
       if (this.categoryPopupVisible == true) return;
       if (!this.$refs.backDrop.classList.contains("close")) {
@@ -449,64 +347,42 @@ export default {
       subCategory.classList.toggle("_close");
       arrow.classList.toggle("_active");
     },
-    selectInput(event) {
-      let input = event.target;
-      if (!input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = input.name;
+    isShowExample(index) {
+      if (index == 0) {
+        return true;
       }
-    },
-    unSelectInput(event) {
-      let input = event.target;
-      if (input.classList.contains("_focus")) {
-        input.classList.toggle("_focus");
-        this.currentFocusInput = "";
-      }
-    },
-    enterTranscription(event) {
-      if (event?.type == "keyup") {
-        let input = this.$refs.transcription;
-        this.validateField("transcription", input.value);
-        return;
-      }
-
-      let symbol = event;
-      let input = this.$refs.transcription;
-      let cursor = input.selectionStart;
-      let text = input.value;
-      switch (symbol) {
-        case "_": {
-          input.value =
-            text.substring(0, cursor) + " " + text.substring(cursor);
-          input.selectionStart = input.selectionEnd = cursor + 1;
-
-          break;
+      if (index == 1) {
+        if (this.example[0].trim() != "") {
+          return true;
         }
-        case "←": {
-          input.value = text.substring(0, cursor - 1) + text.substring(cursor);
-          input.selectionStart = input.selectionEnd = cursor - 1;
-
-          break;
+        this.repairEmptyField();
+        return false;
+      }
+      if (index == 2) {
+        if (this.example[0].trim() != "" && this.example[1].trim() != "") {
+          return true;
         }
-        default: {
-          input.value =
-            text.substring(0, cursor) + symbol + text.substring(cursor);
-          input.selectionStart = input.selectionEnd = cursor + 1;
-
-          break;
+        this.repairEmptyField();
+        return false;
+      }
+      return false;
+    },
+    repairEmptyField() {
+      if (this.example[0].trim() == "") {
+        if (this.example[1].trim() != "") {
+          this.example[0] = this.example[1];
+          this.example[1] = "";
+        }
+        if (this.example[2].trim() != "") {
+          this.example[1] = this.example[2];
+          this.example[2] = "";
+        }
+      } else if (this.example[1].trim() == "") {
+        if (this.example[2].trim() != "") {
+          this.example[1] = this.example[2];
+          this.example[2] = "";
         }
       }
-      this.transcription = input.value;
-      this.validateField("transcription", input.value);
-    },
-    async addExample() {
-      this.exampleCount += 1;
-
-      await nextTick();
-      let id = `example${this.exampleCount - 1}`;
-      let input = document.querySelector(`#${id}`);
-      input.addEventListener("focus", this.selectInput);
-      input.addEventListener("focusout", this.unSelectInput);
     },
     async showInfo(header, title) {
       await this.$refs.info.show(header, title);
@@ -520,10 +396,7 @@ export default {
       Object.keys(form).forEach((key) => {
         if (
           form[key] == "" &&
-          (key == "word" ||
-            key == "translate" ||
-            key == "transcription" ||
-            key == "description")
+          (key == "word" || key == "translate" || key == "transcription")
         ) {
           this.errors[key] = "Поле обязательно для заполнения!";
           return;
@@ -644,10 +517,7 @@ export default {
         }
         if (
           fieldData == "" &&
-          (field == "word" ||
-            field == "translate" ||
-            field == "transcription" ||
-            field == "description")
+          (field == "word" || field == "translate" || field == "transcription")
         ) {
           this.errors[field] = "Поле обязательно для заполнения!";
           return;
@@ -754,7 +624,7 @@ export default {
         category: this.category,
         word: this.word,
         translate: this.translate,
-        transcription: this.$refs.transcription.value,
+        transcription: this.transcription,
         description: this.description,
         example: this.example,
       };
@@ -768,7 +638,6 @@ export default {
     async addWord(form) {
       try {
         if (this.isLoading == true) return;
-        this.isLoading = true;
 
         let hasRelevance = this.userInfo?.relevance.filter((relevanceItem) => {
           if (relevanceItem.irregularVerb == false)
@@ -792,6 +661,7 @@ export default {
           );
           if (!confirm) return;
         }
+        this.isLoading = true;
 
         let res = this.$store.getters.getAuth
           ? await this.$api.words.addWord(form)
@@ -862,6 +732,9 @@ export default {
     },
     description() {
       this.validateField("description", this.description);
+    },
+    transcription() {
+      this.validateField("transcription", this.transcription);
     },
     example: {
       handler: function () {

@@ -313,10 +313,7 @@ export const deleteCategory = async (req, res) => {
 };
 export const deleteWord = async (req, res) => {
   try {
-    let { id } = req.params;
-
-    if (!id || typeof id != 'string' || id.trim()?.length == 0)
-      return sendResponseError(req, res, 'Неверный тип ID!');
+    let { id } = req.body;
 
     let user = await getUserInfo(
       req.userId,
@@ -324,23 +321,50 @@ export const deleteWord = async (req, res) => {
     );
     if (!user) return sendResponseError(req, res);
 
-    let index = user.knownWords.findIndex((item) => item._id == id);
-    if (index != -1) {
-      return deleteKnownWord(req, res, id);
+    let knownWordsID = [];
+    let studyWordsID = [];
+    for (let item of id) {
+      let index = user.knownWords.findIndex((word) => word._id == item);
+      if (index != -1) {
+        knownWordsID.push(item);
+      }
+    }
+    for (let item of id) {
+      let index = user.wordsToStudy.findIndex((word) => word._id == item);
+      if (index != -1) {
+        studyWordsID.push(item);
+      }
     }
 
-    index = user.wordsToStudy.findIndex((item) => item._id == id);
-    if (index == -1) return sendResponseError(req, res, 'Слова не существует!');
-
-    let activeCategory = isActiveCategory(
-      user.wordsToStudy[index].category,
-      user
+    let activeCategoriesID = user.categoriesToLearn.filter(
+      (item) => item.startLearn == true
     );
-    if (activeCategory)
+    activeCategoriesID = activeCategoriesID.map((item) => item._id);
+    let studyWordsInfo = user.wordsToStudy.filter((item) =>
+      studyWordsID.includes(item._id)
+    );
+    let wordsInActiveCategory = studyWordsInfo.filter((item) =>
+      activeCategoriesID.includes(item.category)
+    );
+    if (wordsInActiveCategory.length > 0)
       return sendResponseError(req, res, 'Слово в активной категории!');
 
-    let userInfo = await pullElement('wordsToStudy', id, req.userId);
-    if (!userInfo) return sendResponseError(req, res);
+    if (knownWordsID.lenght == 0 && studyWordsID.length == 0)
+      return sendResponseError(req, res, 'Нет выбранных слов!');
+
+    let userInfo;
+    if (knownWordsID.length > 0) {
+      userInfo = await multiPullElement('knownWords', knownWordsID, req.userId);
+      if (!userInfo) return sendResponseError(req, res);
+    }
+    if (studyWordsID.length > 0) {
+      userInfo = await multiPullElement(
+        'wordsToStudy',
+        studyWordsID,
+        req.userId
+      );
+      if (!userInfo) return sendResponseError(req, res);
+    }
 
     return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
   } catch (err) {
@@ -350,19 +374,6 @@ export const deleteWord = async (req, res) => {
     });
   }
 };
-async function deleteKnownWord(req, res, id) {
-  try {
-    let userInfo = await pullElement('knownWords', id, req.userId);
-    if (!userInfo) return sendResponseError(req, res);
-
-    return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
-  } catch (err) {
-    req.err = err;
-    return res.status(500).json({
-      message: `Не удалось выполнить операцию!`,
-    });
-  }
-}
 
 export const addRelevance = async (req, res) => {
   try {
@@ -487,106 +498,118 @@ export const learnAnswer = async (req, res) => {
     let { categoryID, words } = req.body;
     let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
     if (!user) return sendResponseError(req, res);
-    /* Проверка на активность категории */
-    let activeCategory = isActiveCategory(categoryID, user);
-    if (!activeCategory)
-      return sendResponseError(req, res, 'Категория не активна!');
-    /* Проверка на сущесвтование категории */
-    let index = user.categoriesToLearn.findIndex(
-      (item) => item._id == categoryID
-    );
-    if (index == -1)
-      return sendResponseError(req, res, 'Категории не существует!');
-    /* Проверка на актуальность повторения */
-    let category = user.categoriesToLearn[index];
-    let nextRepeat = millisecondsToDays(category.nextRepeat);
-
-    if (millisecondsToDays(Date.now()) < nextRepeat)
-      return res.json({
-        message:
-          'День повторения категории не наступил! Прогресс не будет сохранен!',
-      });
-    /* Проверка на ошибки в словах */
     let wordsWithWrong = words.filter((item) => {
       if (item.wrong && typeof item?.wrong == 'boolean') return true;
       return false;
     });
-    if (wordsWithWrong.length > 0) {
-      wordsWithWrong = wordsWithWrong.map((item) => item.word);
-      wordsWithWrong = user.wordsToStudy.filter((item) =>
-        wordsWithWrong.includes(item._id.toString())
-      );
-      let pushWrongs = await pushWrongsInWords(
-        wordsWithWrong,
-        'wordsToStudy',
-        req
-      );
-      wordsWithWrong = wordsWithWrong.map((item) => item.word);
-      wordsWithWrong = wordsWithWrong.join(', ');
-      let message =
-        'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
-      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
-      if (!pushWrongs.status)
-        return sendResponseError(req, res, pushWrongs.message);
-      if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
-      return res.json({
-        message,
-        user: pushWrongs.user,
-      });
-    }
-    /* Проверка на количество повторений категории */
-    let countOfRepeat = category.countOfRepeat + 1;
-    let countOfReverseRepeat = category.countOfReverseRepeat;
-    if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
-      return pullStudiedCategory(req, res);
-    if (countOfRepeat > 13)
-      return res.json({
-        message:
-          'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!',
-      });
-    /* Сбор новых параметров категории*/
-    let nextPattern;
-    if (countOfRepeat == 13) nextPattern = daysToMilliseconds(365);
-    else {
-      nextPattern = daysToMilliseconds(
-        category.regularityToRepeat[countOfRepeat - 1]
-      );
-    }
-    let historyOfRepeat = category.historyOfRepeat;
-    historyOfRepeat.push(Date.now());
-
-    let changeFields = {
-      lastRepeat: Date.now(),
-      countOfRepeat,
-      nextRepeat: nextPattern + Date.now(),
-      historyOfRepeat,
-    };
-    /* Изменение параметров категории */
-    let userInfo = await setElement(
-      'categoriesToLearn',
-      categoryID,
-      changeFields,
-      req.userId
+    wordsWithWrong = wordsWithWrong.map((item) => item.word);
+    wordsWithWrong = user.wordsToStudy.filter((item) =>
+      wordsWithWrong.includes(item._id.toString())
     );
-    if (!userInfo) return sendResponseError(req, res);
-
+    let studiedCategory = [];
+    let wrongsCategory = [];
+    let successCategory = [];
     let message = '';
-    if (countOfRepeat == 13)
-      message +=
-        'Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!\n';
-    else message += 'Обычное повторение категории успешно завершено!\n';
+    for (let id of categoryID) {
+      /* Проверка на сущесвтование категории */
+      let index = user.categoriesToLearn.findIndex((item) => {
+        return item._id.toString() == id;
+      });
+      if (index == -1)
+        return sendResponseError(req, res, `Категории не существует!`);
+      let category = user.categoriesToLearn[index];
+      let categoryName = category.name;
+      /* Проверка на активность категории */
+      let activeCategory = isActiveCategory(id, user);
+      if (!activeCategory)
+        return sendResponseError(
+          req,
+          res,
+          `Категория ${categoryName} не активна!`
+        );
+      /* Проверка на актуальность повторения */
+      let nextRepeat = millisecondsToDays(category.nextRepeat);
+      if (millisecondsToDays(Date.now()) < nextRepeat)
+        return sendResponseError(
+          req,
+          res,
+          `День повторения категории ${categoryName} не наступил! Прогресс не будет сохранен!`
+        );
+      /* Проверка на ошибки в словах */
+      let currentWordsWithWrongs = wordsWithWrong.filter(
+        (item) => item.category == id
+      );
+      if (currentWordsWithWrongs.length > 0) {
+        wrongsCategory.push(id);
+        currentWordsWithWrongs = currentWordsWithWrongs.map(
+          (item) => item.word
+        );
+        currentWordsWithWrongs = currentWordsWithWrongs.join(', ');
+        message += `Категория ${categoryName}: В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз! В следуюших словах была допущена ошибка: ${currentWordsWithWrongs}!\n\n `;
+        continue;
+      }
+      /* Проверка на количество повторений категории */
+      let countOfRepeat = category.countOfRepeat + 1;
+      let countOfReverseRepeat = category.countOfReverseRepeat;
+      if (countOfRepeat >= 13 && countOfReverseRepeat >= 13) {
+        studiedCategory.push(id);
+        message += `Категория ${categoryName}: успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!\n\n`;
+        continue;
+      }
+      if (countOfRepeat > 13) {
+        message += `Категория ${categoryName}: Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!\n\n`;
+        continue;
+      }
+      /* Сбор новых параметров категории*/
+      let nextPattern;
+      if (countOfRepeat == 13) nextPattern = daysToMilliseconds(365);
+      else {
+        nextPattern = daysToMilliseconds(
+          category.regularityToRepeat[countOfRepeat - 1]
+        );
+      }
+      let historyOfRepeat = category.historyOfRepeat;
+      historyOfRepeat.push(Date.now());
+      let changeFields = {
+        lastRepeat: Date.now(),
+        countOfRepeat,
+        nextRepeat: nextPattern + Date.now(),
+        historyOfRepeat,
+      };
+      successCategory.push({ elementID: id, changeFields });
+      if (countOfRepeat == 13)
+        message += `Категория ${categoryName}: Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!\n\n`;
+      else
+        message += `Категория ${categoryName}: Обычное повторение категории успешно завершено!\n\n`;
+    }
 
+    if (studiedCategory.length > 0) {
+      let res = await pullStudiedCategory(req, studiedCategory);
+      if (!res) return sendResponseError(req, res);
+    }
+    if (successCategory.length > 0) {
+      let res = await multiSetElement(
+        'categoriesToLearn',
+        successCategory,
+        req.userId
+      );
+      if (!res) return sendResponseError(req, res);
+    }
+    if (wordsWithWrong.length > 0) {
+      let res = await pushWrongsInWords(wordsWithWrong, 'wordsToStudy', req);
+      if (!res.status) return sendResponseError(req, res, pushWrongs.message);
+      message += res.message;
+    }
     let checkStreak = await isSuccessStreak(req.userId);
     if (checkStreak.ok) {
       message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
-      userInfo = checkStreak.userInfo;
     }
     if (checkStreak.resetStreak) {
-      userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo) return sendResponseError(req, res);
-      userInfo = getUserInfoFromDoc(userInfo._doc);
       message += '\nК сожалению, серия повторения была прервана!';
     }
+    let userInfo = await User.findOne({ _id: req.userId });
+    if (!userInfo) return sendResponseError(req, res);
+    userInfo = getUserInfoFromDoc(userInfo._doc);
 
     return res.json({
       message,
@@ -605,102 +628,117 @@ export const reLearnAnswer = async (req, res) => {
     let { categoryID, words } = req.body;
     let user = await getUserInfo(req.userId, 'categoriesToLearn wordsToStudy');
     if (!user) return sendResponseError(req, res);
-    /* Проверка на активность категории */
-    let activeCategory = isActiveCategory(categoryID, user);
-    if (!activeCategory)
-      return sendResponseError(req, res, 'Категория не активна!');
-    /* Проверка на сущесвтование категории */
-    let index = user.categoriesToLearn.findIndex(
-      (item) => item._id == categoryID
-    );
-    if (index == -1)
-      return sendResponseError(req, res, 'Категории не существует!');
-    /* Проверка на актуальность повторения */
-    let category = user.categoriesToLearn[index];
-    let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
-    if (millisecondsToDays(Date.now()) < nextReverseRepeat)
-      return res.json({
-        message:
-          'День повторения категории не наступил! Прогресс не будет сохранен!',
-      });
-    /* Проверка на ошибки в словах */
     let wordsWithWrong = words.filter((item) => {
       if (item.wrong && typeof item?.wrong == 'boolean') return true;
       return false;
     });
-    if (wordsWithWrong.length > 0) {
-      wordsWithWrong = wordsWithWrong.map((item) => item.word);
-      wordsWithWrong = user.wordsToStudy.filter((item) =>
-        wordsWithWrong.includes(item._id.toString())
-      );
-      let pushWrongs = await pushWrongsInWords(
-        wordsWithWrong,
-        'wordsToStudy',
-        req
-      );
-      wordsWithWrong = wordsWithWrong.map((item) => item.word);
-      wordsWithWrong = wordsWithWrong.join(', ');
-      let message =
-        'В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!';
-      message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
-      if (!pushWrongs.status)
-        return sendResponseError(req, res, pushWrongs.message);
-      if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
-      return res.json({ message, user: pushWrongs.user });
-    }
-    /* Проверка на количество повторений категории */
-    let countOfRepeat = category.countOfRepeat;
-    let countOfReverseRepeat = category.countOfReverseRepeat + 1;
-    if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
-      return pullStudiedCategory(req, res);
-    if (countOfReverseRepeat > 13)
-      return res.json({
-        message:
-          'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!',
-      });
-    /* Сбор новых параметров категории*/
-    let nextPattern;
-    if (countOfReverseRepeat == 13) nextPattern = daysToMilliseconds(365);
-    else {
-      nextPattern = daysToMilliseconds(
-        category.regularityToRepeat[countOfReverseRepeat - 1]
-      );
-    }
-    let historyOfReverseRepeat = category.historyOfReverseRepeat;
-    historyOfReverseRepeat.push(Date.now());
-
-    let changeFields = {
-      lastReverseRepeat: Date.now(),
-      countOfReverseRepeat,
-      nextReverseRepeat: nextPattern + Date.now(),
-      historyOfReverseRepeat,
-    };
-    /* Изменение параметров категории */
-    let userInfo = await setElement(
-      'categoriesToLearn',
-      categoryID,
-      changeFields,
-      req.userId
+    wordsWithWrong = wordsWithWrong.map((item) => item.word);
+    wordsWithWrong = user.wordsToStudy.filter((item) =>
+      wordsWithWrong.includes(item._id.toString())
     );
-    if (!userInfo) return sendResponseError(req, res);
-
+    let studiedCategory = [];
+    let wrongsCategory = [];
+    let successCategory = [];
     let message = '';
-    if (countOfReverseRepeat == 13)
-      message +=
-        'Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!\n';
-    else message += 'Реверсивное повторение категории успешно завершено!\n';
+    for (let id of categoryID) {
+      /* Проверка на сущесвтование категории */
+      let index = user.categoriesToLearn.findIndex((item) => {
+        return item._id.toString() == id;
+      });
+      if (index == -1)
+        return sendResponseError(req, res, `Категории не существует!`);
+      let category = user.categoriesToLearn[index];
+      let categoryName = category.name;
+      /* Проверка на активность категории */
+      let activeCategory = isActiveCategory(id, user);
+      if (!activeCategory)
+        return sendResponseError(
+          req,
+          res,
+          `Категория ${categoryName} не активна!`
+        );
+      /* Проверка на актуальность повторения */
+      let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
+      if (millisecondsToDays(Date.now()) < nextReverseRepeat)
+        return sendResponseError(
+          req,
+          res,
+          `День повторения категории ${categoryName} не наступил! Прогресс не будет сохранен!`
+        );
+      /* Проверка на ошибки в словах */
+      let currentWordsWithWrongs = wordsWithWrong.filter(
+        (item) => item.category == id
+      );
+      if (currentWordsWithWrongs.length > 0) {
+        wrongsCategory.push(id);
+        currentWordsWithWrongs = currentWordsWithWrongs.map(
+          (item) => item.word
+        );
+        currentWordsWithWrongs = currentWordsWithWrongs.join(', ');
+        message += `Категория ${categoryName}: В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз! В следуюших словах была допущена ошибка: ${currentWordsWithWrongs}!\n\n `;
+        continue;
+      }
+      /* Проверка на количество повторений категории */
+      let countOfRepeat = category.countOfRepeat;
+      let countOfReverseRepeat = category.countOfReverseRepeat + 1;
+      if (countOfRepeat >= 13 && countOfReverseRepeat >= 13) {
+        studiedCategory.push(id);
+        message += `Категория ${categoryName}: Успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!\n\n`;
+        continue;
+      }
+      if (countOfReverseRepeat > 13) {
+        message += `Категория ${categoryName}: Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!\n\n`;
+        continue;
+      }
+      /* Сбор новых параметров категории*/
+      let nextPattern;
+      if (countOfReverseRepeat == 13) nextPattern = daysToMilliseconds(365);
+      else {
+        nextPattern = daysToMilliseconds(
+          category.regularityToRepeat[countOfReverseRepeat - 1]
+        );
+      }
+      let historyOfReverseRepeat = category.historyOfReverseRepeat;
+      historyOfReverseRepeat.push(Date.now());
+      let changeFields = {
+        lastReverseRepeat: Date.now(),
+        countOfReverseRepeat,
+        nextReverseRepeat: nextPattern + Date.now(),
+        historyOfReverseRepeat,
+      };
+      successCategory.push({ elementID: id, changeFields });
+      if (countOfReverseRepeat == 13)
+        message += `Категория ${categoryName}: Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!\n\n`;
+      else
+        message += `Категория ${categoryName}: Реверсивное повторение категории успешно завершено!\n\n`;
+    }
 
+    if (studiedCategory.length > 0) {
+      let res = await pullStudiedCategory(req, studiedCategory);
+      if (!res) return sendResponseError(req, res);
+    }
+    if (successCategory.length > 0) {
+      let res = await multiSetElement(
+        'categoriesToLearn',
+        successCategory,
+        req.userId
+      );
+      if (!res) return sendResponseError(req, res);
+    }
+    if (wordsWithWrong.length > 0) {
+      let res = await pushWrongsInWords(wordsWithWrong, 'wordsToStudy', req);
+      if (!res.status) return sendResponseError(req, res, pushWrongs.message);
+      message += res.message;
+    }
     let checkStreak = await isSuccessStreak(req.userId);
     if (checkStreak.ok) {
       message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
-      userInfo = checkStreak.userInfo;
-    }
-    if (checkStreak.resetStreak) {
-      userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo) return sendResponseError(req, res);
-      userInfo = getUserInfoFromDoc(userInfo._doc);
+    } else if (checkStreak.resetStreak) {
       message += '\nК сожалению, серия повторения была прервана!';
     }
+    let userInfo = await User.findOne({ _id: req.userId });
+    if (!userInfo) return sendResponseError(req, res);
+    userInfo = getUserInfoFromDoc(userInfo._doc);
 
     return res.json({
       message,
@@ -713,40 +751,35 @@ export const reLearnAnswer = async (req, res) => {
     });
   }
 };
-const pullStudiedCategory = async (req, res) => {
+const pullStudiedCategory = async (req, categoryID) => {
   try {
     /* Сбор информации о пользователе и ID категории */
-    let { categoryID } = req.body;
     let user = await getUserInfo(
       req.userId,
       'categoriesToLearn wordsToStudy knownWords'
     );
-    if (!user) return sendResponseError(req, res);
+    if (!user) return false;
     /* Проверка нет ли слов из категории во вкладке Изученные */
-    let words = user.wordsToStudy.filter((item) => item.category == categoryID);
+    let words = user.wordsToStudy.filter((item) =>
+      categoryID.includes(item.category)
+    );
     let wordsName = words.map((item) => item.word);
     let knownWords = user.knownWords.filter((item) =>
       wordsName.includes(item.word)
     );
-    if (knownWords.length > 0)
-      return sendResponseError(
-        req,
-        res,
-        "Слово из категории присутствует во вкладке 'Изученные'"
-      );
-
+    if (knownWords.length > 0) return false;
     /* Удаление категории */
-    let userInfo = await pullElement(
+    let userInfo = await multiPullElement(
       'categoriesToLearn',
       categoryID,
       req.userId
     );
-    if (!userInfo) return sendResponseError(req, res);
+    if (!userInfo) return false;
 
     /* Удаление слов из категории Изучаемые */
     let wordsID = words.map((item) => item._id);
     userInfo = await multiPullElement('wordsToStudy', wordsID, req.userId);
-    if (!userInfo) return sendResponseError(req, res);
+    if (!userInfo) return false;
     /* Добавление слов в категорию Изученные */
     let newWords = words.map((item) => {
       return {
@@ -766,31 +799,12 @@ const pullStudiedCategory = async (req, res) => {
       };
     });
     userInfo = await multiPushNewElement('knownWords', newWords, req.userId);
-    if (!userInfo) return sendResponseError(req, res);
+    if (!userInfo) return false;
 
-    let message =
-      "Категория успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!\n";
-    let checkStreak = await isSuccessStreak(req.userId);
-    if (checkStreak.ok) {
-      message += '\nПоздравляем, непрерывная серия повторения была увеличена!';
-      userInfo = checkStreak.userInfo;
-    }
-    if (checkStreak.resetStreak) {
-      userInfo = await User.findOne({ _id: req.userId });
-      if (!userInfo) return sendResponseError(req, res);
-      userInfo = getUserInfoFromDoc(userInfo._doc);
-      message += '\nК сожалению, серия повторения была прервана!';
-    }
-
-    res.json({
-      message,
-      user: userInfo,
-    });
+    return true;
   } catch (err) {
     req.err = err;
-    return res.status(500).json({
-      message: `Не удалось выполнить операцию!`,
-    });
+    return false;
   }
 };
 export const knownAnswer = async (req, res) => {
@@ -1354,7 +1368,6 @@ export const checkStreak = async (req, res) => {
     if (userInfo.ok == 0) return sendResponseError(req, res);
 
     userInfo = getUserInfoFromDoc(userInfo.value._doc);
-    console.log(userInfo);
     res.json({
       message,
       user: userInfo,
@@ -1673,7 +1686,7 @@ async function isSuccessStreak(userID) {
       user.knownWords.length,
       userID
     );
-    console.log(checkKnownWords);
+    //console.log(checkKnownWords);
     if (!checkKnownWords) success = false;
     if (checkKnownWords.resetStreak) return { resetStreak: true };
     let checkWordsToStudy = await isStreakInWordsToStudy(
@@ -1681,7 +1694,7 @@ async function isSuccessStreak(userID) {
       user.statistics[0],
       userID
     );
-    console.log(checkWordsToStudy);
+    //console.log(checkWordsToStudy);
     if (!checkWordsToStudy) success = false;
     if (checkWordsToStudy.resetStreak) return { resetStreak: true };
     let checkWordsToRepeat = await isStreakInWordsToRepeat(
@@ -1690,7 +1703,7 @@ async function isSuccessStreak(userID) {
       user.options[0],
       userID
     );
-    console.log(checkWordsToRepeat);
+    //console.log(checkWordsToRepeat);
     if (!checkWordsToRepeat) success = false;
     if (checkWordsToRepeat.resetStreak) return { resetStreak: true };
 

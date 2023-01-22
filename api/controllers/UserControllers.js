@@ -101,8 +101,10 @@ export const register = async (req, res) => {
       from: process.env.POST_LOGIN,
       to: req.body.email,
       subject: `Подтверждение аккаунта`,
-      text: `Перейдите по ссылке, чтобы активировать аккаунт: http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}`,
-      html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}">Confirm</a> `,
+      //text: `Перейдите по ссылке, чтобы активировать аккаунт: http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}`,
+      //html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}">Confirm</a> `,
+      text: `Перейдите по ссылке, чтобы активировать аккаунт: http://192.168.0.103:8080/confirm/${user.confirmKey}`,
+      html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://192.168.0.103:8080//confirm/${user.confirmKey}">Confirm</a> `,
     };
     await transporter.sendMail(message);
 
@@ -157,8 +159,8 @@ export const login = async (req, res) => {
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         expires: timeExistCookies,
-        sameSite: 'None', // DEV OPTIONS strict - if UI exist inside domain
-        secure: true, // DEV OPTIONS true - if app use https protocol
+        //sameSite: 'None', // DEV OPTIONS strict - if UI exist inside domain
+        //secure: true, // DEV OPTIONS true - if app use https protocol
       });
     } else {
       res.cookie('refreshToken', refreshToken, {

@@ -13,6 +13,14 @@
     &__bestStreak {
         margin: 0 auto;
         font-size: rem(24);
+
+        @media (min-width: 480px) and (max-width: 767px) {
+            font-size: rem(18);
+        }
+
+        @media (max-width: 479px) {
+            font-size: rem(14);
+        }
     }
 
     &__chartContainer {

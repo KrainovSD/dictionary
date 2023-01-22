@@ -10,18 +10,56 @@
   <loading-popup v-if="isLoading == true" />
 
   <div class="relevance appearVision">
-    <div style="display: flex">
-      <div style="position: relative; width: 45%; height: 100px">
+    <div class="relevance__inputData">
+      <div class="relevance__inputContainer">
         <input-tooltip
           type="textarea"
           maxLength="210"
           v-model="input"
-          field="input"
           fontSize="16"
-          :errors="errors"
+          :error="errors?.input"
           placeholder="Внесите слова"
         />
       </div>
+
+      <button class="relevance__confirmInput" @click="checkInput">
+        Внести
+      </button>
+      <p class="relevance__info">
+        Для записи слов и дальнейшей проверке на актуальность, внесите слово или
+        слова, используя в качестве разделителя знак запятой или точки с
+        запятой, в текстовое поле. <br />
+        С правой стороны экрана слова выводятся с количеством встреч в течении
+        месяца (первая цифра) и с общим количеством встреч с этим словом с
+        момента записи слова (цифра в скобках). Так же в квадратных скобках
+        буквой " I " помечаются неправильные глаголы.<br />
+        Слова имеют три цвета при добавлении: зеленый - новое слово, черный -
+        количество встреч не превысило минимум, красное - часто встречающееся
+        вам слово.<br />
+        Чтобы добавить слово, которое часто вам встречается, в любую категорию
+        для дальнейшего изучения, выберите подходящее слово в окошке справа.
+      </p>
+      <button
+        class="relevance__confirmAddWord"
+        @click="wordPopupVisible = true"
+        :class="
+          currentSelectedWord.countMeetsPerDays >=
+          userInfo?.options?.[0]?.maxCountCheckRelevance
+            ? ''
+            : 'disabled'
+        "
+        :disabled="
+          currentSelectedWord.countMeetsPerDays >=
+          userInfo?.options?.[0]?.maxCountCheckRelevance
+            ? false
+            : true
+        "
+      >
+        Добавить слово на изучение
+      </button>
+    </div>
+
+    <div class="relevance__outputData">
       <div class="relevance__newInput">
         <p
           class="relevance__inputItem"
@@ -40,89 +78,42 @@
           }})
         </p>
       </div>
-    </div>
-    <div style="display: flex">
-      <div style="display: flex; flex-direction: column; width: 45%">
-        <button class="relevance__confirmInput" @click="checkInput">
-          Внести
-        </button>
-        <p class="relevance__info">
-          Для записи слов и дальнейшей проверке на актуальность, внесите слово
-          или слова, используя в качестве разделителя знак запятой или точки с
-          запятой, в текстовое поле. <br />
-          С правой стороны экрана слова выводятся с количеством встреч в течении
-          месяца (первая цифра) и с общим количеством встреч с этим словом с
-          момента записи слова (цифра в скобках). Так же в квадратных скобках
-          буквой " I " помечаются неправильные глаголы.<br />
-          Слова имеют три цвета при добавлении: зеленый - новое слово, черный -
-          количество встреч не превысило минимум, красное - часто встречающееся
-          вам слово.<br />
-          Чтобы добавить слово, которое часто вам встречается, в любую категорию
-          для дальнейшего изучения, выберите подходящее слово в окошке справа.
-        </p>
-        <button
-          class="relevance__confirmAddWord"
-          @click="wordPopupVisible = true"
-          :class="
-            currentSelectedWord.countMeetsPerDays >=
+
+      <div class="relevance__filterPanel">
+        <div class="relevance__filterContainer">
+          <slide-filter
+            :filterList="filterList"
+            @change="(payload) => (filter = payload)"
+          />
+        </div>
+        <div class="relevance__searchContainer">
+          <search-panel v-model="search" />
+        </div>
+      </div>
+
+      <div class="relevance__list" @click.self="currentSelectedWord = []">
+        <p
+          class="relevance__word"
+          :class="[
+            item?.countMeetsPerDays >=
             userInfo?.options?.[0]?.maxCountCheckRelevance
-              ? ''
-              : 'disabled'
-          "
-          :disabled="
-            currentSelectedWord.countMeetsPerDays >=
-            userInfo?.options?.[0]?.maxCountCheckRelevance
-              ? false
-              : true
+              ? 'red'
+              : '',
+            currentSelectedWord?._id == item?._id ? '_select' : '',
+          ]"
+          :id="item._id"
+          v-for="(item, index) in wordsList"
+          :key="index"
+          @click="
+            currentSelectedWord =
+              currentSelectedWord?._id == item?._id ? [] : item
           "
         >
-          Добавить слово на изучение
-        </button>
-      </div>
-      <div
-        style="
-          display: flex;
-          flex-direction: column;
-          width: 50%;
-          margin: 15px 0 0 auto;
-        "
-      >
-        <div style="height: 52px; display: flex">
-          <div class="relevance__filterContainer">
-            <slide-filter
-              :filterList="filterList"
-              @change="(payload) => (filter = payload)"
-            />
-          </div>
-          <div class="relevance__searchContainer">
-            <search-panel v-model="search" />
-          </div>
-        </div>
-
-        <div class="relevance__list" @click.self="currentSelectedWord = []">
-          <p
-            class="relevance__word"
-            :class="[
-              item?.countMeetsPerDays >=
-              userInfo?.options?.[0]?.maxCountCheckRelevance
-                ? 'red'
-                : '',
-              currentSelectedWord?._id == item?._id ? '_select' : '',
-            ]"
-            :id="item._id"
-            v-for="(item, index) in wordsList"
-            :key="index"
-            @click="
-              currentSelectedWord =
-                currentSelectedWord?._id == item?._id ? [] : item
-            "
-          >
-            {{ item.word }} - {{ item.countMeetsPerDays }} ({{
-              item.totalCountMeets
-            }})
-            <span v-if="item.irregularVerb == true">[I]</span>
-          </p>
-        </div>
+          {{ item.word }} - {{ item.countMeetsPerDays }} ({{
+            item.totalCountMeets
+          }})
+          <span v-if="item.irregularVerb == true">[I]</span>
+        </p>
       </div>
     </div>
   </div>

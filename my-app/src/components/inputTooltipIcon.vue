@@ -86,6 +86,20 @@
       <p style="color: rgb(253, 69, 69)">{{ errors.password }}</p>
     </div>
   </div>
+  <div
+    class="inputIconContainer__adviceMobile"
+    v-if="focusInput == true && type == 'passwordAdvice'"
+  >
+    <p>Сложность пароля:</p>
+    <div class="inputIconContainer__progressBar">
+      <div
+        class="inputIconContainer__progress"
+        :class="progressOfPasswordAdvice"
+      ></div>
+    </div>
+    <br />
+    <p style="color: rgb(253, 69, 69)">{{ errors.password }}</p>
+  </div>
 </template>
 
 <script>
@@ -262,7 +276,7 @@ export default {
   background: rgba(0, 0, 0, 0.7);
   text-align: center;
   color: white;
-  font-size: 1.2vw;
+  font-size: 16px;
   min-width: 250px;
   border-radius: 5px;
   pointer-events: none;
@@ -295,6 +309,9 @@ export default {
 .inputIconContainer__eye._active {
   animation: spin 0.3s ease;
 }
+.inputIconContainer__adviceMobile {
+  display: none;
+}
 .inputIconContainer__tooltipAdvice {
   position: absolute;
   display: inline-block;
@@ -302,7 +319,7 @@ export default {
   top: 50%;
   background: rgba(0, 0, 0, 0.7);
   color: white;
-  font-size: 1.2vw;
+  font-size: 16px;
   min-width: 350px;
   border-radius: 5px;
   pointer-events: none;
@@ -318,7 +335,7 @@ export default {
   border-style: solid;
   border-color: rgba(0, 0, 0, 0.7) transparent transparent transparent;
   z-index: 99;
-  left: rem(-8);
+  left: 8;
   top: 50%;
   transform: translatey(-50%) rotate(90deg);
 }
@@ -356,5 +373,32 @@ export default {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 255, 21, 0.7);
+}
+
+@media (max-width: 1023px) {
+  .inputIconContainer__tooltipAdvice {
+    display: none;
+  }
+  .inputIconContainer__adviceMobile {
+    display: block;
+    margin: 5px 0 0 0;
+  }
+  .inputIconContainer__adviceMobile .inputIconContainer__progressBar {
+    border: 1px solid black;
+  }
+}
+
+@media (max-width: 767px) {
+  .inputIconContainer__tooltip {
+    left: 50%;
+    top: -10%;
+  }
+  .inputIconContainer__tooltip::after {
+    transform: translateX(-50%) translateY(-100%);
+  }
+
+  .inputIconContainer__tooltip::before {
+    transform: translatey(-50%) rotate(0deg);
+  }
 }
 </style>

@@ -1,6 +1,7 @@
-<template>
+<template v-if="visible == true">
   <loading-popup v-if="isLoading == true" />
-  <div class="modal__backDrop" ref="backDrop" v-if="visible == true">
+  <div class="modal__backDrop" ref="backDrop"></div>
+  <div class="modal__container">
     <info-popup ref="info" />
     <confirm-popup ref="confirm" />
     <div class="learnCard">
@@ -91,7 +92,7 @@
                 ]"
                 @click="reverseConfirm"
               >
-                {{ item }}
+                <p>{{ item }}</p>
               </div>
             </div>
             <div
@@ -280,6 +281,7 @@ export default {
   promiseController: null,
   beforeUnmount() {
     document.removeEventListener("keyup", this.keyBoardEvent);
+    window.removeEventListener("storage", this.resetStudy);
     clearTimeout(this.$options.enterAnswerController);
     if (this.isVisibleAnswer == false) return;
     clearTimeout(this.$options.setTimeoutController);
@@ -288,6 +290,7 @@ export default {
   },
   mounted() {
     document.addEventListener("keyup", this.keyBoardEvent);
+    window.addEventListener("storage", this.resetStudy);
   },
   computed: {
     headerInfo() {
@@ -338,6 +341,9 @@ export default {
   },
 
   methods: {
+    resetStudy() {
+      this.$options.promiseController.resolve({ resetStudy: true });
+    },
     randomNumber(max) {
       let random = Math.random();
       let min = 1;
@@ -501,6 +507,7 @@ export default {
           if (this.kindOfLearn == "reverse") this.setReverseSetting(word);
           await nextTick();
           let res = await this.checkAnswer();
+          if (res?.resetStudy) return this.closePopup();
           if (!res) answer.wrong = true;
           answer.word = word._id;
           answers.push(answer);
@@ -535,6 +542,7 @@ export default {
           message =
             "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн! Повторно откройте обучение, чтобы сохранить прогресс в режиме оффлайн!";
           this.$store.commit("resetAuth");
+          return this.closePopup();
         }
         await this.showInfo("Обучение", message);
         return this.closePopup();

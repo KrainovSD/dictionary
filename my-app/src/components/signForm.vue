@@ -5,7 +5,8 @@
   />
   <info-popup ref="info" />
   <loading-popup v-if="isLoading == true" />
-  <div class="modal__backDrop" ref="backDrop" style="z-index: 5">
+  <div class="modal__backDrop" ref="backDrop"></div>
+  <div class="modal__container">
     <div class="sign" :class="signType == 'register' ? 'signUp' : ''">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">

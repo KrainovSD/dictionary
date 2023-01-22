@@ -42,6 +42,8 @@
             class="chart__itemContainer"
             v-for="(item, index) in chartItems"
             :key="index"
+            :tooltip="bottomLabelList[index]"
+
           >
             <div
               class="chart__firstItem"
@@ -71,15 +73,6 @@
                 {{ item.second.count }}
               </p>
             </div>
-          </div>
-        </div>
-        <div class="chart__bottomLabelContainer">
-          <div
-            class="chart__bottomLabelItem"
-            v-for="(item, index) in bottomLabelList"
-            :key="index"
-          >
-            {{ item }}
           </div>
         </div>
       </div>
@@ -113,7 +106,7 @@ export default {
     dateRegistration: Number,
   },
   increaseMaxAmountWordsByPers: 15, // Увеличивает максимальную сумму слов (на представленный график) на 15 процентов
-  countLeftLabel: 6, // количество делений слева
+  countLeftLabel: 5, // количество делений слева
   minStepLeftLabel: 5, // минимальный шаг левых делений
   maxCountStepAllTime: 20, // максмальное количество нижних делений при периоде за "все время";
   periodList: ["7 дней", "30 дней", "90 дней", "1 год", "всё время"],

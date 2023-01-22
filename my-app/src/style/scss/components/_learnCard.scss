@@ -3,13 +3,22 @@
     @return $result+rem;
 }
 
+$learnWidth: 450px;
+$learnWidthMimi: 320px;
+
 .learnCard {
     margin: auto;
     background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
-    width: rem(450);
+    width: $learnWidth;
     display: flex;
     flex-direction: column;
     min-height: rem(425);
+
+    @media (max-width: 479px) {
+        width: $learnWidthMimi;
+    }
+
+
 
     &__container {
         padding: rem(20);
@@ -41,6 +50,8 @@
 
     &__word {
         text-align: center;
+        width: calc(100% - 10px);
+        word-wrap: break-word;
         font-size: rem(30);
         font-family: 'Times New Roman', Times, serif;
 
@@ -69,6 +80,10 @@
     &__confirmContainer {
         margin: rem(13) auto 0;
         width: 35%;
+
+        @media (max-width: 479px) {
+            width: 65%;
+        }
     }
 
 
@@ -84,6 +99,7 @@
     }
 
     &__optionItem {
+        max-width: calc(($learnWidth - 40px - 15px) / 2);
         word-wrap: break-word;
         display: flex;
         justify-content: center;
@@ -97,6 +113,17 @@
         background-color: #ffffff;
         font-size: rem(15);
         cursor: pointer;
+
+        @media (max-width: 479px) {
+            max-width: calc(($learnWidthMimi - 40px - 15px) / 2);
+        }
+
+        & p {
+            width: 100%;
+            word-wrap: break-word;
+            text-align: center;
+
+        }
 
         &:hover {
             transform: translateY(rem(-4));
@@ -141,6 +168,8 @@
         text-align: center;
         font-size: rem(30);
         font-family: 'Times New Roman', Times, serif;
+        width: calc(100% - 10px);
+        word-wrap: break-word;
     }
 
     &__transcriprion {
@@ -148,6 +177,8 @@
         font-size: rem(18);
         color: rgb(131, 130, 130);
         font-family: 'Times New Roman', Times, serif;
+        width: calc(100% - 10px);
+        word-wrap: break-word;
     }
 
     &__examples {

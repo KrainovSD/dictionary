@@ -1,25 +1,31 @@
 <template>
-  <div class="categoryIcon" ref="categoryIcon">
-    <close-modal-button @close="closeCategoryIcon" class="sign__closeButton" />
-    <div class="categoryIcon__container">
-      <div class="categoryIcon__containerIcon">
-        <img
-          v-for="(item, index) in iconProd"
-          :key="index"
-          :src="require(`@/assets/category/${item}.png`)"
-          alt=""
-          :id="item"
-          class="categoryIcon__icon categIcon"
-          :class="currentSelectionIcon == item ? '_focus' : ''"
-        />
-      </div>
-      <div class="newPassword__confirmContainer">
-        <confirm-button
-          text="Подтвердить"
-          @click="chooseIcon"
-          fontSize="14"
-          :disabled="isCurrentSelectionIconEmpty"
-        />
+  <div class="modal__backDrop z11" ref="backDrop"></div>
+  <div class="modal__container info z12">
+    <div class="categoryIcon" ref="categoryIcon">
+      <close-modal-button
+        @close="closeCategoryIcon"
+        class="sign__closeButton"
+      />
+      <div class="categoryIcon__container">
+        <div class="categoryIcon__containerIcon">
+          <img
+            v-for="(item, index) in iconProd"
+            :key="index"
+            :src="require(`@/assets/category/${item}.png`)"
+            alt=""
+            :id="item"
+            class="categoryIcon__icon categIcon"
+            :class="currentSelectionIcon == item ? '_focus' : ''"
+          />
+        </div>
+        <div class="newPassword__confirmContainer">
+          <confirm-button
+            text="Подтвердить"
+            @click="chooseIcon"
+            fontSize="14"
+            :disabled="isCurrentSelectionIconEmpty"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -102,9 +108,9 @@ export default {
       this.currentSelectionIcon = icon.id;
     },
     closeAnimation() {
-      let div = this.$refs.categoryIcon;
-      if (!div.classList.contains("close")) {
-        div.classList.toggle("close");
+      let backDrop = this.$refs.backDrop;
+      if (!backDrop.classList.contains("close")) {
+        backDrop.classList.toggle("close");
       }
     },
     closeCategoryIcon() {
@@ -118,7 +124,7 @@ export default {
         this.closeAnimation();
         setTimeout(() => {
           this.$emit("add", this.currentSelectionIcon);
-        }, 300);
+        }, 200);
       }
     },
   },
@@ -130,20 +136,27 @@ export default {
   position: absolute;
   top: 30px;
   left: 70%;
-  z-index: 3;
   background: linear-gradient(-42deg, #e7fcf5 50%, #fce5f9 50%);
   display: flex;
   flex-direction: column;
-  width: 328px;
+  max-width: 320px;
+  width: 100vw;
   animation: appearBackDrop 0.4s ease;
 }
+@media (max-width: 1199px) {
+  .categoryIcon {
+    top: 0px;
+    left: calc((100vw - 320px) / 2);
+  }
+}
+
 .categoryIcon.close {
   animation: dissappearBackDrop 0.3s ease;
 }
 .categoryIcon__container {
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 20px 10px;
 }
 .categoryIcon__icon {
   width: 40px;
@@ -164,5 +177,6 @@ export default {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  justify-content: center;
 }
 </style>

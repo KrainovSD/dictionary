@@ -1,10 +1,6 @@
 <template>
-  <div
-    class="modal__backDrop"
-    style="z-index: 1000"
-    ref="backDrop"
-    v-if="isVisible"
-  >
+  <div class="modal__backDrop z15" ref="backDrop" v-if="isVisible"></div>
+  <div class="modal__container info z16" v-if="isVisible">
     <div class="confirmPopup">
       <h1 class="confirmPopup__header">{{ header }}</h1>
       <div class="confirmPopup__line"></div>
@@ -22,10 +18,10 @@
       <div class="confirmPopup__line"></div>
       <div class="confirmPopup__buttonContainer">
         <div class="confirmPopup__confirmContainer left">
-          <confirm-button text="Yes" @click="_confirm" fontSize="1vw" />
+          <confirm-button text="Yes" @click="_confirm" fontSize="16px" />
         </div>
         <div class="confirmPopup__confirmContainer right">
-          <confirm-button text="No" @click="_cancel" fontSize="1vw" />
+          <confirm-button text="No" @click="_cancel" fontSize="16px" />
         </div>
       </div>
     </div>
@@ -107,18 +103,28 @@ export default {
   max-width: 60%;
   padding: 20px;
 }
+@media (max-width: 1023px) {
+  .confirmPopup {
+    min-width: none;
+    max-width: 100vw;
+    width: auto;
+  }
+}
 .confirmPopup__header {
   font-weight: 700;
-  font-size: 1.8vw;
+  font-size: 24px;
   margin: 0 auto;
+  text-align: center;
+  width: 100%;
 }
 .confirmPopup__titleContainer {
   margin: 0 auto;
 }
 .confirmPopup__title {
-  text-align: justify;
-  font-size: 1.3vw;
+  font-size: 18px;
   font-family: "Times New Roman", Times, serif;
+  width: 100%;
+  text-align: center;
 }
 .confirmPopup__title._enter {
   margin-top: 10px;

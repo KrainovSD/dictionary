@@ -25,47 +25,12 @@
       </div>
 
       <div class="repeatWords__wordsContainer">
-        <div class="repeatWords__wordPlaceholder" v-if="wordsList?.length == 0">
-          WORDS
-        </div>
-        <div
-          class="repeatWords__word"
-          :class="wordColor(item._id)"
-          v-for="(item, index) in wordsList"
-          :key="index"
-        >
-          <div class="repeatWords__info">
-            <p>{{ item.word }}</p>
-            <p>{{ item.translate }}</p>
-            <p>{{ item.transcription }}</p>
-          </div>
-          <p class="repeatWords__description">
-            Description: {{ item.description }}
-          </p>
-          <div class="repeatWords_examples" v-if="item.example?.length > 0">
-            <p>Examples:</p>
-            <p
-              v-for="(itemExample, indexExample) in item.example"
-              :key="indexExample"
-            >
-              {{ itemExample }}
-            </p>
-          </div>
-          <p class="repeatWords__subInfo">
-            Следующее обычное повторение: {{ item.infoNextRepeat }}
-          </p>
-          <p class="repeatWords__subInfo">
-            Следующее реверсивное повторение: {{ item.infoNextReverseRepeat }}
-          </p>
-          <p class="repeatWords__subInfo">
-            Осталось обычных повторений: {{ item.infoCountOfRepeat }}
-          </p>
-          <p class="repeatWords__subInfo">
-            Осталось реверсивных повторений: {{ item.infoCountOfReverseRepeat }}
-          </p>
-        </div>
+        <word-card
+          :wordsList="wordsList"
+          :currentMultiSelectedWords="currentMultiSelectedWords"
+        />
       </div>
-      <div class="repeatWords__startLearn">
+      <div class="repeatWords__startLearn" ref="fixedItems">
         <button
           class="repeatWords__startButton normal red"
           :class="[
@@ -77,6 +42,11 @@
         >
           Обычный режим
         </button>
+        <div class="repeatWords__infoMobile">
+          <p>
+            Количество ошибок в слове для добавления: {{ countWrongsToAdd }}
+          </p>
+        </div>
         <button
           class="repeatWords__startButton reverse red"
           :class="[
@@ -97,12 +67,14 @@
 import learnCard from "../components/learnCard.vue";
 import slideFilter from "../components/slideFilter.vue";
 import searchPanel from "../components/searchPanel.vue";
+import wordCard from "../components/wordCard";
 import { nextTick } from "@vue/runtime-core";
 export default {
   components: {
     learnCard,
     slideFilter,
     searchPanel,
+    wordCard,
   },
 
   data() {
@@ -128,8 +100,21 @@ export default {
           "По количеству оставшихся реверсивных повторений (по убыванию)",
       },
       learnCardVisible: false,
+      currentMultiSelectedWords: [],
+      topFixedItems: 0,
     };
   },
+  mounted() {
+    let fixedItems = this.$refs.fixedItems;
+    let { top } = this.getCoords(fixedItems);
+    this.topFixedItems = top;
+
+    window.addEventListener("scroll", this.toggleFixedMobileItems);
+  },
+  beforeUnmount() {
+    window.removeEventListener("scroll", this.toggleFixedMobileItems);
+  },
+
   computed: {
     userInfo() {
       let userInfo = this.$store.getters.getUserInfo;
@@ -155,10 +140,10 @@ export default {
       }
 
       let wordsList = words.map((item) => {
-        let example = [];
+        let infoExample = [];
         for (let itemExample of item.example) {
           if (itemExample == "") continue;
-          example.push(itemExample);
+          infoExample.push(itemExample);
         }
 
         let infoNextRepeat =
@@ -187,7 +172,7 @@ export default {
           translate: item.translate,
           transcription: item.transcription,
           description: item.description,
-          example,
+          example: item.example,
           irregularVerb: item.irregularVerb,
           nextRepeat: item.nextRepeat,
           nextReverseRepeat: item.nextReverseRepeat,
@@ -195,10 +180,12 @@ export default {
           historyOfReverseRepeat: item.historyOfReverseRepeat,
           countOfRepeat: item.countOfRepeat,
           countOfReverseRepeat: item.countOfReverseRepeat,
+          infoExample,
           infoNextRepeat,
           infoNextReverseRepeat,
           infoCountOfRepeat,
           infoCountOfReverseRepeat,
+          infoMultiSelect: false,
         };
       });
 
@@ -270,28 +257,30 @@ export default {
     },
   },
   methods: {
-    wordColor(id) {
-      let index = this.userInfo?.wordsToRepeat.findIndex(
-        (item) => item._id == id
-      );
-      if (index == -1) return "";
-      let word = this.userInfo?.wordsToRepeat[index];
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+    toggleFixedMobileItems() {
+      if (window.innerWidth > 1023) return;
 
-      let dateOfCreation = Math.floor(
-        word.dateOfCreation / (1000 * 60 * 60 * 24)
-      );
-      let nextRepeat = Math.floor(word.nextRepeat / (1000 * 60 * 60 * 24));
-      let nextReverseRepeat = Math.floor(
-        word.nextReverseRepeat / (1000 * 60 * 60 * 24)
-      );
-      if (nextRepeat == now || nextReverseRepeat == now) return "yellow";
-      if (nextRepeat < now || nextReverseRepeat < now) {
-        if (now - dateOfCreation <= 1) return "yellow";
-        return "red";
+      let fixedItems = this.$refs.fixedItems;
+      let objectTop = this.topFixedItems;
+      const headerHeight = 65;
+      const pageTop = window.scrollY + headerHeight;
+      if (objectTop > pageTop && fixedItems.classList.contains("_fixed")) {
+        fixedItems.classList.remove("_fixed");
+      } else if (
+        objectTop <= pageTop &&
+        !fixedItems.classList.contains("_fixed")
+      ) {
+        fixedItems.classList.add("_fixed");
       }
-
-      return "";
+    },
+    getCoords(elem) {
+      let box = elem.getBoundingClientRect();
+      return {
+        top: box.top + scrollY,
+        left: box.left + scrollX,
+        right: box.right + scrollX,
+        bottom: box.bottom + scrollY,
+      };
     },
     dateFormatter(date) {
       date = new Date(date);

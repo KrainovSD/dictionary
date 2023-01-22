@@ -13,7 +13,9 @@
       placeholder="Search"
       v-if="searching == true"
       :value="modelValue"
-      @input="$emit('update:modelValue', $event.target.value)"
+      @input="
+        $emit('update:modelValue', $event.target.value.trim().toLowerCase())
+      "
       @keydown="validateInput"
     />
   </div>
@@ -33,6 +35,7 @@ export default {
     let icon = this.$refs.icon;
     let search = this.$refs.search;
     icon.style.width = `${search.clientHeight}px`;
+    this.showSearch();
   },
   methods: {
     showSearch() {

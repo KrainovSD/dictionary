@@ -1,5 +1,6 @@
 <template>
-  <div class="modal__backDrop" style="z-index: 1000" ref="backDrop">
+  <div class="modal__backDrop z15" ref="backDrop"></div>
+  <div class="modal__container z16">
     <div class="loading__container">
       <div class="loader">
         <div class="inner one"></div>

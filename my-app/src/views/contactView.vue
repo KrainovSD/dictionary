@@ -15,9 +15,8 @@
             <input-tooltip
               type="input"
               v-model="userName"
-              field="userName"
               fontSize="18"
-              :errors="errors"
+              :error="errors?.userName"
               placeholder="Имя"
             />
           </div>
@@ -25,10 +24,20 @@
             <input-tooltip
               type="input"
               v-model="email"
-              field="email"
               fontSize="18"
-              :errors="errors"
+              :error="errors?.email"
               placeholder="Адресс почты для связи"
+            />
+          </div>
+          <div class="mailer__inputMobileContainer">
+            <input-tooltip
+              type="textarea"
+              maxLength="600"
+              v-model="message"
+              fontSize="18"
+              :error="errors?.message"
+              placeholder="Ваше сообщение"
+              tooltip="top"
             />
           </div>
           <span>
@@ -48,9 +57,8 @@
             type="textarea"
             maxLength="600"
             v-model="message"
-            field="message"
             fontSize="18"
-            :errors="errors"
+            :error="errors?.message"
             placeholder="Ваше сообщение"
             tooltip="top"
           />

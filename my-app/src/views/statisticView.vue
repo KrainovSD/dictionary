@@ -1,10 +1,10 @@
 <template>
   <div class="statistic appearVision">
     <div class="statistic__bestStreak">
-      Лучшая непрерывная серия изучения: {{ bestStreak }}
+      Лучшая непрерывная серия изучения: <b>{{ bestStreak }}</b>
     </div>
     <div class="statistic__bestStreak">
-      Текущая непрерывная серия изучения: {{ currentStreak }}
+      Текущая непрерывная серия изучения: <b>{{ currentStreak }}</b>
     </div>
     <div class="statistic__chartContainer">
       <chart-view
@@ -32,8 +32,10 @@ export default {
     },
     bestStreak() {
       let bestStreak = `${this.userInfo?.statistics?.[0]?.bestStreak}`;
+      if (bestStreak == "undefined") return "Неизвестно";
       let label = "";
       let index = bestStreak?.length - 1;
+
       if (bestStreak[index] == 1) label = "день";
       else if (
         bestStreak[index] == 2 ||
@@ -46,9 +48,9 @@ export default {
     },
     currentStreak() {
       let currentStreak = `${this.userInfo?.statistics?.[0]?.currentStreak}`;
+      if (currentStreak == "undefined") return "Неизвестно";
       let label = "";
       let index = currentStreak?.length - 1;
-
       if (currentStreak[index] == 1) label = "день";
       else if (
         currentStreak[index] == 2 ||
@@ -61,12 +63,13 @@ export default {
     },
     firstElements() {
       let knownWords = this.userInfo?.knownWords;
+      knownWords = knownWords.filter((item) => item?.offline != "delete");
       knownWords = knownWords.map((item) => item.dateOfKnown);
       return knownWords;
     },
     secondElements() {
       let categories = this.userInfo?.categoriesToLearn.filter(
-        (item) => item.startLearn == true
+        (item) => item.startLearn == true && item?.offline != "delete"
       );
       let secondElements = [];
       for (let category of categories) {

@@ -3,6 +3,55 @@
     @return $result+rem;
 }
 
+.mobileSearchContainer {
+    width: 50%;
+    height: 45px;
+    margin-bottom: 20px;
+    display: none;
+
+    @media (max-width: 1023px) {
+        display: block;
+    }
+
+    @media (max-width: 767px) {
+        width: 60%;
+    }
+
+    @media (max-width: 479px) {
+        width: 90%;
+        margin: 0 auto 25px auto;
+    }
+
+}
+
+.addButtonMobile {
+    display: none;
+    position: fixed;
+    padding: rem(8) rem(13);
+    border-radius: rem(20);
+    font-size: rem(20);
+    background-color: #698AFE;
+    box-shadow: 0px 3px 13px 0px #C2CEF0;
+    color: white;
+    font-family: antique;
+    left: calc(100vw / 2 - 55px);
+    bottom: 80px;
+    z-index: 2;
+    transition: all 0.3s ease;
+    transform: translateY(0%);
+
+    @media (max-width: 1023px) {
+        display: block;
+
+        &._hidden {
+            transform: translateY(300%);
+        }
+
+
+    }
+}
+
+
 .categories {
 
     width: 40%;
@@ -11,25 +60,67 @@
     padding: rem(20) 0;
 
 
+    @media (max-width: 1023px) {
+        border-top: 0;
+        border-bottom: 0;
+        width: 100%;
+        padding: 0;
+    }
+
+
     &__list {
         margin: rem(30) 0;
-        max-height: rem(375);
-        min-height: rem(375);
+        height: 375px;
         box-shadow: 0px 1px 8px 0px #000000;
         overflow-y: scroll;
         padding: rem(5);
-        display: flex;
-        flex-direction: column;
+        transition: all 0.3s ease;
+
+
+        @media (max-width: 1023px) {
+            overflow-y: auto;
+            height: auto;
+            box-shadow: none;
+            margin: 0;
+            padding: 0;
+
+            .newWords__workPlace._openWordList & {
+                opacity: 0;
+            }
+
+
+        }
     }
 
     &__categoryPlaceholder {
         margin: auto;
         font-size: rem(50);
         letter-spacing: 10px;
+
+        @media (max-width: 479px) {
+            font-size: rem(35);
+        }
     }
 
     &__startLearn {
         display: flex;
+
+        &.mobile {
+            display: none;
+        }
+
+        @media (max-width: 1023px) {
+            display: none;
+
+            &.mobile {
+                display: flex;
+                padding-bottom: 30px;
+
+                .newWords__workPlace._openWordList & {
+                    opacity: 0;
+                }
+            }
+        }
     }
 
     &__startButton {
@@ -38,6 +129,16 @@
         border-radius: rem(20);
         font-family: antique;
         color: black;
+
+        @media (min-width: 1024px) and (max-width: 1199px) {
+            padding: 5px;
+        }
+
+        @media (max-width: 350px) {
+            padding: 5px;
+        }
+
+
 
         &.normal {
             margin: 0 auto 0 0;
@@ -112,6 +213,38 @@
     display: flex;
     height: rem(34);
 
+    @media (max-width: 1023px) {
+        .newWords & {
+            display: none;
+        }
+
+        .categories & {
+            position: absolute;
+            height: auto;
+            z-index: 3;
+            top: 155px;
+            width: 143px;
+            left: calc(100vw - 143px);
+            flex-direction: column;
+            background-color: white;
+            transition: transform 0.3s ease;
+            transform: translateX(200%);
+            box-shadow: 0px 0px 16px -2px rgba(34, 60, 80, 0.2);
+
+
+            &._active {
+                transform: translateX(0%);
+            }
+
+            &._fixed {
+                position: fixed;
+                top: 135px;
+            }
+        }
+
+
+    }
+
     &.reverse {
         flex-direction: row-reverse;
     }
@@ -124,6 +257,10 @@
         box-shadow: 0px 3px 13px 0px #C2CEF0;
         color: white;
         font-family: antique;
+
+        &.start {
+            display: none;
+        }
 
         &.create {
             margin: 0 auto 0 0;
@@ -148,6 +285,30 @@
             box-shadow: 0px 3px 13px 0px #999b9e;
 
         }
+
+        @media (max-width: 1023px) {
+            font-size: rem(18);
+            background-color: transparent;
+            box-shadow: none;
+            color: black;
+            font-family: antique;
+
+            &.start {
+                display: block;
+            }
+
+            &.create {
+                display: none;
+            }
+
+            &.delete {
+                margin: 0;
+            }
+
+            &.disabled {
+                display: none;
+            }
+        }
     }
 }
 
@@ -157,10 +318,12 @@
 .category {
     width: 100%;
     border-radius: rem(2);
-    display: flex;
-    padding: rem(5) rem(5);
+    padding: 10px;
     cursor: pointer;
     margin-bottom: rem(10);
+    overflow: hidden;
+
+
 
     &.gray {
         background-color: #0c0c0c48;
@@ -188,22 +351,119 @@
             0 0 8px rgba(102, 175, 233, 0.6);
     }
 
+
+
+    &__infoContainer {
+        display: flex;
+        width: 100%;
+    }
+
+    &__footer {
+        display: flex;
+        width: 100%;
+    }
+
+    &__subInfoContainer {
+        padding-top: 20px;
+        animation: showDown 0.4s ease;
+        padding-right: 20px;
+
+
+        @media (max-width: 1023px) {
+            font-size: 16px;
+
+        }
+
+        @media (max-width: 767px) {
+            font-size: 14px;
+        }
+
+
+
+    }
+
+    &__enter {
+        width: 64px;
+        height: 64px;
+        margin: auto 0px auto auto;
+        display: none;
+
+
+        @media (max-width: 1023px) {
+            display: block;
+        }
+
+        @media (max-width: 767px) {
+            width: 50px;
+            height: 50px;
+        }
+    }
+
     &__icon {
         width: rem(26);
         height: rem(26);
+
+        @media (max-width: 1023px) {
+            width: rem(34);
+            height: rem(34);
+        }
+
+        @media (max-width: 767px) {
+            width: rem(30);
+            height: rem(30);
+        }
+
+        @media (max-width: 479px) {
+            width: rem(26);
+            height: rem(26);
+        }
     }
 
     &__name {
-        margin-left: rem(15);
         font-size: rem(18);
-        line-height: 1.3;
+        margin: auto 0 auto 15px;
+
+        @media (max-width: 1023px) {
+            font-size: 24px;
+
+        }
+
+        @media (max-width: 767px) {
+            font-size: 20px;
+        }
+
+        @media (max-width: 479px) {
+            font-size: 18px;
+        }
+
+        @media (max-width: 350px) {
+            font-size: 16px;
+        }
     }
 
     &__countWords {
-        margin-left: auto;
         font-size: rem(18);
-        line-height: 1.3;
+        margin: auto 0 auto auto;
+
+        @media (max-width: 1023px) {
+            font-size: 24px;
+
+        }
+
+        @media (max-width: 767px) {
+            font-size: 20px;
+        }
+
+        @media (max-width: 479px) {
+            font-size: 18px;
+        }
+
+        @media (max-width: 350px) {
+            font-size: 16px;
+        }
     }
+
+
 }
 
 .newWords {
@@ -215,84 +475,148 @@
     flex-direction: column;
 
 
+    @media (max-width: 1023px) {
+        position: absolute;
+        display: block;
+        z-index: 1;
+        background-color: whitesmoke;
+        width: calc(100vw - 40px);
+        border-top: 0;
+        border-bottom: 0;
+        padding: 70px 0 86px 0;
+        top: 85px;
+        min-height: 100vh;
+        transition: all 0.5s ease;
+        transform: translateX(-200%);
+
+
+        .newWords__workPlace._openWordList & {
+            transform: translateX(0);
+        }
+    }
+
+
+    &__workPlace {
+        margin: 0px auto;
+        padding: 20px 20px;
+        display: flex;
+
+        @media (max-width: 1023px) {
+            flex-direction: column;
+            position: relative;
+
+        }
+    }
 
     &__searchContainer {
         width: 25%;
         margin: 0 rem(40) 0 auto;
         height: 100%;
 
+        @media (max-width: 1023px) {
+            display: none;
+        }
+
 
     }
 
 
-
-
-    &__list {
+    &__wordContainer {
         margin: rem(30) 0 0 0;
-        overflow-y: scroll;
         max-height: rem(375);
         min-height: rem(375);
-        box-shadow: 0px 1px 8px 0px #000000;
-        padding: rem(5);
-        display: flex;
-        flex-direction: column;
-    }
 
-    &__wordPlaceholder {
-        margin: auto;
-        font-size: rem(60);
-        letter-spacing: 30px;
-    }
-
-    &__word {
-        display: flex;
-        flex-direction: column;
-        border: 1px solid black;
-        width: 100%;
-        margin-bottom: rem(20);
-        cursor: pointer;
-
-        &.selected {
-            border-color: #66afe9;
-            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),
-                0 0 8px rgba(102, 175, 233, 0.6);
+        @media (max-width: 1023px) {
+            max-height: none;
+            min-height: none;
         }
     }
 
 
-
-
-
-    &__info {
-        display: flex;
-        font-size: rem(18);
-        padding-bottom: rem(10);
-
-        & p {
-            margin: auto;
-        }
-    }
-
-    &__description {
-        font-size: rem(16);
-        margin: auto;
-        padding-bottom: rem(10);
-    }
-
-    &__examples {
-        font-size: rem(16);
-        margin: auto;
-        padding-bottom: rem(10);
-    }
-
-    &__subInfo {
-        margin-top: rem(5);
-        font-size: rem(14);
-    }
-
-    &__nameCategory {
+    &__categoryInfo {
         margin: rem(35) auto 0 auto;
         font-size: rem(17);
         font-family: antique;
+        display: flex;
+
+        @media (max-width: 1023px) {
+            display: none;
+        }
+
     }
+
+    &__categoryInfoMobile {
+        display: none;
+
+
+        @media (max-width: 1023px) {
+            padding: 20px;
+            font-size: rem(18);
+            margin: 0;
+            top: 85px;
+            left: 0;
+            font-family: antique;
+            display: flex;
+            position: absolute;
+            background-color: white;
+            width: 100vw;
+            transition: transform 0.5s ease;
+            z-index: 2;
+            box-shadow: 0px 0px 16px -2px rgba(34, 60, 80, 0.2);
+            transform: translateX(-200%);
+
+            .newWords__workPlace._openWordList & {
+                transform: translateX(0);
+            }
+
+            &._fixed {
+                top: 65px;
+                position: fixed;
+            }
+        }
+    }
+
+    &__backMobile,
+    &__cancelMobile {
+        width: 30px;
+        height: 30px;
+        margin: auto 0;
+        display: none;
+
+        @media (max-width: 1023px) {
+            display: block;
+
+        }
+    }
+
+
+    &__selectedCategory {
+        @media (max-width: 1023px) {
+            display: none;
+        }
+
+    }
+
+    &__selectedCategoryMobile {
+        font-size: rem(18);
+        margin: auto;
+
+        @media (max-width: 1023px) {
+            display: block;
+        }
+    }
+
+    &__CRUDmobile,
+    &__deleteMobile {
+        width: 30px;
+        height: 30px;
+        margin: auto 0 auto 0;
+        display: none;
+
+        @media (max-width: 1023px) {
+            display: block;
+
+        }
+    }
+
 }

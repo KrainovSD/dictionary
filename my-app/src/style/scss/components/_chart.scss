@@ -5,12 +5,18 @@
 
 .chart {
     width: 100%;
+    display: flex;
+    flex-direction: column;
 
     &__header {
         margin-left: 25%;
         font-size: rem(18);
         display: inline-block;
         position: relative;
+
+        @media (max-width: 767px) {
+            font-size: rem(16);
+        }
     }
 
     &__period {
@@ -54,13 +60,54 @@
 
 
     &__leftLabelContainer {
-        margin: 0 5px 0 auto;
+        padding-right: 5px;
+        margin: 0 0px 0 auto;
         display: flex;
         flex-direction: column;
-        height: 500px; ///
+        height: 600px;
+        position: relative;
+
+        @media (min-width: 1024px) and (max-width: 1199px) {
+            height: 500px;
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+            height: 400px;
+        }
+
+        @media (min-width: 480px) and (max-width: 767px) {
+            height: 304px;
+            border-right: 2px solid black;
+
+            &::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                right: -2px;
+                width: 2px;
+                height: 2px;
+                background-color: black;
+            }
+        }
+
+        @media (max-width: 479px) {
+            height: 248px;
+            border-right: 2px solid black;
+
+            &::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                right: -2px;
+                width: 2px;
+                height: 2px;
+                background-color: black;
+            }
+        }
 
 
     }
+
 
     &__leftLabelItem {
         position: relative;
@@ -68,32 +115,16 @@
         line-height: 1.5;
         color: gray;
 
-
         &::before {
             content: "";
             position: absolute;
-            width: 1118px;
+            @extend %variable-maxWidth;
+            width: 87vw;
             height: 1px;
             border-top: 1px solid rgba(179, 178, 178, 0.432);
             top: 0;
             left: 0;
             z-index: 1;
-
-            @media (min-width: 1024px) and (max-width: 1199px) {
-                width: 918px;
-            }
-
-            @media (min-width: 768px) and (max-width: 1023px) {
-                width: 618px;
-            }
-
-            @media (min-width: 480px) and (max-width: 767px) {
-                width: 318px;
-            }
-
-            @media (max-width: 479px) {
-                width: 168px;
-            }
 
         }
     }
@@ -105,27 +136,36 @@
 
 
     &__base {
-
-        width: 1100px;
-        height: 500px; ///
+        @extend %variable-maxWidth;
+        width: 85vw;
+        height: 600px;
         border-left: 2px solid black;
         border-bottom: 2px solid black;
         display: flex;
 
+
+
         @media (min-width: 1024px) and (max-width: 1199px) {
-            width: 900px;
+            height: 500px;
         }
 
         @media (min-width: 768px) and (max-width: 1023px) {
-            width: 600px;
+            height: 400px;
         }
 
         @media (min-width: 480px) and (max-width: 767px) {
-            width: 300px;
+            height: 380px;
+            overflow-x: scroll;
+            border-left: 0;
+            border-bottom: 0;
+
         }
 
         @media (max-width: 479px) {
-            width: 150px;
+            height: 310px;
+            overflow-x: scroll;
+            border-left: 0;
+            border-bottom: 0;
         }
 
     }
@@ -136,6 +176,38 @@
         border-right: 1px dashed rgba(179, 178, 178, 0.432);
         display: flex;
         flex-direction: column-reverse;
+        position: relative;
+
+        @media (max-width: 767px) {
+            min-width: 40px;
+            height: 80%;
+        }
+
+        &::after {
+            content: attr(tooltip);
+            position: absolute;
+            text-align: left;
+            color: gray;
+            font-size: 14px;
+            width: 65%;
+            top: 102%;
+            z-index: 2;
+        }
+
+        @media (max-width: 767px) {
+            &::before {
+                content: "";
+                position: absolute;
+                width: calc(100% + 2px);
+                top: 100%;
+                height: 2px;
+                background-color: black;
+                border-right: 2px solid black;
+
+            }
+
+        }
+
 
     }
 
@@ -157,7 +229,7 @@
             background: rgba(0, 0, 0, 0.7);
             text-align: center;
             color: white;
-            font-size: 1.2vw;
+            font-size: 16px;
             border-radius: 5px;
             pointer-events: none;
             padding: 9px 9px;
@@ -222,7 +294,7 @@
             background: rgba(0, 0, 0, 0.7);
             text-align: center;
             color: white;
-            font-size: 1.2vw;
+            font-size: 16px;
             border-radius: 5px;
             pointer-events: none;
             padding: 9px 9px;
@@ -269,24 +341,10 @@
 
     &__bottomLabelContainer {
         margin-top: 5px;
-        width: 1100px;
+        @extend %variable-maxWidth;
+        width: 85vw;
         display: flex;
 
-        @media (min-width: 1024px) and (max-width: 1199px) {
-            width: 900px;
-        }
-
-        @media (min-width: 768px) and (max-width: 1023px) {
-            width: 600px;
-        }
-
-        @media (min-width: 480px) and (max-width: 767px) {
-            width: 300px;
-        }
-
-        @media (max-width: 479px) {
-            width: 150px;
-        }
     }
 
     &__bottomLabelItem {
@@ -295,13 +353,32 @@
         justify-content: left;
         color: gray;
         font-size: 14px;
+
+        & p {
+            width: 65%;
+        }
+
+        @media (max-width: 767px) {
+            min-width: 33px;
+        }
+
     }
 
 
     &__footer {
-        margin-top: 30px;
+        margin-top: 90px;
         margin-left: 20%;
         font-size: 18px;
+
+        @media (max-width: 767px) {
+            margin: 40px auto 0 auto;
+            font-size: 16px;
+        }
+
+        @media (max-width: 479px) {
+            font-size: 14px;
+
+        }
     }
 
     &__footerHeader {
@@ -327,6 +404,11 @@
         width: 18px;
         height: 18px;
 
+        @media (max-width: 479px) {
+            margin-left: 20px;
+
+        }
+
         &._orange {
             background-color: #e4c2b1;
         }
@@ -338,6 +420,11 @@
 
     &__footerText {
         margin-left: 8px;
+
+        @media (max-width: 479px) {
+
+            width: 120px;
+        }
     }
 
 }

@@ -215,6 +215,50 @@ export default function () {
       store.commit("resetAuth");
       return { message: "Операция успешно выполнена!" };
     },
+    multipleDeleteWord(data) {
+      let { id } = data;
+      let userInfo = getUserInfoFromLocalStorage();
+      let knownWordsID = [];
+      let studyWordsID = [];
+      for (let item of id) {
+        let index = userInfo.knownWords.findIndex((word) => word._id == item);
+        if (index != -1) {
+          knownWordsID.push(item);
+        }
+      }
+      for (let item of id) {
+        let index = userInfo.wordsToStudy.findIndex((word) => word._id == item);
+        if (index != -1) {
+          studyWordsID.push(item);
+        }
+      }
+
+      let activeCategoriesID = userInfo.categoriesToLearn.filter(
+        (item) => item.startLearn == true
+      );
+      activeCategoriesID = activeCategoriesID.map((item) => item._id);
+      let studyWordsInfo = userInfo.wordsToStudy.filter((item) =>
+        studyWordsID.includes(item._id)
+      );
+      let wordsInActiveCategory = studyWordsInfo.filter((item) =>
+        activeCategoriesID.includes(item.category)
+      );
+      if (wordsInActiveCategory.length > 0)
+        throw new Error("Слово в активной категории!");
+
+      if (knownWordsID.length > 0) {
+        userInfo = multiPullElement("knownWords", knownWordsID, userInfo);
+      }
+      if (studyWordsID.length > 0) {
+        userInfo = multiPullElement("wordsToStudy", studyWordsID, userInfo);
+      }
+
+      userInfo = setSignature(userInfo);
+      if (!userInfo) throw new Error("Не удалось поставить подпись!");
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      store.commit("resetAuth");
+      return { message: "Операция успешно выполнена!" };
+    },
     startLearnCategory(data) {
       let { id } = data;
       let userInfo = getUserInfoFromLocalStorage();
@@ -348,80 +392,98 @@ export default function () {
     pushLearnAnswers(data) {
       let { categoryID, words } = data;
       let user = getUserInfoFromLocalStorage();
-
-      let activeCategory = isActiveCategory(categoryID, user);
-      if (!activeCategory) throw new Error("Категория не активна!");
-
-      let index = user.categoriesToLearn.findIndex(
-        (item) => item._id == categoryID && item?.offline != "delete"
+      let wordsWithWrong = words.filter((item) => {
+        if (item.wrong && typeof item?.wrong == "boolean") return true;
+        return false;
+      });
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = user.wordsToStudy.filter((item) =>
+        wordsWithWrong.includes(item._id.toString())
       );
-      if (index == -1) throw new Error("Категория не существует!");
-
-      let category = user.categoriesToLearn[index];
-      let nextRepeat = millisecondsToDays(category.nextRepeat);
-      if (millisecondsToDays(Date.now()) < nextRepeat)
-        throw new Error(
-          "День повторения категории не наступил! Прогресс не будет сохранен!"
-        );
-
-      let wordsWithWrong = words.filter(
-        (item) => item.wrong && typeof item?.wrong == "boolean"
-      );
-      if (wordsWithWrong.length > 0) {
-        wordsWithWrong = wordsWithWrong.map((item) => item.word);
-        wordsWithWrong = user.wordsToStudy.filter((item) =>
-          wordsWithWrong.includes(item._id.toString())
-        );
-        let pushWrongs = pushWrongsInWords(
-          wordsWithWrong,
-          "wordsToStudy",
-          user
-        );
-        wordsWithWrong = wordsWithWrong.map((item) => item.word);
-        wordsWithWrong = wordsWithWrong.join(", ");
-        let message =
-          "В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!";
-        message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
-        if (!pushWrongs.status) throw new Error(pushWrongs.message);
-        if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
-
-        pushWrongs.user = setSignature(pushWrongs.user);
-        if (!pushWrongs.user) throw new Error("Не удалось поставить подпись!");
-        localStorage.setItem("userInfo", JSON.stringify(pushWrongs.user));
-        store.commit("resetAuth");
-        return { message };
-      }
-      /* Проверка на количество повторений категории */
-      let countOfRepeat = category.countOfRepeat + 1;
-      let countOfReverseRepeat = category.countOfReverseRepeat;
-      if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
-        return pullStudiedCategory(categoryID, user);
-
-      /* Сбор новых параметров категории*/
-      let nextPattern;
-      if (countOfRepeat >= 13) nextPattern = daysToMilliseconds(365);
-      else {
-        nextPattern = daysToMilliseconds(
-          category.regularityToRepeat[countOfRepeat - 1]
-        );
-      }
-      let historyOfRepeat = category.historyOfRepeat;
-      historyOfRepeat.push(Date.now());
-
-      let changeFields = {
-        lastRepeat: Date.now(),
-        countOfRepeat,
-        nextRepeat: nextPattern + Date.now(),
-        historyOfRepeat,
-      };
-      /* Изменение параметров категории */
-      user = setElement("categoriesToLearn", categoryID, changeFields, user);
-
+      let studiedCategory = [];
+      let wrongsCategory = [];
+      let successCategory = [];
       let message = "";
-      if (countOfRepeat >= 13)
-        message =
-          "Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!\n";
-      else message = "Обычное повторение категории успешно завершено!\n";
+      for (let id of categoryID) {
+        /* Проверка на сущесвтование категории */
+        let index = user.categoriesToLearn.findIndex((item) => {
+          return item._id.toString() == id;
+        });
+        if (index == -1) throw new Error("Категории не существует!");
+        let category = user.categoriesToLearn[index];
+        let categoryName = category.name;
+        /* Проверка на активность категории */
+        let activeCategory = isActiveCategory(id, user);
+        if (!activeCategory)
+          throw new Error(`Категория ${categoryName} не активна!`);
+        /* Проверка на актуальность повторения */
+        let nextRepeat = millisecondsToDays(category.nextRepeat);
+        if (millisecondsToDays(Date.now()) < nextRepeat)
+          throw new Error(
+            `День повторения категории ${categoryName} не наступил! Прогресс не будет сохранен!`
+          );
+        /* Проверка на ошибки в словах */
+        let currentWordsWithWrongs = wordsWithWrong.filter(
+          (item) => item.category == id
+        );
+        if (currentWordsWithWrongs.length > 0) {
+          wrongsCategory.push(id);
+          currentWordsWithWrongs = currentWordsWithWrongs.map(
+            (item) => item.word
+          );
+          currentWordsWithWrongs = currentWordsWithWrongs.join(", ");
+          message += `Категория ${categoryName}: В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз! В следуюших словах была допущена ошибка: ${currentWordsWithWrongs}!\n\n `;
+          continue;
+        }
+        /* Проверка на количество повторений категории */
+        let countOfRepeat = category.countOfRepeat + 1;
+        let countOfReverseRepeat = category.countOfReverseRepeat;
+        if (countOfRepeat >= 13 && countOfReverseRepeat >= 13) {
+          studiedCategory.push(id);
+          message += `Категория ${categoryName}: успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!\n\n`;
+          continue;
+        }
+        if (countOfRepeat > 13) {
+          message += `Категория ${categoryName}: Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!\n\n`;
+          continue;
+        }
+        /* Сбор новых параметров категории*/
+        let nextPattern;
+        if (countOfRepeat == 13) nextPattern = daysToMilliseconds(365);
+        else {
+          nextPattern = daysToMilliseconds(
+            category.regularityToRepeat[countOfRepeat - 1]
+          );
+        }
+        let historyOfRepeat = category.historyOfRepeat;
+        historyOfRepeat.push(Date.now());
+        let changeFields = {
+          lastRepeat: Date.now(),
+          countOfRepeat,
+          nextRepeat: nextPattern + Date.now(),
+          historyOfRepeat,
+        };
+        successCategory.push({ elementID: id, changeFields });
+        if (countOfRepeat == 13)
+          message += `Категория ${categoryName}: Вы достигли необходимого количества обычных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества реверсивных повторений!\n\n`;
+        else
+          message += `Категория ${categoryName}: Обычное повторение категории успешно завершено!\n\n`;
+      }
+
+      if (studiedCategory.length > 0) {
+        user = pullStudiedCategory(studiedCategory, user);
+        if (!user) throw new Error("Не удалось выполнить операцию 1");
+      }
+      if (successCategory.length > 0) {
+        user = multiSetElement("categoriesToLearn", successCategory, user);
+        if (!user) throw new Error("Не удалось выполнить операцию 2");
+      }
+      if (wordsWithWrong.length > 0) {
+        let res = pushWrongsInWords(wordsWithWrong, "wordsToStudy", user);
+        if (!res.status) throw new Error("Не удалось выполнить операцию 3");
+        user = res.user;
+        message += res.message;
+      }
 
       let checkStreak = isSuccessStreak(user);
       if (checkStreak.increaseStreak) {
@@ -443,78 +505,98 @@ export default function () {
     pushReLearnAnswers(data) {
       let { categoryID, words } = data;
       let user = getUserInfoFromLocalStorage();
-
-      let activeCategory = isActiveCategory(categoryID, user);
-      if (!activeCategory) throw new Error("Категория не активна!");
-
-      let index = user.categoriesToLearn.findIndex(
-        (item) => item._id == categoryID && item?.offline != "delete"
+      let wordsWithWrong = words.filter((item) => {
+        if (item.wrong && typeof item?.wrong == "boolean") return true;
+        return false;
+      });
+      wordsWithWrong = wordsWithWrong.map((item) => item.word);
+      wordsWithWrong = user.wordsToStudy.filter((item) =>
+        wordsWithWrong.includes(item._id.toString())
       );
-      if (index == -1) throw new Error("Категория не существует!");
-
-      let category = user.categoriesToLearn[index];
-      let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
-      if (millisecondsToDays(Date.now()) < nextReverseRepeat)
-        throw new Error(
-          "День повторения категории не наступил! Прогресс не будет сохранен!"
-        );
-
-      let wordsWithWrong = words.filter(
-        (item) => item.wrong && typeof item?.wrong == "boolean"
-      );
-      if (wordsWithWrong.length > 0) {
-        wordsWithWrong = wordsWithWrong.map((item) => item.word);
-        wordsWithWrong = user.wordsToStudy.filter((item) =>
-          wordsWithWrong.includes(item._id.toString())
-        );
-        let pushWrongs = pushWrongsInWords(
-          wordsWithWrong,
-          "wordsToStudy",
-          user
-        );
-        wordsWithWrong = wordsWithWrong.map((item) => item.word);
-        wordsWithWrong = wordsWithWrong.join(", ");
-        let message =
-          "В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз!";
-        message += ` В следуюших словах была допущена ошибка: ${wordsWithWrong}!\n`;
-        if (!pushWrongs.status) throw new Error(pushWrongs.message);
-        if (pushWrongs.message.length > 0) message += `${pushWrongs.message}`;
-        pushWrongs.user = setSignature(pushWrongs.user);
-        if (!pushWrongs.user) throw new Error("Не удалось поставить подпись!");
-        localStorage.setItem("userInfo", JSON.stringify(pushWrongs.user));
-        store.commit("resetAuth");
-        return { message };
-      }
-      /* Проверка на количество повторений категории */
-      let countOfRepeat = category.countOfRepeat;
-      let countOfReverseRepeat = category.countOfReverseRepeat + 1;
-      if (countOfRepeat >= 13 && countOfReverseRepeat >= 13)
-        return pullStudiedCategory(categoryID, user);
-      /* Сбор новых параметров категории*/
-      let nextPattern;
-      if (countOfReverseRepeat >= 13) nextPattern = daysToMilliseconds(365);
-      else {
-        nextPattern = daysToMilliseconds(
-          category.regularityToRepeat[countOfReverseRepeat - 1]
-        );
-      }
-      let historyOfReverseRepeat = category.historyOfReverseRepeat;
-      historyOfReverseRepeat.push(Date.now());
-
-      let changeFields = {
-        lastReverseRepeat: Date.now(),
-        countOfReverseRepeat,
-        nextReverseRepeat: nextPattern + Date.now(),
-        historyOfReverseRepeat,
-      };
-      /* Изменение параметров категории */
-      user = setElement("categoriesToLearn", categoryID, changeFields, user);
-
+      let studiedCategory = [];
+      let wrongsCategory = [];
+      let successCategory = [];
       let message = "";
-      if (countOfReverseRepeat >= 13)
-        message =
-          "Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!\n";
-      else message = "Реверсивное повторение категории успешно завершено!\n";
+      for (let id of categoryID) {
+        /* Проверка на сущесвтование категории */
+        let index = user.categoriesToLearn.findIndex((item) => {
+          return item._id.toString() == id;
+        });
+        if (index == -1) throw new Error("Категории не существует!");
+        let category = user.categoriesToLearn[index];
+        let categoryName = category.name;
+        /* Проверка на активность категории */
+        let activeCategory = isActiveCategory(id, user);
+        if (!activeCategory)
+          throw new Error(`Категория ${categoryName} не активна!`);
+        /* Проверка на актуальность повторения */
+        let nextReverseRepeat = millisecondsToDays(category.nextReverseRepeat);
+        if (millisecondsToDays(Date.now()) < nextReverseRepeat)
+          throw new Error(
+            `День повторения категории ${categoryName} не наступил! Прогресс не будет сохранен!`
+          );
+        /* Проверка на ошибки в словах */
+        let currentWordsWithWrongs = wordsWithWrong.filter(
+          (item) => item.category == id
+        );
+        if (currentWordsWithWrongs.length > 0) {
+          wrongsCategory.push(id);
+          currentWordsWithWrongs = currentWordsWithWrongs.map(
+            (item) => item.word
+          );
+          currentWordsWithWrongs = currentWordsWithWrongs.join(", ");
+          message += `Категория ${categoryName}: В словах были допущены ошибки, повторение не засчитано, попробуйте еще раз! В следуюших словах была допущена ошибка: ${currentWordsWithWrongs}!\n\n `;
+          continue;
+        }
+        /* Проверка на количество повторений категории */
+        let countOfRepeat = category.countOfRepeat;
+        let countOfReverseRepeat = category.countOfReverseRepeat + 1;
+        if (countOfRepeat >= 13 && countOfReverseRepeat >= 13) {
+          studiedCategory.push(id);
+          message += `Категория ${categoryName}: успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!\n\n`;
+          continue;
+        }
+        if (countOfReverseRepeat > 13) {
+          message += `Категория ${categoryName}: Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!\n\n`;
+          continue;
+        }
+        /* Сбор новых параметров категории*/
+        let nextPattern;
+        if (countOfReverseRepeat == 13) nextPattern = daysToMilliseconds(365);
+        else {
+          nextPattern = daysToMilliseconds(
+            category.regularityToRepeat[countOfReverseRepeat - 1]
+          );
+        }
+        let historyOfReverseRepeat = category.historyOfReverseRepeat;
+        historyOfReverseRepeat.push(Date.now());
+        let changeFields = {
+          lastReverseRepeat: Date.now(),
+          countOfReverseRepeat,
+          nextReverseRepeat: nextPattern + Date.now(),
+          historyOfReverseRepeat,
+        };
+        successCategory.push({ elementID: id, changeFields });
+        if (countOfReverseRepeat == 13)
+          message += `Категория ${categoryName}: Вы достигли необходимого количества реверсивных повторений! Чтобы слова переместились в категорию изученных, вам требуется достигнуть необходимого количества обычных повторений!\n\n`;
+        else
+          message += `Категория ${categoryName}: Реверсивное повторение категории успешно завершено!\n\n`;
+      }
+
+      if (studiedCategory.length > 0) {
+        user = pullStudiedCategory(studiedCategory, user);
+        if (!user) throw new Error("Не удалось выполнить операцию 1");
+      }
+      if (successCategory.length > 0) {
+        user = multiSetElement("categoriesToLearn", successCategory, user);
+        if (!user) throw new Error("Не удалось выполнить операцию 2");
+      }
+      if (wordsWithWrong.length > 0) {
+        let res = pushWrongsInWords(wordsWithWrong, "wordsToStudy", user);
+        if (!res.status) throw new Error("Не удалось выполнить операцию 3");
+        user = res.user;
+        message += res.message;
+      }
 
       let checkStreak = isSuccessStreak(user);
       if (checkStreak.increaseStreak) {
@@ -928,22 +1010,23 @@ function deleteKnownWord(id, index) {
 }
 function pullStudiedCategory(categoryID, user) {
   /* Проверка нет ли слов из категории во вкладке Изученные */
-  let words = user.wordsToStudy.filter((item) => item.category == categoryID);
+  let words = user.wordsToStudy.filter((item) =>
+    categoryID.includes(item.category)
+  );
   let wordsName = words.map((item) => item.word);
   let knownWords = user.knownWords.filter((item) =>
     wordsName.includes(item.word)
   );
-  if (knownWords.length > 0)
-    throw new Error('Слово из категории присутствует во вкладке "Изученные"');
+  if (knownWords.length > 0) return false;
 
   /* Удаление категории */
-  user = pullElement("categoriesToLearn", categoryID, user);
-  if (!user) throw new Error("Не удалось удалить категорию!");
+  user = multiPullElement("categoriesToLearn", categoryID, user);
+  if (!user) return false;
 
   /* Удаление слов из категории Изучаемые */
   let wordsID = words.map((item) => item._id);
   user = multiPullElement("wordsToStudy", wordsID, user);
-  if (!user) throw new Error("Не удалось удалить слова!");
+  if (!user) return false;
 
   /* Добавление слов в категорию Изученные */
   let newKnownWords = words.map((item) => {
@@ -964,29 +1047,12 @@ function pullStudiedCategory(categoryID, user) {
     };
   });
   user = multiPushNewElement("knownWords", newKnownWords, user);
-  if (!user) throw new Error("Не удалось перенести слова из категории!");
+  if (!user) return false;
 
-  let message =
-    "Категория успешно изучена и удалена! Все слова перенесены во вкладку 'Изученные'!";
-  let checkStreak = isSuccessStreak(user);
-  if (checkStreak.increaseStreak) {
-    user = increaseStreak(user);
-    message += "\nПоздравляем, непрерывная серия повторения была увеличена!";
-  }
-  if (checkStreak.resetStreak) {
-    user = resetStreak(user);
-    message += "\nК сожалению, серия повторения была прервана!";
-  }
-
-  user = setSignature(user);
-  if (!user) throw new Error("Не удалось поставить подпись!");
-  localStorage.setItem("userInfo", JSON.stringify(user));
-  store.commit("resetAuth");
-  return {
-    message,
-  };
+  return user;
 }
 function pushWrongsInWords(words, typeWords, user) {
+  console.log(words);
   let message = "";
   const maxWrongs = user.options[0].countWrongsToAddToRepeat;
 
@@ -1074,7 +1140,7 @@ function pushWordsInRepeat(wordsWithWrong, user) {
   return user;
 }
 
-function setElement(field, elementID, changeFields, userInfo) {
+/*function setElement(field, elementID, changeFields, userInfo) {
   try {
     let index = userInfo[field].findIndex(
       (item) => item._id == elementID && item?.offline != "delete"
@@ -1089,8 +1155,8 @@ function setElement(field, elementID, changeFields, userInfo) {
   } catch (err) {
     return false;
   }
-}
-function pullElement(field, elementID, userInfo) {
+}*/
+/*function pullElement(field, elementID, userInfo) {
   try {
     let index = userInfo[field].findIndex(
       (item) => item._id == elementID && item?.offline != "delete"
@@ -1103,7 +1169,7 @@ function pullElement(field, elementID, userInfo) {
   } catch (err) {
     return false;
   }
-}
+}*/
 function multiSetElement(field, changeFields, userInfo) {
   try {
     // changeFields = ({ elementID, [changeFields] });
@@ -1120,6 +1186,7 @@ function multiSetElement(field, changeFields, userInfo) {
     }
     return userInfo;
   } catch (err) {
+    console.log(err);
     return false;
   }
 }

@@ -2,6 +2,7 @@
   <div style="position: relative; width: 100%; height: 100%">
     <input
       type="text"
+      spellcheck="false"
       class="interactiveInput__input"
       :class="[
         errors?.[field] ? '_error' : '',
@@ -21,6 +22,7 @@
     />
     <textarea
       type="text"
+      spellcheck="false"
       class="interactiveInput__input textarea"
       :class="[
         errors?.[field] ? '_error' : '',
@@ -142,7 +144,7 @@ export default {
   background: rgba(0, 0, 0, 0.7);
   text-align: center;
   color: white;
-  font-size: 1.2vw;
+  font-size: 16px;
   min-width: 250px;
   border-radius: 5px;
   pointer-events: none;
@@ -176,5 +178,18 @@ export default {
 }
 .interactiveInput__tooltip.top::before {
   transform: translatey(-50%) rotate(0deg);
+}
+@media (max-width: 767px) {
+  .interactiveInput__tooltip {
+    left: 50%;
+    top: -10%;
+  }
+  .interactiveInput__tooltip::after {
+    transform: translateX(-50%) translateY(-100%);
+  }
+
+  .interactiveInput__tooltip::before {
+    transform: translatey(-50%) rotate(0deg);
+  }
 }
 </style>

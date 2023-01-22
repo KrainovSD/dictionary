@@ -1,62 +1,69 @@
 <template>
   <div class="setting__container">
-    <p class="setting__userDataTittle">{{ title }}</p>
-    <p class="setting__userData" v-if="fieldChangin == false">
-      {{ data }}
-    </p>
-    <div style="position: relative">
-      <input
-        ref="input"
-        type="text"
-        class="setting__userDataInput"
-        :class="[
-          errors[field] ? '_error' : '',
-          inputType == 'Number' ? 'number' : '',
-        ]"
-        :placeholder="placeholder"
-        :name="field"
-        :value="modelValue"
-        @input="$emit('update:modelValue', $event.target.value)"
-        @keyup.enter.stop="saveData"
-        @keyup.esc.stop="
+    <div class="setting__infoContainer">
+      <p class="setting__userDataTittle">
+        {{ title }}
+        <span class="setting__userData" v-if="fieldChangin == false">
+          {{ data }}
+        </span>
+      </p>
+      <div class="setting__inputContainer">
+        <input
+          ref="input"
+          type="text"
+          class="setting__userDataInput"
+          :class="[
+            errors[field] ? '_error' : '',
+            inputType == 'Number' ? 'number' : '',
+          ]"
+          :placeholder="placeholder"
+          :name="field"
+          :value="modelValue"
+          @input="$emit('update:modelValue', $event.target.value)"
+          @keyup.enter.stop="saveData"
+          @keyup.esc.stop="
+            fieldChangin = false;
+            $emit('close', field);
+          "
+          @focus="focusInput = true"
+          @focusout="focusInput = false"
+          v-if="fieldChangin == true"
+          autocomplete="off"
+        />
+        <div
+          class="inputTooltip__tooltip"
+          v-if="errors?.[field] && focusInput == true"
+          :tooltip="errors?.[field]"
+        ></div>
+      </div>
+    </div>
+
+    <div class="setting__buttonContainer">
+      <button
+        class="setting__userDataReplace _change"
+        v-if="fieldChangin == false"
+        @click="openEditor"
+      >
+        Изменить
+      </button>
+      <img
+        src="@/assets/closeRed.png"
+        alt=""
+        class="setting__userDataClose"
+        v-if="fieldChangin == true"
+        @click="
           fieldChangin = false;
           $emit('close', field);
         "
-        @focus="focusInput = true"
-        @focusout="focusInput = false"
-        v-if="fieldChangin == true"
-        autocomplete="off"
       />
-      <div
-        class="inputTooltip__tooltip"
-        v-if="errors?.[field] && focusInput == true"
-        :tooltip="errors?.[field]"
-      ></div>
+      <button
+        class="setting__userDataReplace"
+        v-if="fieldChangin == true"
+        @click="saveData"
+      >
+        Сохранить
+      </button>
     </div>
-    <button
-      class="setting__userDataReplace _change"
-      v-if="fieldChangin == false"
-      @click="openEditor"
-    >
-      Изменить
-    </button>
-    <img
-      src="@/assets/closeRed.png"
-      alt=""
-      class="setting__userDataClose"
-      v-if="fieldChangin == true"
-      @click="
-        fieldChangin = false;
-        $emit('close', field);
-      "
-    />
-    <button
-      class="setting__userDataReplace"
-      v-if="fieldChangin == true"
-      @click="saveData"
-    >
-      Сохранить
-    </button>
   </div>
 </template>
 
@@ -117,15 +124,25 @@ export default {
 </script>
 
 <style>
+.setting__infoContainer {
+  display: flex;
+}
 .setting__userDataTittle {
   font-size: 14px;
   line-height: 1;
+  margin-right: 5px;
+  display: flex;
+  align-items: center;
 }
 .setting__userData {
   font-size: 14px;
   margin-left: 5px;
   margin-right: 8px;
   line-height: 1;
+}
+.setting__inputContainer {
+  position: relative;
+  margin: 0 0 0 0px;
 }
 .setting__userDataInput {
   border-radius: 3px;
@@ -151,6 +168,9 @@ export default {
 .setting__userDataInput.number {
   width: 25px;
 }
+.setting__buttonContainer {
+  margin: 0 0 0 auto;
+}
 .setting__userDataReplace {
   padding: 5px 13px;
   border-radius: 20px;
@@ -169,5 +189,33 @@ export default {
   height: 22px;
   cursor: pointer;
   margin: auto 5px auto auto;
+}
+@media (max-width: 767px) {
+  .setting__buttonContainer {
+    margin: 10px 0 10px 0;
+  }
+  .setting__userData {
+    font-size: 16px;
+    margin: 5px 0px 0px 0px;
+  }
+  .setting__userDataTittle {
+    font-size: 16px;
+    display: inline-block;
+  }
+  .setting__userDataInput {
+    font-size: 16px;
+    margin: 5px 0px 0px 0px;
+    padding: 2px;
+    width: 180px;
+  }
+  .setting__userDataInput.number {
+    width: 30px;
+  }
+  .setting__infoContainer {
+    display: flex;
+    width: calc(100vw - 20px);
+    align-items: center;
+    flex-wrap: wrap;
+  }
 }
 </style>

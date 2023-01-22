@@ -1,14 +1,15 @@
 <template>
   <info-popup ref="info" />
   <loading-popup v-if="isLoading == true" />
-  <div class="modal__backDrop" style="z-index: 6" ref="backDrop">
+  <div class="modal__backDrop z9" ref="backDrop"></div>
+  <div class="modal__container info z10">
     <div class="iconPopup">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="iconPopup__container">
         <h1 class="sign__header">Смена аватара</h1>
         <p class="sign__description">Загрузите иконку для смены аватара</p>
         <div class="iconPopup__avatarContainer">
-          <img :src="showIcon" alt="" class="setting__avatar" />
+          <img :src="showIcon" alt="" class="iconPopup__avatar" />
           <div class="iconPopup__fileContainer">
             <input
               type="file"
@@ -182,5 +183,20 @@ export default {
   color: red;
   padding-top: 4px;
   margin: 0 0 auto 0;
+}
+@media (max-width: 767px) {
+  .iconPopup {
+    width: 100vw;
+    max-width: 400px;
+  }
+  .iconPopup__container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+  }
+  .iconPopup__avatar {
+    width: 50px;
+    height: 50px;
+  }
 }
 </style>

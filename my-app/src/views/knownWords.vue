@@ -7,10 +7,7 @@
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
   <loading-popup v-if="isLoading == true" />
-  <div
-    class="learnPlace__container appearVision"
-    @click="currentSelectedWord = {}"
-  >
+  <div class="learnPlace__container appearVision">
     <div class="knownWords">
       <div class="knownWords__header">
         <div class="knownWords__filterContainer">
@@ -26,10 +23,18 @@
         <button
           class="knownWords__CRUDButton"
           :class="
-            Object.keys(currentSelectedWord)?.length == 0 ? 'disabled' : ''
+            currentSelectedWord == ''
+              ? currentMultiSelectedWords.length > 0
+                ? ''
+                : 'disabled'
+              : ''
           "
           :disabled="
-            Object.keys(currentSelectedWord)?.length == 0 ? true : false
+            currentSelectedWord == ''
+              ? currentMultiSelectedWords.length > 0
+                ? false
+                : true
+              : false
           "
           @click.stop="deleteWord"
         >
@@ -48,61 +53,41 @@
       </div>
 
       <div class="knownWords__wordsContainer">
-        <div class="knownWords__wordPlaceholder" v-if="wordsList?.length == 0">
-          WORDS
-        </div>
-        <div
-          class="knownWords__word"
-          @click.stop="
-            currentSelectedWord =
-              currentSelectedWord?._id == item._id ? {} : item
-          "
-          v-for="(item, index) in wordsList"
-          :key="index"
-          :id="item._id"
-          :class="currentSelectedWord._id == item._id ? 'selected' : ''"
-        >
-          <div class="knownWords__info">
-            <p>{{ item.word }}</p>
-            <p>{{ item.translate }}</p>
-            <p>{{ item.transcription }}</p>
-          </div>
-          <p class="knownWords__description">
-            Description: {{ item.description }}
+        <div class="knownWords__lastInfoMobile">
+          <p>
+            Последнее повторение в обычном режиме:
+            {{ lastRepeat }}
           </p>
-          <div class="knownWords__examples" v-if="item.example?.length > 0">
-            <p>Examples:</p>
-            <p
-              v-for="(itemExample, indexExample) in item.example"
-              :key="indexExample"
-            >
-              {{ itemExample }}
-            </p>
-          </div>
-          <div class="knownWords__subInfo">
-            <p>
-              Последнее повторение в обычном режиме: {{ item.infoLastRepeat }}
-            </p>
-            <p>
-              Последнее повторение в обратном режиме:
-              {{ item.infoLastReverseRepeat }}
-            </p>
-            <p>
-              Количество обычных повторений:
-              {{ item.infoCountRepeat }}
-            </p>
-            <p>
-              Количество реверсивных повторений:
-              {{ item.infoCountReverseRepeat }}
-            </p>
-            <p>
-              Количество ошибок, допущенных в слове: {{ item.wrongs }}
-              {{ caseOfCount(item.wrongs) }}
-            </p>
-          </div>
+          <p>
+            Последнее повторение в обратном режиме:
+            {{ lastReverseRepeat }}
+          </p>
         </div>
+        <word-card
+          :wordsList="wordsList"
+          :currentMultiSelectedWords="currentMultiSelectedWords"
+          @changeCurrentSelectedWord="
+            (payload) => (currentSelectedWord = payload)
+          "
+          @changeMultiSelected="
+            (payload) => (currentMultiSelectedWords = payload)
+          "
+          @delete="
+            (payload) => {
+              currentSelectedWordID = payload;
+              deleteWord();
+            }
+          "
+        />
       </div>
-      <div class="knownWords__startLearn">
+      <div class="knownWords__startLearn" ref="fixedItems">
+        <img
+          src="@/assets/cancel.png"
+          alt=""
+          class="knownWords__cancelMobile"
+          v-if="currentMultiSelectedWords.length > 0"
+          @click="this.currentMultiSelectedWords = []"
+        />
         <button
           class="knownWords__startButton normal"
           :class="[
@@ -110,6 +95,7 @@
             userInfo?.knownWords.length == 0 ? 'disabled' : '',
           ]"
           :disabled="userInfo?.knownWords.length == 0 ? true : false"
+          v-if="isButtonRepeatVisible"
           @click="startLearn('known')"
         >
           Обычный режим
@@ -122,10 +108,18 @@
             userInfo?.knownWords.length == 0 ? 'disabled' : '',
           ]"
           :disabled="userInfo?.knownWords.length == 0 ? true : false"
+          v-if="isButtonRepeatVisible"
           @click="startLearn('reKnown')"
         >
           Обратный режим
         </button>
+        <img
+          src="@/assets/delete.png"
+          alt=""
+          v-if="currentMultiSelectedWords.length > 0"
+          class="knownWords__deleteMobile"
+          @click="deleteWord"
+        />
       </div>
     </div>
   </div>
@@ -138,6 +132,7 @@ import searchPanel from "../components/searchPanel.vue";
 import infoPopup from "../components/infoPopup";
 import confirmPopup from "../components/confirmPopup";
 import loadingPopup from "../components/loadingPopup.vue";
+import wordCard from "../components/wordCard";
 import { nextTick } from "@vue/runtime-core";
 export default {
   components: {
@@ -147,6 +142,7 @@ export default {
     infoPopup,
     confirmPopup,
     loadingPopup,
+    wordCard,
   },
   data() {
     return {
@@ -175,8 +171,20 @@ export default {
       },
       learnCardVisible: false,
       isLoading: false,
-      currentSelectedWord: {},
+      currentSelectedWord: "",
+      currentMultiSelectedWords: [],
+      topFixedItems: 0,
     };
+  },
+  mounted() {
+    let fixedItems = this.$refs.fixedItems;
+    let { top } = this.getCoords(fixedItems);
+    this.topFixedItems = top;
+
+    window.addEventListener("scroll", this.toggleFixedMobileItems);
+  },
+  beforeUnmount() {
+    window.removeEventListener("scroll", this.toggleFixedMobileItems);
   },
   computed: {
     userInfo() {
@@ -236,10 +244,10 @@ export default {
         let infoCountRepeat = item.historyOfRepeat.length;
         let infoCountReverseRepeat = item.historyOfReverseRepeat.length;
 
-        let example = [];
+        let infoExample = [];
         for (let itemExample of item.example) {
           if (itemExample == "") continue;
-          example.push(itemExample);
+          infoExample.push(itemExample);
         }
 
         return {
@@ -248,16 +256,18 @@ export default {
           translate: item.translate,
           transcription: item.transcription,
           description: item.description,
-          example,
+          example: item.example,
           wrongs: item.wrongs,
           irregularVerb: item.irregularVerb,
           lastRepeat: item.lastRepeat,
           lastReverseRepeat: item.lastReverseRepeat,
           dateOfKnown: this.dateFormatter(item.dateOfKnown),
+          infoExample,
           infoLastRepeat,
           infoLastReverseRepeat,
           infoCountRepeat,
           infoCountReverseRepeat,
+          infoMultiSelect: true,
         };
       });
 
@@ -292,8 +302,41 @@ export default {
       }
       return "green";
     },
+    isButtonRepeatVisible() {
+      if (
+        this.currentMultiSelectedWords.length == 0 ||
+        window.innerWidth > 1023
+      )
+        return true;
+      return false;
+    },
   },
   methods: {
+    toggleFixedMobileItems() {
+      if (window.innerWidth > 1023) return;
+
+      let fixedItems = this.$refs.fixedItems;
+      let objectTop = this.topFixedItems;
+      const headerHeight = 65;
+      const pageTop = window.scrollY + headerHeight;
+      if (objectTop > pageTop && fixedItems.classList.contains("_fixed")) {
+        fixedItems.classList.remove("_fixed");
+      } else if (
+        objectTop <= pageTop &&
+        !fixedItems.classList.contains("_fixed")
+      ) {
+        fixedItems.classList.add("_fixed");
+      }
+    },
+    getCoords(elem) {
+      let box = elem.getBoundingClientRect();
+      return {
+        top: box.top + scrollY,
+        left: box.left + scrollX,
+        right: box.right + scrollX,
+        bottom: box.bottom + scrollY,
+      };
+    },
     caseOfCount(wrongs) {
       if (wrongs == 2 || wrongs == 3 || wrongs == 4) return "раза";
       return "раз";
@@ -413,21 +456,31 @@ export default {
     },
     async deleteWord() {
       try {
-        if (Object.keys(this.currentSelectedWord)?.length == 0) return;
-        let id = this.currentSelectedWord?._id;
+        let id;
+        if (this.currentSelectedWord == "") {
+          id = this.currentMultiSelectedWords;
+          let confirm = await this.showConfirm(
+            "Удаление слова",
+            "Вы уверены, что хотите удалить выбранные слова?"
+          );
+          if (!confirm) return;
+        } else {
+          id = [this.currentSelectedWord];
 
-        let confirm = await this.showConfirm(
-          "Удаление слова",
-          "Вы уверены, что хотите удалить выбранное слово?"
-        );
-        if (!confirm) return;
+          let confirm = await this.showConfirm(
+            "Удаление слова",
+            "Вы уверены, что хотите удалить выбранное слово?"
+          );
+          if (!confirm) return;
+        }
+        this.currentMultiSelectedWords = [];
 
         if (this.isLoading == true) return;
         this.isLoading = true;
 
         let res = this.$store.getters.getAuth
-          ? await this.$api.words.deleteWord(id)
-          : this.$api.offline.deleteWord(id);
+          ? await this.$api.words.multipleDeleteWord({ id })
+          : this.$api.offline.multipleDeleteWord({ id });
 
         this.isLoading = false;
         if (this.$store.getters.getAuth) {

@@ -9,27 +9,88 @@
     padding: 0 rem(20);
     margin: 0 auto;
 
+    @media (max-width: 1023px) {
+        position: fixed;
+        background-color: white;
+        bottom: 0;
+        z-index: 3;
+        padding: 0;
+    }
+
     &__container {
         @extend %variable-maxWidth;
-        margin: 0px auto;
         padding: rem(20) rem(20);
         display: flex;
+
+        @media (max-width: 1023px) {
+            padding: 10px 0;
+        }
+
+
     }
 
     &__button {
+        display: flex;
+        flex-direction: column;
         font-size: rem(18);
         padding: rem(10) rem(15);
         background-color: #e7fcf5;
         border: 1px solid #7dfad0;
         font-family: Antique;
+
+        &>p {
+            margin: auto;
+        }
+
+        @media (min-width: 480px) and (max-width: 1023px) {
+            background-color: transparent;
+            border: 0;
+            font-size: rem(16);
+            padding: 0;
+            width: 100%;
+        }
+
+        @media (max-width: 479px) {
+            font-size: rem(14);
+            background-color: transparent;
+            border: 0;
+            padding: 0;
+            width: 100%;
+        }
+    }
+
+    &__linkIcon {
+        display: none;
+        width: 30px;
+        height: 30px;
+        margin: auto;
+
+        @media (min-width: 480px) and (max-width: 1023px) {
+            display: block;
+        }
+
+        @media (max-width: 479px) {
+            display: block;
+            width: 24px;
+            height: 24px;
+        }
     }
 
     &__linkContainer {
         margin: rem(20) auto 0 auto;
 
-        & p {
+        @media (max-width: 1023px) {
+            margin: 0 auto;
+            width: 100%;
+
+            &>p {
+                display: none;
+            }
+        }
+
+        &>p {
+            padding-top: 10px;
             text-align: center;
-            padding-top: rem(15);
             font-size: rem(16);
         }
     }
@@ -37,6 +98,15 @@
 
 .learnPlace {
     width: 100%;
+    position: relative;
+
+    @media (min-width: 480px) and (max-width: 1023px) {
+        padding-bottom: 66px;
+    }
+
+    @media (max-width: 479px) {
+        padding-bottom: 58px;
+    }
 
 
     &__container {
@@ -44,5 +114,7 @@
         margin: 0px auto;
         padding: rem(20) rem(20);
         display: flex;
+
+
     }
 }

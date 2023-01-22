@@ -18,6 +18,9 @@ export default function (instance, instanceToken) {
     deleteWord(data) {
       return instanceToken.delete(`/words/word/${data}`);
     },
+    multipleDeleteWord(data) {
+      return instanceToken.post("/words/delete-words", data);
+    },
     startLearnCategory(data) {
       return instanceToken.post("/words/startLearnCategory", data);
     },

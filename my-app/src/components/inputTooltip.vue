@@ -3,13 +3,9 @@
     <input
       type="text"
       class="inputTooltip__input"
-      :class="[
-        errors?.[field] ? '_error' : '',
-        focusInput == true ? '_focus' : '',
-      ]"
+      :class="[error ? '_error' : '', focusInput == true ? '_focus' : '']"
       :style="`font-size: ${fontSize}px`"
       :placeholder="placeholder"
-      :name="field"
       autocomplete="off"
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
@@ -20,13 +16,9 @@
     <textarea
       type="text"
       class="inputTooltip__input textarea"
-      :class="[
-        errors?.[field] ? '_error' : '',
-        focusInput == true ? '_focus' : '',
-      ]"
+      :class="[error ? '_error' : '', focusInput == true ? '_focus' : '']"
       :style="`font-size: ${fontSize}px;`"
       :placeholder="placeholder"
-      :name="field"
       :maxlength="maxLength"
       autocomplete="off"
       :value="modelValue"
@@ -38,8 +30,8 @@
     <div
       class="inputTooltip__tooltip"
       :class="tooltip == 'top' ? 'top' : ''"
-      v-if="errors?.[field] && focusInput == true"
-      :tooltip="errors?.[field]"
+      v-if="error && focusInput == true"
+      :tooltip="error"
     ></div>
   </div>
 </template>
@@ -49,8 +41,7 @@ export default {
   emits: ["update:modelValue"],
   props: {
     modelValue: String,
-    field: String,
-    errors: Object,
+    error: String,
     placeholder: String,
     fontSize: String,
     type: String,
@@ -103,7 +94,7 @@ export default {
   background: rgba(0, 0, 0, 0.7);
   text-align: center;
   color: white;
-  font-size: 1.2vw;
+  font-size: 16px;
   min-width: 250px;
   border-radius: 5px;
   pointer-events: none;
@@ -137,5 +128,18 @@ export default {
 }
 .inputTooltip__tooltip.top::before {
   transform: translatey(-50%) rotate(0deg);
+}
+@media (max-width: 767px) {
+  .inputTooltip__tooltip {
+    left: 50%;
+    top: -10%;
+  }
+  .inputTooltip__tooltip::after {
+    transform: translateX(-50%) translateY(-100%);
+  }
+
+  .inputTooltip__tooltip::before {
+    transform: translatey(-50%) rotate(0deg);
+  }
 }
 </style>

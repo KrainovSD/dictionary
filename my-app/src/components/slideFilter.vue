@@ -13,20 +13,6 @@
       v-if="filterVisible == true"
     >
       {{ filterTitle }}
-      <div class="slideFilter__subFilter _close" ref="subFilter">
-        <p
-          class="slideFilter__subFilterItem"
-          v-for="(item, index) in filterList"
-          :key="index"
-          :id="index"
-          @click="
-            filter = index;
-            showSubFilter();
-          "
-        >
-          {{ item }}
-        </p>
-      </div>
     </div>
     <img
       src="@/assets/arrowDown.png"
@@ -37,6 +23,21 @@
       id="arrow"
       ref="arrow"
     />
+    <div class="slideFilter__subFilter _close" ref="subFilter">
+      <p
+        class="slideFilter__subFilterItem"
+        v-for="(item, index) in filterList"
+        :class="filter == index ? '_selected' : ''"
+        :key="index"
+        :id="index"
+        @click="
+          filter = index;
+          showSubFilter();
+        "
+      >
+        {{ item }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -60,6 +61,7 @@ export default {
     let filter = this.$refs.filter;
     let icon = this.$refs.icon;
     icon.style.width = `${filter.clientHeight}px`;
+    this.showFilter();
   },
   methods: {
     showFilter() {
@@ -116,6 +118,7 @@ export default {
   border: 1px solid black;
   transition: all 0.3s ease;
   padding: 8px;
+  position: relative;
 }
 .slideFilter._close {
   width: 0;
@@ -141,16 +144,20 @@ export default {
   font-size: 16px;
   padding: 0 8px;
   margin: auto 0;
+  max-height: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .slideFilter__subFilter {
   position: absolute;
-  right: 0;
-  z-index: 3;
+  top: 105%;
+  z-index: 2;
+  left: 0;
   background-color: #fff;
   border-radius: 0.4rem;
   box-shadow: 0 0.1rem 2rem #04061c1a;
   padding: 15px 0;
-  margin-top: 20px;
   width: 300px;
   transition: all 0.3s ease;
   overflow: hidden;
@@ -168,6 +175,10 @@ export default {
 }
 .slideFilter__subFilterItem:hover {
   background-color: #f5f5f6;
+}
+.slideFilter__subFilterItem._selected {
+  color: rgb(6, 175, 6);
+  font-weight: 900;
 }
 .slideFilter__arrow {
   width: 16px;

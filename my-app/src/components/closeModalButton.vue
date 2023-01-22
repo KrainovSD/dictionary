@@ -25,8 +25,8 @@ export default {
 
 <style>
 .closeButton {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   transition: all 0.2s ease;
   cursor: pointer;
 }

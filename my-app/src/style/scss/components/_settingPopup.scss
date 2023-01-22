@@ -10,8 +10,12 @@
     display: flex;
     flex-direction: column;
     width: rem(570);
-
     padding: 0 0 rem(20) rem(20);
+
+    @media (max-width: 767px) {
+        width: 100vw;
+        padding: 0 rem(10) rem(20) rem(10);
+    }
 
     &__avatarContainer {
 
@@ -47,6 +51,12 @@
         display: flex;
         margin-top: rem(10);
         align-items: center;
+
+        @media (max-width: 767px) {
+            flex-direction: column;
+            align-items: flex-start;
+            width: calc(100vw - 20px);
+        }
     }
 
     &__userDataHeader {
@@ -66,11 +76,17 @@
 
     &__regularityData {
         padding-top: rem(10);
+        flex-wrap: wrap;
         display: flex;
+
+        @media (max-width: 767px) {
+            width: 250px;
+        }
     }
 
     &__multipleInputContainer {
-        width: rem(40)
+        width: rem(40);
+        margin-bottom: 8px;
     }
 
     &__regularityItem {
@@ -99,8 +115,23 @@
 
     }
 
+    &__regularityButtonContainer {
+        position: absolute;
+        right: 0;
+
+        @media (max-width: 767px) {
+            position: relative;
+            margin: 10px 0 10px 0;
+        }
+    }
+
     &__backup {
         display: flex;
+
+        @media (max-width: 767px) {
+            flex-direction: column;
+            width: 112px;
+        }
     }
 
     &__backupButton {
@@ -129,10 +160,18 @@
         &.export {
             margin: 0 auto 0 0;
 
+            @media (max-width: 767px) {
+                margin: 0;
+            }
+
         }
 
         &.import {
             margin: 0 rem(5) 0 auto;
+
+            @media (max-width: 767px) {
+                margin: 0;
+            }
         }
     }
 }

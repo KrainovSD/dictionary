@@ -8,7 +8,8 @@
   <info-popup ref="info" />
   <confirm-popup ref="confirm" />
 
-  <div class="modal__backDrop" ref="backDrop">
+  <div class="modal__backDrop" ref="backDrop"></div>
+  <div class="modal__container">
     <div class="setting">
       <close-modal-button @click="closePopup" class="sign__closeButton" />
       <h1 class="sign__header">Пользовательские настройки</h1>
@@ -98,13 +99,47 @@
         <!-- REGULARITY TO REPEAT -->
         <div
           class="setting__container"
-          style="flex-direction: column; align-items: flex-start"
+          style="
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+          "
         >
           <div class="setting__regularityInfo">
             <p class="setting__userDataTittle" style="width: 345px">
               Регулярность повторения слова попавшее на повторение:
               {{ stringRegularityToRepeat }}
             </p>
+          </div>
+          <div
+            class="setting__regularityData"
+            v-if="regularityToRepeatChange == true"
+          >
+            <template v-for="(item, index) in regularityToRepeat" :key="index">
+              <div class="setting__multipleInputContainer">
+                <multiple-input-tooltip
+                  v-model="regularityToRepeat[index]"
+                  field="regularityToRepeat"
+                  fontSize="16"
+                  :index="index"
+                  :errors="errors"
+                  @onEnter="
+                    checkField({
+                      field: 'regularityToRepeat',
+                      fieldData: regularityToRepeat,
+                    })
+                  "
+                  @onEsc="
+                    regularityToRepeatChange = false;
+                    clearField('regularityToRepeat');
+                  "
+                />
+              </div>
+
+              <p class="setting__regularDash" v-if="index != 7">-</p>
+            </template>
+          </div>
+          <div class="setting__regularityButtonContainer">
             <button
               class="setting__userDataReplace _change"
               v-if="regularityToRepeatChange == false"
@@ -134,34 +169,6 @@
             >
               Сохранить
             </button>
-          </div>
-          <div
-            class="setting__regularityData"
-            v-if="regularityToRepeatChange == true"
-          >
-            <template v-for="(item, index) in regularityToRepeat" :key="index">
-              <div class="setting__multipleInputContainer">
-                <multiple-input-tooltip
-                  v-model="regularityToRepeat[index]"
-                  field="regularityToRepeat"
-                  fontSize="16"
-                  :index="index"
-                  :errors="errors"
-                  @onEnter="
-                    checkField({
-                      field: 'regularityToRepeat',
-                      fieldData: regularityToRepeat,
-                    })
-                  "
-                  @onEsc="
-                    regularityToRepeatChange = false;
-                    clearField('regularityToRepeat');
-                  "
-                />
-              </div>
-
-              <p class="setting__regularDash" v-if="index != 7">-</p>
-            </template>
           </div>
         </div>
       </div>

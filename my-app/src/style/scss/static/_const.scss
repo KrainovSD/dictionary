@@ -1,27 +1,32 @@
 $maxWidthPC: 1240px;
-$maxWidthNoteBook: 1024px;
-$maxWidthTablet: 768px;
-$maxWidthPhone: 480px;
-$maxWidthSPhone: 320px;
+$maxWidthNoteBook: 1199px;
+$maxWidthTablet: 1023px;
+$maxWidthPhone: 767px;
+$maxWidthSPhone: 479px;
 
 %variable-maxWidth {
     @media (min-width: 1200px) {
-        width: $maxWidthPC;
+        max-width: $maxWidthPC;
+        width: 100%;
     }
 
     @media (min-width: 1024px) and (max-width: 1199px) {
-        width: $maxWidthNoteBook;
+        max-width: $maxWidthNoteBook;
+        width: 100%;
     }
 
     @media (min-width: 768px) and (max-width: 1023px) {
-        width: $maxWidthTablet;
+        max-width: $maxWidthTablet;
+        width: 100%;
     }
 
     @media (min-width: 480px) and (max-width: 767px) {
-        width: $maxWidthPhone;
+        max-width: $maxWidthPhone;
+        width: 100%;
     }
 
     @media (max-width: 479px) {
-        width: $maxWidthSPhone;
+        max-width: $maxWidthSPhone;
+        width: 100%;
     }
 }
