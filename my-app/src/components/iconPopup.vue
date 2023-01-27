@@ -144,6 +144,8 @@ export default {
   display: flex;
   flex-direction: column;
   width: 400px;
+  max-height: 90vh;
+  overflow: auto;
 }
 .iconPopup__container {
   padding: 20px;

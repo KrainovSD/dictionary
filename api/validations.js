@@ -318,6 +318,7 @@ const userInfoValidation = [
         options: value.options,
         signature: value.signature,
       };
+      if (value.nickName) userInfo.nickName = value.nickName;
       return userInfo;
     })
     .custom((value) => {
@@ -584,13 +585,10 @@ function checkWordsToStudy(words) {
     '_id',
   ];
   for (let word of studyWords) {
-    console.log(word);
-    console.log('___');
     if (typeof word != 'object') return false;
     if (Array.isArray(word)) return false;
     if (Object.keys(word).length != 9) return false;
     for (let field in word) {
-      console.log(field);
       if (!studyFields.includes(field)) return false;
       let fieldData = word[field];
       switch (field) {
@@ -980,7 +978,11 @@ function checkOptions(options) {
 function checkSignature(signatures) {
   if (typeof signatures != 'object') return false;
   if (Array.isArray(signatures)) return false;
-  if (Object.keys(signatures).length != 8) return false;
+  if (
+    Object.keys(signatures).length != 8 &&
+    Object.keys(signatures).length != 9
+  )
+    return false;
   let signatureFields = [
     'knownWords',
     'categoriesToLearn',
@@ -990,6 +992,7 @@ function checkSignature(signatures) {
     'statistics',
     'options',
     'data',
+    'nickName',
   ];
   for (let field in signatures) {
     if (!signatureFields.includes(field)) return false;

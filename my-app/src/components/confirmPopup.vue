@@ -102,6 +102,8 @@ export default {
   min-width: 30%;
   max-width: 60%;
   padding: 20px;
+  max-height: 90vh;
+  overflow: auto;
 }
 @media (max-width: 1023px) {
   .confirmPopup {

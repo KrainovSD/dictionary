@@ -75,32 +75,50 @@
           </div>
           <div class="word__subInfo">
             <p><b>Info:</b></p>
-            <p v-if="item?.infoLastRepeat">
+            <p v-if="item.infoLastRepeat || item.infoLastRepeat === 0">
               Последнее повторение в обычном режиме: {{ item.infoLastRepeat }}
             </p>
-            <p v-if="item?.infoLastReverseRepeat">
+            <p
+              v-if="
+                item.infoLastReverseRepeat || item.infoLastReverseRepeat === 0
+              "
+            >
               Последнее повторение в обратном режиме:
               {{ item.infoLastReverseRepeat }}
             </p>
-            <p v-if="item?.infoCountRepeat">
+            <p v-if="item.infoCountRepeat || item.infoCountOfRepeat === 0">
               Количество обычных повторений:
               {{ item.infoCountRepeat }}
             </p>
-            <p v-if="item?.infoCountReverseRepeat">
+            <p
+              v-if="
+                item.infoCountReverseRepeat ||
+                item.infoCountOfReverseRepeat === 0
+              "
+            >
               Количество реверсивных повторений:
               {{ item.infoCountReverseRepeat }}
             </p>
 
-            <p v-if="item?.infoNextRepeat">
+            <p v-if="item.infoNextRepeat || item.infoNextRepeat === 0">
               Следующее обычное повторение: {{ item.infoNextRepeat }}
             </p>
-            <p v-if="item?.infoNextReverseRepeat">
+            <p
+              v-if="
+                item.infoNextReverseRepeat || item.infoNextReverseRepeat === 0
+              "
+            >
               Следующее реверсивное повторение: {{ item.infoNextReverseRepeat }}
             </p>
-            <p v-if="item?.infoCountOfRepeat">
+            <p v-if="item.infoCountOfRepeat || item.infoCountOfRepeat === 0">
               Осталось обычных повторений: {{ item.infoCountOfRepeat }}
             </p>
-            <p v-if="item?.infoCountOfReverseRepeat">
+            <p
+              v-if="
+                item.infoCountOfReverseRepeat ||
+                item.infoCountOfReverseRepeat === 0
+              "
+            >
               Осталось реверсивных повторений:
               {{ item.infoCountOfReverseRepeat }}
             </p>
@@ -154,24 +172,25 @@ export default {
     },
     wordColor(item) {
       if (
-        !item?.dateOfCreation ||
-        !item?.nextRepeat ||
-        !item?.nextReverseRepeat
+        (!item.dateOfCreation && item.dateOfCreation !== 0) ||
+        (!item.nextRepeat && item.nextRepeat !== 0) ||
+        (!item.nextReverseRepeat && item.nextReverseRepeat !== 0)
       )
         return "";
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-      let dateOfCreation = Math.floor(
-        item.dateOfCreation / (1000 * 60 * 60 * 24)
+      let now = this.$api.offline.getDayFromMillisecond(Date.now());
+      let dateOfCreation = this.$api.offline.getDayFromMillisecond(
+        item.dateOfCreation
       );
-      let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
-      let nextReverseRepeat = Math.floor(
-        item.nextReverseRepeat / (1000 * 60 * 60 * 24)
+      let nextRepeat = this.$api.offline.getDayFromMillisecond(item.nextRepeat);
+      let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+        item.nextReverseRepeat
       );
-      if (nextRepeat == now || nextReverseRepeat == now) return "yellow";
+
       if (nextRepeat < now || nextReverseRepeat < now) {
         if (now - dateOfCreation <= 1) return "yellow";
         return "red";
       }
+      if (nextRepeat == now || nextReverseRepeat == now) return "yellow";
 
       return "";
     },

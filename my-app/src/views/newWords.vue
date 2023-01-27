@@ -182,11 +182,11 @@
                   Осталось реверсивных повторений:
                   {{ 13 - item.countOfReverseRepeat }}
                 </p>
-                <p>
+                <p v-if="item.infoNextRepeat">
                   Следующее обычное повторение:
                   {{ item.infoNextRepeat }}
                 </p>
-                <p>
+                <p v-if="item.infoNextReverseRepeat">
                   Следующее реверсивное повторение:
                   {{ item.infoNextReverseRepeat }}
                 </p>
@@ -280,7 +280,6 @@
         @click="
           closeWordsListMobile();
           this.currentSelectedCategory = {};
-          this.search = '';
         "
       />
       <img
@@ -298,7 +297,10 @@
         src="@/assets/pointMenu.png"
         alt=""
         class="newWords__CRUDmobile"
-        v-if="currentMultiSelectedWords.length == 0"
+        v-if="
+          currentMultiSelectedWords.length == 0 &&
+          Object.keys(currentSelectedCategory).length > 0
+        "
         @click="this.$refs.CRUD.classList.toggle('_active')"
       />
       <img
@@ -457,34 +459,56 @@ export default {
       return userInfo;
     },
     categoriesList() {
-      let categories = this?.userInfo?.categoriesToLearn;
-      categories = categories.filter((item) => item?.offline != "delete");
+      let categories = [
+        ...this.userInfo?.categoriesToLearn.filter(
+          (item) => item.offline != "delete"
+        ),
+      ];
       categories = categories.sort((a, b) => {
         if (a.name < b.name) return -1;
         if (a.name > b.name) return 1;
         return 0;
       });
-      for (let category of categories) {
+      categories = categories.map((category) => {
         let infoNextRepeat =
           category.nextRepeat == 0
             ? "Сегодня"
-            : Math.floor(category.nextRepeat / (1000 * 60 * 60 * 24)) -
-                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+            : this.$api.offline.getDayFromMillisecond(category.nextRepeat) -
+                this.$api.offline.getDayFromMillisecond(Date.now()) >
               100
             ? "Никогда"
-            : this.dateFormatter(category.nextRepeat);
+            : this.$api.offline.formatDate(category.nextRepeat);
         let infoNextReverseRepeat =
           category.nextReverseRepeat == 0
             ? "Сегодня"
-            : Math.floor(category.nextReverseRepeat / (1000 * 60 * 60 * 24)) -
-                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+            : this.$api.offline.getDayFromMillisecond(
+                category.nextReverseRepeat
+              ) -
+                this.$api.offline.getDayFromMillisecond(Date.now()) >
               50
             ? "Никогда"
-            : this.dateFormatter(category.nextReverseRepeat);
+            : this.$api.offline.formatDate(category.nextReverseRepeat);
 
-        category.infoNextRepeat = infoNextRepeat;
-        category.infoNextReverseRepeat = infoNextReverseRepeat;
-      }
+        return {
+          _id: category._id,
+          name: category.name,
+          regularityToRepeat: category.regularityToRepeat,
+          icon: category.icon,
+          lastRepeat: category.lastRepeat,
+          lastReverseRepeat: category.lastReverseRepeat,
+          nextRepeat: category.nextRepeat,
+          nextReverseRepeat: category.nextReverseRepeat,
+          historyOfRepeat: category.historyOfRepeat,
+          historyOfReverseRepeat: category.historyOfReverseRepeat,
+          countOfRepeat: category.countOfRepeat,
+          countOfReverseRepeat: category.countOfReverseRepeat,
+          startLearn: category.startLearn,
+          dateOfStartLearn: category.dateOfStartLearn,
+          infoNextRepeat,
+          infoNextReverseRepeat,
+        };
+      });
+
       return categories;
     },
     selectedCategory() {
@@ -522,10 +546,10 @@ export default {
         (item) => item.offline != "delete" && item.startLearn == true
       );
       let readyCategories = [];
-      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = this.$api.offline.getDayFromMillisecond(Date.now());
       for (let category of categories) {
-        let nextRepeat = Math.floor(
-          category.nextRepeat / (1000 * 60 * 60 * 24)
+        let nextRepeat = this.$api.offline.getDayFromMillisecond(
+          category.nextRepeat
         );
 
         if (nextRepeat == now || nextRepeat < now)
@@ -539,10 +563,10 @@ export default {
         (item) => item.offline != "delete" && item.startLearn == true
       );
       let readyCategories = [];
-      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = this.$api.offline.getDayFromMillisecond(Date.now());
       for (let category of categories) {
-        let nextReverseRepeat = Math.floor(
-          category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+          category.nextReverseRepeat
         );
 
         if (nextReverseRepeat == now || nextReverseRepeat < now)
@@ -642,7 +666,7 @@ export default {
     },
 
     standartModeButtonColor() {
-      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = this.$api.offline.getDayFromMillisecond(Date.now());
       if (Object.keys(this.currentSelectedCategory)?.length == 0) {
         let categories = this.userInfo.categoriesToLearn.filter(
           (item) => item.offline != "delete" && item.startLearn == true
@@ -650,12 +674,13 @@ export default {
         let red = false;
         let yellow = false;
         for (let category of categories) {
-          let nextRepeat = Math.floor(
-            category.nextRepeat / (1000 * 60 * 60 * 24)
+          let nextRepeat = this.$api.offline.getDayFromMillisecond(
+            category.nextRepeat
           );
-          let dateOfStartLearn = Math.floor(
-            category.dateOfStartLearn / (1000 * 60 * 60 * 24)
+          let dateOfStartLearn = this.$api.offline.getDayFromMillisecond(
+            category.dateOfStartLearn
           );
+
           if (nextRepeat == now) yellow = true;
           if (nextRepeat < now) {
             if (now - dateOfStartLearn <= 1) yellow = true;
@@ -675,13 +700,11 @@ export default {
       if (index == -1) {
         return "";
       }
-      let nextRepeat = Math.floor(
-        this.userInfo.categoriesToLearn[index]?.nextRepeat /
-          (1000 * 60 * 60 * 24)
+      let nextRepeat = this.$api.offline.getDayFromMillisecond(
+        this.userInfo.categoriesToLearn[index]?.nextRepeat
       );
-      let dateOfStartLearn = Math.floor(
-        this.userInfo.categoriesToLearn[index]?.dateOfStartLearn /
-          (1000 * 60 * 60 * 24)
+      let dateOfStartLearn = this.$api.offline.getDayFromMillisecond(
+        this.userInfo.categoriesToLearn[index]?.dateOfStartLearn
       );
 
       if (nextRepeat == now) return "yellow";
@@ -692,7 +715,8 @@ export default {
       return "green";
     },
     reverseModeButtonColor() {
-      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = this.$api.offline.getDayFromMillisecond(Date.now());
+
       if (Object.keys(this.currentSelectedCategory)?.length == 0) {
         let categories = this.userInfo.categoriesToLearn.filter(
           (item) => item.offline != "delete" && item.startLearn == true
@@ -700,11 +724,11 @@ export default {
         let red = false;
         let yellow = false;
         for (let category of categories) {
-          let nextReverseRepeat = Math.floor(
-            category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+          let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+            category.nextReverseRepeat
           );
-          let dateOfStartLearn = Math.floor(
-            category.dateOfStartLearn / (1000 * 60 * 60 * 24)
+          let dateOfStartLearn = this.$api.offline.getDayFromMillisecond(
+            category.dateOfStartLearn
           );
 
           if (nextReverseRepeat == now) yellow = true;
@@ -723,13 +747,11 @@ export default {
       if (index == -1) {
         return "";
       }
-      let nextReverseRepeat = Math.floor(
-        this.userInfo.categoriesToLearn[index]?.nextReverseRepeat /
-          (1000 * 60 * 60 * 24)
+      let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+        this.userInfo.categoriesToLearn[index]?.nextReverseRepeat
       );
-      let dateOfStartLearn = Math.floor(
-        this.userInfo.categoriesToLearn[index]?.dateOfStartLearn /
-          (1000 * 60 * 60 * 24)
+      let dateOfStartLearn = this.$api.offline.getDayFromMillisecond(
+        this.userInfo.categoriesToLearn[index]?.dateOfStartLearn
       );
 
       if (nextReverseRepeat == now) return "yellow";
@@ -776,6 +798,7 @@ export default {
     closeWordsListMobile() {
       this.$refs.workPlace.classList.remove("_openWordList");
       this.$refs.CRUD.classList.remove("_active");
+      this.search = "";
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
     getCoords(elem) {
@@ -812,23 +835,6 @@ export default {
         categoryInfoMobile.classList.add("_fixed");
       }
     },
-    dateFormatter(date) {
-      date = new Date(date);
-      let minute = date.getMinutes();
-      let hour = date.getHours();
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
-
-      if (minute >= 0 && minute < 10) {
-        minute = `0${minute}`;
-      }
-      if (hour >= 0 && hour < 10) {
-        hour = `0${hour}`;
-      }
-
-      return `${day}-${month}-${year}`;
-    },
     categoryIcon(icon) {
       return require(`../assets/category/${icon}.png`);
     },
@@ -843,19 +849,23 @@ export default {
     },
     categoryColor(category) {
       if (!category.startLearn) return "gray";
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-      let dateOfStartLearn = Math.floor(
-        category.dateOfStartLearn / (1000 * 60 * 60 * 24)
+      let now = this.$api.offline.getDayFromMillisecond(Date.now());
+      let dateOfStartLearn = this.$api.offline.getDayFromMillisecond(
+        category.dateOfStartLearn
       );
-      let nextRepeat = Math.floor(category.nextRepeat / (1000 * 60 * 60 * 24));
-      let nextReverseRepeat = Math.floor(
-        category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+      let nextRepeat = this.$api.offline.getDayFromMillisecond(
+        category.nextRepeat
       );
-      if (nextRepeat == now || nextReverseRepeat == now) return "yellow";
+      let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+        category.nextReverseRepeat
+      );
+
       if (nextRepeat < now || nextReverseRepeat < now) {
         if (now - dateOfStartLearn <= 1) return "yellow";
         return "red";
       }
+      if (nextRepeat == now || nextReverseRepeat == now) return "yellow";
+
       return "green";
     },
     isSelectedCategory(id) {
@@ -922,6 +932,7 @@ export default {
         let message = res?.data?.message || res?.message;
         await this.showInfo("Изменения статуса категории", message);
         this.currentSelectedCategory = {};
+        this.closeWordsListMobile();
       } catch (err) {
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
@@ -1025,10 +1036,11 @@ export default {
         (item) => item.offline != "delete" && item.startLearn == true
       );
       let readyCategories = [];
-      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = this.$api.offline.getDayFromMillisecond(Date.now());
+
       for (let category of categories) {
-        let nextRepeat = Math.floor(
-          category.nextRepeat / (1000 * 60 * 60 * 24)
+        let nextRepeat = this.$api.offline.getDayFromMillisecond(
+          category.nextRepeat
         );
 
         if (nextRepeat == now || nextRepeat < now)
@@ -1043,10 +1055,10 @@ export default {
         (item) => item.offline != "delete" && item.startLearn == true
       );
       let readyCategories = [];
-      const now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const now = this.$api.offline.getDayFromMillisecond(Date.now());
       for (let category of categories) {
-        let nextReverseRepeat = Math.floor(
-          category.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+          category.nextReverseRepeat
         );
 
         if (nextReverseRepeat == now || nextReverseRepeat < now)
@@ -1067,6 +1079,33 @@ export default {
         : categoryID.push(...allCategoriesToRepeat);
       if (categoryID.length == 0) return;
 
+      const now = this.$api.offline.getDayFromMillisecond(Date.now());
+      let isPlannedLearn = false;
+      if (type == "learn") {
+        let categoriesToPlannedLearn = this.userInfo.categoriesToLearn.filter(
+          (item) => {
+            if (!categoryID.includes(item._id)) return false;
+            let nextRepeat = this.$api.offline.getDayFromMillisecond(
+              item.nextRepeat
+            );
+
+            if (nextRepeat <= now) return true;
+          }
+        );
+        if (categoriesToPlannedLearn.length > 0) isPlannedLearn = true;
+      } else {
+        let categoriesToPlannedLearn = this.userInfo.categoriesToLearn.filter(
+          (item) => {
+            if (!categoryID.includes(item._id)) return false;
+            let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+              item.nextReverseRepeat
+            );
+            if (nextReverseRepeat <= now) return true;
+          }
+        );
+        if (categoriesToPlannedLearn.length > 0) isPlannedLearn = true;
+      }
+
       let words = this.userInfo.wordsToStudy.filter(
         (item) =>
           categoryID.includes(item.category) && item?.offline != "delete"
@@ -1074,7 +1113,7 @@ export default {
       words = words.sort(() => Math.random() - 0.5);
       this.learnCardVisible = true;
       await nextTick();
-      this.$refs.learnCard.start(type, words, categoryID);
+      this.$refs.learnCard.start(type, words, categoryID, isPlannedLearn);
     },
   },
   watch: {
@@ -1087,6 +1126,7 @@ export default {
       );
       if (index == -1) {
         this.currentSelectedCategory = {};
+        this.closeWordsListMobile();
         return;
       }
       this.currentSelectedCategory = this.userInfo.categoriesToLearn[index];

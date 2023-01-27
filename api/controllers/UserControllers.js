@@ -104,7 +104,7 @@ export const register = async (req, res) => {
       //text: `Перейдите по ссылке, чтобы активировать аккаунт: http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}`,
       //html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}">Confirm</a> `,
       text: `Перейдите по ссылке, чтобы активировать аккаунт: http://192.168.0.103:8080/confirm/${user.confirmKey}`,
-      html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://192.168.0.103:8080//confirm/${user.confirmKey}">Confirm</a> `,
+      html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://192.168.0.103:8080/confirm/${user.confirmKey}">Confirm</a> `,
     };
     await transporter.sendMail(message);
 
@@ -138,15 +138,32 @@ export const login = async (req, res) => {
         'Аккаунт не подтвержден! Следуйте инструкции на почте!'
       );
 
-    let { refreshToken, accessToken } = getTokens(user._id);
+    let oldRefreshToken = user.refreshToken;
+    let newRefreshToken;
+    let newAccessToken;
+    try {
+      if (oldRefreshToken === '') throw new Error('');
+      let decoded = jwt.verify(oldRefreshToken, secretRefreshToken);
+      let { accessToken } = getTokens(user._id);
+      newRefreshToken = oldRefreshToken;
+      newAccessToken = accessToken;
+    } catch (err) {
+      let { refreshToken, accessToken } = getTokens(user._id);
+      newRefreshToken = refreshToken;
+      newAccessToken = accessToken;
+    }
+
+    let lastLogin = user.lastLogin;
+    if (lastLogin === 0) lastLogin = 1000;
+    else lastLogin = Date.now();
 
     let update = await User.updateOne(
       {
         nickName: user.nickName,
       },
       {
-        refreshToken: refreshToken,
-        lastLogin: Date.now(),
+        refreshToken: newRefreshToken,
+        lastLogin: lastLogin,
       },
       {
         upsert: false,
@@ -156,23 +173,25 @@ export const login = async (req, res) => {
 
     const timeExistCookies = getTimeExistCoockies();
     if (!PRODUCTION) {
-      res.cookie('refreshToken', refreshToken, {
+      res.cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
         expires: timeExistCookies,
         //sameSite: 'None', // DEV OPTIONS strict - if UI exist inside domain
         //secure: true, // DEV OPTIONS true - if app use https protocol
       });
     } else {
-      res.cookie('refreshToken', refreshToken, {
+      res.cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
         expires: timeExistCookies,
         sameSite: 'strict',
         secure: true,
       });
     }
-
+    user = await User.findOne({ nickName: nickName });
+    if (!user)
+      return sendResponseError(req, res, 'Неправильный логин или пароль!');
     let userData = getUserInfoFromDoc(user._doc);
-    return res.json({ user: userData, token: accessToken });
+    return res.json({ user: userData, token: newAccessToken });
   } catch (err) {
     req.err = err;
     return res.status(500).json({
@@ -234,11 +253,6 @@ export const updateAccessToken = async (req, res) => {
     if (!user)
       return sendResponseError(req, res, 'Требуется авторизация!', 401);
 
-    let update = await User.updateOne(
-      { refreshToken: refreshTokenFromCoockies },
-      { lastLogin: Date.now() },
-      { upsert: false }
-    );
     const { accessToken } = getTokens(user._id);
     let userData = getUserInfoFromDoc(user._doc);
     return res.json({
@@ -773,86 +787,25 @@ export const importUserData = async (req, res) => {
 export const syncInfo = async (req, res) => {
   try {
     let { userInfo } = req.body;
+
     if (!isCorrectSignatureSync(userInfo))
+      return sendResponseError(req, res, 'Данные повреждены!');
+
+    let user = await getUserInfo(req.userId, 'nickName lastLogin');
+    if (!user) return sendResponseError(req, res);
+    if (userInfo.nickName != user.nickName && user.lastLogin != 1000)
       return sendResponseError(req, res, 'Данные повреждены!');
 
     let fields = requireSyncFields(userInfo);
     if (Object.keys(fields).length == 0)
       return sendResponseError(req, res, 'Синхронизация не требуется!');
 
-    const wordFields = [
-      'knownWords',
-      'categoriesToLearn',
-      'wordsToStudy',
-      'wordsToRepeat',
-      'relevance',
-    ];
-    for (let field in fields) {
-      if (!wordFields.includes(field)) continue;
-      let itemsForAdd = []; // items
-      let itemsForUpdate = []; // [{elementID: 'id', changeFields: { name: 'name'}}, {}, {}]
-      let itemsForDelete = []; // elementsID
-      for (let item of fields[field]) {
-        if (item.offline == 'add') {
-          itemsForAdd.push(item);
-        } else if (item.offline == 'update') {
-          let elementID = item._id;
-          let changeFields = {};
-          for (let key in item) {
-            if (key == 'offline' || key == '_id') continue;
-            changeFields[key] = item[key];
-          }
-          itemsForUpdate.push({ elementID, changeFields });
-        } else if (item.offline == 'delete') {
-          itemsForDelete.push(item._id);
-        }
-      }
-      if (itemsForAdd.length > 0) {
-        let addItems = await multiPushNewElement(
-          field,
-          itemsForAdd,
-          req.userId
-        );
-        if (!addItems) return sendResponseError(req, res);
-      }
-      if (itemsForUpdate.length > 0) {
-        let updateItems = await multiSetElement(
-          field,
-          itemsForUpdate,
-          req.userId
-        );
-        if (!updateItems) return sendResponseError(req, res);
-      }
-      if (itemsForDelete.length > 0) {
-        let deleteItems = await multiPullElement(
-          field,
-          itemsForDelete,
-          req.userId
-        );
-        if (!deleteItems) return sendResponseError(req, res);
-      }
-      delete fields[field];
-    }
-    const infoFields = ['statistics', 'options'];
-    for (let field in fields) {
-      console.log(field);
-      if (!infoFields.includes(field)) continue;
-      let changeFields = {};
-      let item = fields[field][0];
-      for (let key in item) {
-        if (key == 'offline') continue;
-        changeFields[[`${field}.0.${key}`]] = item[key]; // [`statistics.0.bestStreak`] : res
-      }
-      console.log(changeFields);
-      let updateItem = await User.findOneAndUpdate(
-        { _id: req.userId },
-        { $set: changeFields },
-        { rawResult: true, new: true }
-      );
-      if (updateItem.ok == 0) return sendResponseError(req, res);
-    }
+    fields = fixAllIrregularVerbs(fields);
 
-    let user = await User.findOne({ _id: req.userId });
+    let result = await executeSync(fields, req.userId);
+    if (!result) return sendResponseError(req, res);
+
+    user = await User.findOne({ _id: req.userId });
     if (!user) return sendResponseError(req, res);
     user = getUserInfoFromDoc(user._doc);
     res.json({ message: 'Синхронизация выполнена успешно', user });
@@ -1091,6 +1044,7 @@ function isCorrectSignatureImport(userInfo) {
 }
 function isCorrectSignatureSync(userInfo) {
   let user = {
+    nickName: userInfo.nickName,
     knownWords: userInfo.knownWords,
     categoriesToLearn: userInfo.categoriesToLearn,
     wordsToStudy: userInfo.wordsToStudy,
@@ -1100,6 +1054,7 @@ function isCorrectSignatureSync(userInfo) {
     statistics: userInfo.statistics,
   };
   let info = {
+    nickName: JSON.stringify(userInfo.nickName).split(''),
     knownWords: JSON.stringify(userInfo.knownWords).split(''),
     categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(''),
     wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(''),
@@ -1144,15 +1099,613 @@ function requireSyncFields(userInfo) {
   }
   return fields;
 }
+function fixAllIrregularVerbs(fields) {
+  const neededFields = [
+    'knownWords',
+    'wordsToStudy',
+    'wordsToRepeat',
+    'relevance',
+  ];
+  for (let field in fields) {
+    if (!neededFields.includes(field)) continue;
+    for (let item of fields[field]) {
+      if (checkIrregularVerb(item.word)) {
+        let irregularVerbs = item.word.split('--');
+        irregularVerbs = irregularVerbs.map((item) =>
+          item.trim().toLowerCase()
+        );
+        item.word = irregularVerbs.join('--');
+      }
+      continue;
+    }
+  }
+
+  return fields;
+}
+/* Операция синхронизации */
+async function executeSync(newItems, userID) {
+  try {
+    const allowedFields = [
+      'knownWords',
+      'categoriesToLearn',
+      'wordsToRepeat',
+      'relevance',
+    ];
+
+    let res;
+    res = await validateSyncDataToDelete(newItems, userID);
+    if (!res) throw new Error('Валидация удаления');
+    res = await executeSyncOperationDelete(newItems, userID);
+    if (!res) throw new Error('Операция синхронизации: удаление');
+
+    for (let field in newItems) {
+      if (!allowedFields.includes(field)) continue;
+      res = await validateSyncDataToAdd(newItems, field, userID);
+      if (!res) throw new Error(`Валидация добавления поля ${field}`);
+      res = await executeSyncOperationAdd(newItems, field, userID);
+      if (!res)
+        throw new Error(`Операция синхронизации: добавление; поле: ${field}`);
+    }
+
+    for (let field in newItems) {
+      if (!allowedFields.includes(field)) continue;
+      res = await validateSyncDataToUpdate(newItems, field, userID);
+      if (!res) throw new Error(`Валидация обновления поля ${field}`);
+      res = await executeSyncOperationUpdate(newItems, field, userID);
+      if (!res)
+        throw new Error(`Операция синхронизации: обновления; поле: ${field}`);
+    }
+
+    if (newItems.wordsToStudy) {
+      res = await validateSyncDataToAdd(newItems, 'wordsToStudy', userID);
+      if (!res) throw new Error(`Валидация добавления поля wordsToStudy`);
+      res = await executeSyncOperationAdd(newItems, 'wordsToStudy', userID);
+      if (!res)
+        throw new Error(
+          `Операция синхронизации: добавление; поле: wordsToStudy`
+        );
+
+      res = await validateSyncDataToUpdate(newItems, 'wordsToStudy', userID);
+      if (!res) throw new Error(`Валидация обновления поля  wordsToStudy`);
+      res = await executeSyncOperationUpdate(newItems, 'wordsToStudy', userID);
+      if (!res)
+        throw new Error(
+          `Операция синхронизации: обновления; поле:  wordsToStudy`
+        );
+    }
+
+    const infoFields = ['statistics', 'options'];
+    for (let field in newItems) {
+      if (!infoFields.includes(field)) continue;
+      let changeFields = {};
+      let item = newItems[field][0];
+      for (let key in item) {
+        if (key == 'offline') continue;
+        changeFields[[`${field}.0.${key}`]] = item[key]; // [`statistics.0.bestStreak`] : res
+      }
+      let updateItem = await User.findOneAndUpdate(
+        { _id: userID },
+        { $set: changeFields },
+        { rawResult: true, new: true }
+      );
+      if (updateItem.ok == 0)
+        throw new Error('Не удалось обновить статистику и настройки');
+    }
+
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+/* Иснтрументы синхронизации */
+async function executeSyncOperationDelete(newItems, userID) {
+  try {
+    const allowedFields = [
+      'knownWords',
+      'categoriesToLearn',
+      'wordsToStudy',
+      'wordsToRepeat',
+      'relevance',
+    ];
+
+    for (let field in newItems) {
+      if (!allowedFields.includes(field)) continue;
+      let itemsForDelete = []; // elementsID
+      for (let item of newItems[field]) {
+        if (item.offline == 'delete') {
+          itemsForDelete.push(item._id);
+        }
+      }
+      if (itemsForDelete.length > 0) {
+        let deleteItems = await multiPullElement(field, itemsForDelete, userID);
+        if (!deleteItems) throw new Error('sync operation');
+      }
+    }
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function executeSyncOperationAdd(newItems, field, userID) {
+  try {
+    let itemsForAdd = []; // items
+    for (let item of newItems[field]) {
+      if (item.offline == 'add') itemsForAdd.push(item);
+    }
+    if (itemsForAdd.length > 0) {
+      let addItems = await multiPushNewElement(field, itemsForAdd, userID);
+      if (!addItems) throw new Error('sync operation');
+    }
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function executeSyncOperationUpdate(newItems, field, userID) {
+  try {
+    let itemsForUpdate = []; // [{elementID: 'id', changeFields: { name: 'new name'}}, {}, {}]
+    for (let item of newItems[field]) {
+      if (item.offline == 'update') {
+        let elementID = item._id;
+        let changeFields = {};
+        for (let key in item) {
+          if (key == 'offline' || key == '_id') continue;
+          changeFields[key] = item[key];
+        }
+        itemsForUpdate.push({ elementID, changeFields });
+      }
+    }
+    if (itemsForUpdate.length > 0) {
+      let updateItems = await multiSetElement(field, itemsForUpdate, userID);
+      if (!updateItems) throw new Error('sync operation');
+    }
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+
+async function validateSyncDataToDelete(newItems, userID) {
+  try {
+    const allowedFields = [
+      'knownWords',
+      'categoriesToLearn',
+      'wordsToStudy',
+      'wordsToRepeat',
+      'relevance',
+    ];
+
+    let user = await getUserInfo(
+      userID,
+      'knownWords categoriesToLearn wordsToStudy wordsToRepeat relevance'
+    );
+    if (!user) return false;
+
+    for (let field in newItems) {
+      let itemForDelete = [];
+      if (!allowedFields.includes(field)) continue;
+      for (let item of newItems[field]) {
+        if (item.offline == 'delete') {
+          itemForDelete.push({ id: item._id, name: item.word || item.name });
+        }
+      }
+      switch (field) {
+        case 'knownWords': {
+          if (itemForDelete.length > 0) {
+            if (!isHasWordsByWordAndID(itemForDelete, 'knownWords', user))
+              throw new Error(`Проверка для удаления поля ${field}`);
+          }
+          break;
+        }
+        case 'relevance': {
+          if (itemForDelete.length > 0) {
+            if (!isHasWordsByWordAndID(itemForDelete, 'relevance', user))
+              throw new Error(`Проверка для удаления поля ${field}`);
+          }
+          break;
+        }
+        case 'categoriesToLearn': {
+          if (itemForDelete.length > 0) {
+            if (!isHasCategoriesByNameAndID(itemForDelete, user))
+              throw new Error(`Проверка для удаления поля ${field}`);
+          }
+          break;
+        }
+        case 'wordsToStudy': {
+          if (itemForDelete.length > 0) {
+            if (!isHasWordsByWordAndID(itemForDelete, 'wordsToStudy', user))
+              throw new Error(`Проверка для удаления поля ${field}`);
+          }
+          break;
+        }
+        case 'wordsToRepeat': {
+          if (itemForDelete.length > 0) {
+            if (!isHasWordsByWordAndID(itemForDelete, 'wordsToRepeat', user))
+              throw new Error(`Проверка для удаления поля ${field}`);
+          }
+          break;
+        }
+      }
+    }
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function validateSyncDataToAdd(newItems, field, userID) {
+  try {
+    let user = await getUserInfo(
+      userID,
+      'knownWords categoriesToLearn wordsToStudy wordsToRepeat relevance'
+    );
+    if (!user) return false;
+
+    let itemForAdd = [];
+    for (let item of newItems[field]) {
+      if (item.offline == 'add') {
+        itemForAdd.push({
+          id: item._id,
+          name: item.word || item.name,
+          category: item.category || null,
+        });
+      }
+    }
+    switch (field) {
+      case 'knownWords': {
+        if (itemForAdd.length > 0) {
+          if (isHasWordsByWord(itemForAdd, user))
+            throw new Error(`Проверка для добавления поля ${field}`);
+        }
+        break;
+      }
+      case 'relevance': {
+        if (itemForAdd.length > 0) {
+          if (isHasWordsByWord(itemForAdd, user))
+            throw new Error(`Проверка для добавления поля ${field}`);
+        }
+
+        break;
+      }
+      case 'categoriesToLearn': {
+        if (itemForAdd.length > 0) {
+          if (isHasCategoriesByName(itemForAdd, user))
+            throw new Error(`Проверка для добавления поля ${field}`);
+        }
+        break;
+      }
+      case 'wordsToRepeat': {
+        if (itemForAdd.length > 0) {
+          if (isHasRepeatWordsByWord(itemForAdd, user))
+            throw new Error(`Проверка для добавления поля ${field}`);
+        }
+
+        break;
+      }
+      case 'wordsToStudy': {
+        if (itemForAdd.length > 0) {
+          if (isHasWordsByWord(itemForAdd, user))
+            throw new Error(`Проверка для добавления поля ${field}`);
+          if (!isHasCategoriesByID(itemForAdd, user))
+            throw new Error(`Проверка для добавления поля ${field}`);
+        }
+
+        break;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+async function validateSyncDataToUpdate(newItems, field, userID) {
+  try {
+    let user = await getUserInfo(
+      userID,
+      'knownWords categoriesToLearn wordsToStudy wordsToRepeat relevance'
+    );
+    if (!user) return false;
+
+    let itemForUpdate = [];
+    for (let item of newItems[field]) {
+      if (item.offline == 'update') {
+        itemForUpdate.push({
+          id: item._id,
+          name: item.word || item.name,
+          category: item.category || null,
+        });
+      }
+    }
+    switch (field) {
+      case 'knownWords': {
+        if (itemForUpdate.length > 0) {
+          if (isHasSimilarWords(itemForUpdate, user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+          if (!isHasWordsByID(itemForUpdate, 'knownWords', user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+        }
+
+        break;
+      }
+      case 'relevance': {
+        if (itemForUpdate.length > 0) {
+          if (isHasSimilarWords(itemForUpdate, user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+          if (!isHasWordsByID(itemForUpdate, 'relevance', user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+        }
+
+        break;
+      }
+      case 'categoriesToLearn': {
+        if (itemForUpdate.length > 0) {
+          if (isHasSimilarCategories(itemForUpdate, user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+          if (!isHasCategoriesByID(itemForUpdate, user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+        }
+        break;
+      }
+      case 'wordsToRepeat': {
+        if (itemForUpdate.length > 0) {
+          if (isHasSimilarRepeatWords(itemForUpdate, user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+          if (!isHasWordsByID(itemForUpdate, 'wordsToRepeat', user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+        }
+
+        break;
+      }
+      case 'wordsToStudy': {
+        if (itemForUpdate.length > 0) {
+          if (isHasSimilarWords(itemForUpdate, user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+          if (!isHasWordsByID(itemForUpdate, 'wordsToStudy', user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+          if (!isHasCategoriesByID(itemForUpdate, user))
+            throw new Error(`Проверка для обновления поля ${field}`);
+        }
+
+        break;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+
+function checkIrregularVerb(word) {
+  if (!/--/g.test(word)) return false;
+  let words = word.split('--');
+  if (words.length != 3) return false;
+  return true;
+}
+/* words = [{id , name, category}]; field = String; userInfo = Object */
+function isHasWordsByWordAndID(words, field, userInfo) {
+  let oldWords = userInfo[field];
+
+  for (let newItem of words) {
+    let word = newItem.name;
+    let id = newItem.id.toString();
+    let index = oldWords.findIndex((oldItem) => {
+      return oldItem.word == word && oldItem._id.toString() == id;
+    });
+    if (index == -1) return false;
+  }
+  return true;
+}
+/* words = [{id , name, category}]; field = String; userInfo = Object */
+function isHasWordsByID(words, field, userInfo) {
+  let oldWords = userInfo[field];
+
+  for (let newItem of words) {
+    let id = newItem.id.toString();
+    let index = oldWords.findIndex((oldItem) => oldItem._id.toString() == id);
+    if (index == -1) return false;
+  }
+  return true;
+}
+/* words = [{id , name, category}];  userInfo = Object */
+function isHasCategoriesByNameAndID(categories, userInfo) {
+  let oldcategories = userInfo.categoriesToLearn;
+
+  for (let newItem of categories) {
+    let name = newItem.name;
+    let id = newItem.id.toString();
+    let index = oldcategories.findIndex(
+      (oldItem) => oldItem.name == name && oldItem._id.toString() == id
+    );
+    if (index == -1) return false;
+  }
+  return true;
+}
+
+/* words = [{id , name, category}];  userInfo = Object */
+function isHasSimilarWords(words, userInfo) {
+  let allWords = [
+    ...userInfo.wordsToStudy,
+    ...userInfo.knownWords,
+    ...userInfo.relevance,
+  ];
+  for (let newItem of words) {
+    let word = newItem.name;
+    let id = newItem.id.toString();
+    for (let oldItem of allWords) {
+      let oldWord = oldItem.word;
+      let oldID = oldItem._id.toString();
+      if (checkIrregularVerb(word)) {
+        let irregularVerbs = word.split('--');
+        if (oldItem.irregularVerb == false) {
+          if (irregularVerbs.includes(oldWord) && oldID != id) return true;
+        } else if (oldWord == word && oldID != id) return true;
+        continue;
+      } else if (oldItem.irregularVerb == false) {
+        if (oldWord == word && oldID != id) return true;
+        continue;
+      } else {
+        let irregularVerbs = oldWord.split('--');
+        irregularVerbs = irregularVerbs.map((item) =>
+          item.toLowerCase().trim()
+        );
+        if (irregularVerbs.includes(word) && oldID != id) return true;
+        continue;
+      }
+    }
+  }
+  return false;
+}
+/* words = [{id , name, category}];  userInfo = Object */
+function isHasWordsByWord(words, userInfo) {
+  let allWords = [
+    ...userInfo.wordsToStudy,
+    ...userInfo.knownWords,
+    ...userInfo.relevance,
+  ];
+
+  for (let newItem of words) {
+    let word = newItem.name;
+    let index = allWords.findIndex((oldItem) => {
+      let oldWord = oldItem.word;
+      if (checkIrregularVerb(word)) {
+        let irregularVerbs = word.split('--');
+        if (oldItem.irregularVerb == false)
+          return irregularVerbs.includes(oldWord);
+        return oldWord == word;
+      } else if (oldItem.irregularVerb == false) return oldWord == word;
+      else {
+        let irregularVerbs = oldWord.split('--');
+        irregularVerbs = irregularVerbs.map((item) =>
+          item.toLowerCase().trim()
+        );
+        return irregularVerbs.includes(word);
+      }
+    });
+
+    if (index != -1) return true;
+  }
+  return false;
+}
+
+/* categories = [{id , name, category}];  userInfo = Object */
+function isHasSimilarCategories(categories, userInfo) {
+  let oldCategories = userInfo.categoriesToLearn;
+  for (let newItem of categories) {
+    let name = newItem.name;
+    let id = newItem.id.toString();
+
+    for (let oldItem of oldCategories) {
+      let oldName = oldItem.name;
+      let oldID = oldItem._id.toString();
+      if (oldName == name && oldID != id) return true;
+    }
+  }
+  return false;
+}
+/* categories = [{id , name, category}];  userInfo = Object */
+function isHasCategoriesByName(categories, userInfo) {
+  let oldcategories = userInfo.categoriesToLearn;
+
+  for (let newItem of categories) {
+    let name = newItem.name;
+    let index = oldcategories.findIndex((oldItem) => oldItem.name == name);
+    if (index != -1) return true;
+  }
+  return false;
+}
+/* categories = [{id , name, category}];  userInfo = Object */
+function isHasCategoriesByID(categories, userInfo) {
+  let oldcategories = userInfo.categoriesToLearn;
+
+  for (let newItem of categories) {
+    let categoryID = newItem.category ? newItem.category.toString() : null;
+    let id = newItem.id.toString();
+    let index = oldcategories.findIndex(
+      (oldItem) =>
+        oldItem._id.toString() == id || oldItem._id.toString() == categoryID
+    );
+    if (index == -1) return false;
+  }
+  return true;
+}
+
+/* words = [{id , name, category}];  userInfo = Object */
+function isHasSimilarRepeatWords(words, userInfo) {
+  let allWords = userInfo.wordsToRepeat;
+
+  for (let newItem of words) {
+    let word = newItem.name;
+    let id = newItem.id.toString();
+    for (let oldItem of allWords) {
+      let oldWord = oldItem.word;
+      let oldID = oldItem._id.toString();
+      if (checkIrregularVerb(word)) {
+        let irregularVerbs = word.split('--');
+        if (oldItem.irregularVerb == false) {
+          if (irregularVerbs.includes(oldWord) && oldID != id) return true;
+        } else if (oldWord == word && oldID != id) return true;
+        continue;
+      } else if (oldItem.irregularVerb == false) {
+        if (oldWord == word && oldID != id) return true;
+        continue;
+      } else {
+        let irregularVerbs = oldWord.split('--');
+        irregularVerbs = irregularVerbs.map((item) =>
+          item.toLowerCase().trim()
+        );
+        if (irregularVerbs.includes(word) && oldID != id) return true;
+        continue;
+      }
+    }
+  }
+  return false;
+}
+/* words = [{id , name, category}];  userInfo = Object */
+function isHasRepeatWordsByWord(words, userInfo) {
+  let allWords = userInfo.wordsToRepeat;
+
+  for (let newItem of words) {
+    let word = newItem.name;
+    let index = allWords.findIndex((oldItem) => {
+      let oldWord = oldItem.word;
+      if (checkIrregularVerb(word)) {
+        let irregularVerbs = word.split('--');
+        if (oldItem.irregularVerb == false)
+          return irregularVerbs.includes(oldWord);
+        return oldWord == word;
+      } else if (oldItem.irregularVerb == false) return oldWord == word;
+      else {
+        let irregularVerbs = oldWord.split('--');
+        irregularVerbs = irregularVerbs.map((item) =>
+          item.toLowerCase().trim()
+        );
+        return irregularVerbs.includes(word);
+      }
+    });
+    if (index != -1) return true;
+  }
+  return false;
+}
+
 function isNowDay(date) {
   let dateToDay = millisecondToDay(date);
   let now = millisecondToDay(Date.now());
   if (now == dateToDay) return true;
   return false;
 }
-function millisecondToDay(millisecond) {
-  let day = 1000 * 60 * 60 * 24;
-  return Math.floor(millisecond / day);
+function millisecondToDay(date) {
+  let day = Math.floor(fixDateToUTC3(date) / (1000 * 60 * 60 * 24));
+  return day;
+}
+function fixDateToUTC3(date) {
+  let fixedDate = date + 1000 * 60 * 60 * 3;
+  return fixedDate;
 }
 function isHasEmailOrNickname(users, reqData) {
   let similarEmail = false;
@@ -1193,6 +1746,21 @@ function getUserInfoFromDoc(doc) {
   } = user;
   userData.email = replaceEmailToStar(userData.email);
   return userData;
+}
+async function getUserInfo(userID, showFields = '') {
+  try {
+    let user = await User.findOne(
+      {
+        _id: userID,
+      },
+      `${showFields}`
+    );
+    if (!user) return false;
+    return user._doc;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
 }
 function replaceEmailToStar(email) {
   let start;

@@ -126,6 +126,9 @@ export const addWord = async (req, res) => {
     );
     if (!user) return sendResponseError(req, res);
 
+    if (!isHasCurrentCategory(category, user))
+      return sendResponseError(req, res, 'Категории не существует!');
+
     let statusCategory = isActiveCategory(category, user);
     if (statusCategory)
       return sendResponseError(
@@ -317,12 +320,13 @@ export const deleteWord = async (req, res) => {
 
     let user = await getUserInfo(
       req.userId,
-      'wordsToStudy categoriesToLearn knownWords'
+      'wordsToStudy categoriesToLearn knownWords relevance'
     );
     if (!user) return sendResponseError(req, res);
 
     let knownWordsID = [];
     let studyWordsID = [];
+    let relevanceID = [];
     for (let item of id) {
       let index = user.knownWords.findIndex((word) => word._id == item);
       if (index != -1) {
@@ -333,6 +337,12 @@ export const deleteWord = async (req, res) => {
       let index = user.wordsToStudy.findIndex((word) => word._id == item);
       if (index != -1) {
         studyWordsID.push(item);
+      }
+    }
+    for (let item of id) {
+      let index = user.relevance.findIndex((word) => word._id == item);
+      if (index != -1) {
+        relevanceID.push(item);
       }
     }
 
@@ -349,7 +359,11 @@ export const deleteWord = async (req, res) => {
     if (wordsInActiveCategory.length > 0)
       return sendResponseError(req, res, 'Слово в активной категории!');
 
-    if (knownWordsID.lenght == 0 && studyWordsID.length == 0)
+    if (
+      knownWordsID.lenght === 0 &&
+      studyWordsID.length === 0 &&
+      relevanceID.length === 0
+    )
       return sendResponseError(req, res, 'Нет выбранных слов!');
 
     let userInfo;
@@ -364,6 +378,9 @@ export const deleteWord = async (req, res) => {
         req.userId
       );
       if (!userInfo) return sendResponseError(req, res);
+    }
+    if (relevanceID.length > 0) {
+      userInfo = await multiPullElement('relevance', relevanceID, req.userId);
     }
 
     return res.json({ message: 'Операция успешно выполнена!', user: userInfo });
@@ -1589,9 +1606,13 @@ function replaceEmailToStar(email) {
   }
   return email.replace(email.slice(start, end), star);
 }
-function millisecondsToDays(millisecond) {
-  let day = 1000 * 60 * 60 * 24;
-  return Math.floor(millisecond / day);
+function millisecondsToDays(date) {
+  let day = Math.floor(fixDateToUTC3(date) / (1000 * 60 * 60 * 24));
+  return day;
+}
+function fixDateToUTC3(date) {
+  let fixedDate = date + 1000 * 60 * 60 * 3;
+  return fixedDate;
 }
 function daysToMilliseconds(days) {
   let day = 1000 * 60 * 60 * 24;
@@ -1665,6 +1686,13 @@ function isHasCategory(name, id, userInfo) {
     (item) => item.name == name && item._id != id
   );
   if (hasCategory.length == 0) return false;
+  return true;
+}
+function isHasCurrentCategory(id, user) {
+  let index = user.categoriesToLearn.findIndex(
+    (item) => item._id.toString() == id
+  );
+  if (index == -1) return false;
   return true;
 }
 async function isSuccessStreak(userID) {

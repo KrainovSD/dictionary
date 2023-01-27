@@ -138,6 +138,16 @@ export default {
     };
   },
   async mounted() {
+    window.addEventListener(
+      "load",
+      function () {
+        setTimeout(function () {
+          window.scrollTo(0, 1);
+        }, 1);
+      },
+      false
+    );
+
     await this.syncUserInfoWithServer();
 
     if (!this.auth) await this.checkAuth();
@@ -286,11 +296,10 @@ export default {
     },
     async dailyCheckStreak() {
       try {
-        let lastDailyCheckStreak = Math.floor(
-          this.userInfo.statistics[0].lastDailyCheckStreak /
-            (1000 * 60 * 60 * 24)
+        let lastDailyCheckStreak = this.$api.offline.getDayFromMillisecond(
+          this.userInfo.statistics[0].lastDailyCheckStreak
         );
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
         if (this.isLoading == true || lastDailyCheckStreak == now) return;
 
         let allWords = [
@@ -347,16 +356,19 @@ export default {
         (item) => item?.offline != "delete" && item.startLearn != false
       );
       let reverseRepeatCategories = categories.filter((item) => {
-        let nextReverseRepeat = Math.floor(
-          item.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextReverseRepeat
         );
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
         if (nextReverseRepeat <= now) return true;
         return false;
       });
       let standartRepeatCategories = categories.filter((item) => {
-        let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let nextRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextRepeat
+        );
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
+
         if (nextRepeat <= now) return true;
         return false;
       });
@@ -380,16 +392,19 @@ export default {
       let repeatWords = userInfo.wordsToRepeat;
       repeatWords = repeatWords.filter((item) => item?.offline != "delete");
       let reverseRepeatWords = repeatWords.filter((item) => {
-        let nextReverseRepeat = Math.floor(
-          item.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextReverseRepeat
         );
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
         if (nextReverseRepeat <= now) return true;
         return false;
       });
       let standartRepeatWords = repeatWords.filter((item) => {
-        let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let nextRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextRepeat
+        );
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
         if (nextRepeat <= now) return true;
         return false;
       });
@@ -405,14 +420,14 @@ export default {
 
       let knownWords = userInfo.knownWords;
       if (knownWords.length > 0) {
-        let standartRepeatKnownWords = Math.floor(
-          userInfo.statistics[0].lastRepeatKnownWords / (1000 * 60 * 60 * 24)
+        let standartRepeatKnownWords = this.$api.offline.getDayFromMillisecond(
+          userInfo.statistics[0].lastRepeatKnownWords
         );
-        let reverseRepeatKnownWords = Math.floor(
-          userInfo.statistics[0].lastReverseRepeatKnownWords /
-            (1000 * 60 * 60 * 24)
+        let reverseRepeatKnownWords = this.$api.offline.getDayFromMillisecond(
+          userInfo.statistics[0].lastReverseRepeatKnownWords
         );
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
         if (standartRepeatKnownWords < now || reverseRepeatKnownWords < now)
           message +=
             'Сегодня рекомендуется повторить слова из вкладки "Изученные"!\n';

@@ -43,7 +43,6 @@
             v-for="(item, index) in chartItems"
             :key="index"
             :tooltip="bottomLabelList[index]"
-
           >
             <div
               class="chart__firstItem"
@@ -122,13 +121,13 @@ export default {
       switch (this.period) {
         case "7 дней": {
           chartItems = [...Array(7).keys()].reverse().map((index) => {
-            let date = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+            let date = this.$api.offline.getDayFromMillisecond(Date.now());
             date = date - index;
             let mathesFirstElements = this.firstElements.filter((item) => {
-              return Math.floor(item / (1000 * 60 * 60 * 24)) == date;
+              return this.$api.offline.getDayFromMillisecond(item) == date;
             });
             let mathesSecondElements = this.secondElements.filter((item) => {
-              return Math.floor(item / (1000 * 60 * 60 * 24)) == date;
+              return this.$api.offline.getDayFromMillisecond(item) == date;
             });
 
             let chartItem = {};
@@ -149,20 +148,20 @@ export default {
         }
         case "30 дней": {
           chartItems = [...Array(10).keys()].reverse().map((index) => {
-            let date = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+            let date = this.$api.offline.getDayFromMillisecond(Date.now());
             let dateStart = date - index * 3 - 2;
             let dateEnd = date - index * 3;
 
             let mathesFirstElements = this.firstElements.filter((item) => {
               return (
-                dateStart <= Math.floor(item / (1000 * 60 * 60 * 24)) &&
-                Math.floor(item / (1000 * 60 * 60 * 24)) <= dateEnd
+                dateStart <= this.$api.offline.getDayFromMillisecond(item) &&
+                this.$api.offline.getDayFromMillisecond(item) <= dateEnd
               );
             });
             let mathesSecondElements = this.secondElements.filter((item) => {
               return (
-                dateStart <= Math.floor(item / (1000 * 60 * 60 * 24)) &&
-                Math.floor(item / (1000 * 60 * 60 * 24)) <= dateEnd
+                dateStart <= this.$api.offline.getDayFromMillisecond(item) &&
+                this.$api.offline.getDayFromMillisecond(item) <= dateEnd
               );
             });
 
@@ -184,20 +183,20 @@ export default {
         }
         case "90 дней": {
           chartItems = [...Array(9).keys()].reverse().map((index) => {
-            let date = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+            let date = this.$api.offline.getDayFromMillisecond(Date.now());
             let dateStart = date - index * 10 - 9;
             let dateEnd = date - index * 10;
 
             let mathesFirstElements = this.firstElements.filter((item) => {
               return (
-                dateStart <= Math.floor(item / (1000 * 60 * 60 * 24)) &&
-                Math.floor(item / (1000 * 60 * 60 * 24)) <= dateEnd
+                dateStart <= this.$api.offline.getDayFromMillisecond(item) &&
+                this.$api.offline.getDayFromMillisecond(item) <= dateEnd
               );
             });
             let mathesSecondElements = this.secondElements.filter((item) => {
               return (
-                dateStart <= Math.floor(item / (1000 * 60 * 60 * 24)) &&
-                Math.floor(item / (1000 * 60 * 60 * 24)) <= dateEnd
+                dateStart <= this.$api.offline.getDayFromMillisecond(item) &&
+                this.$api.offline.getDayFromMillisecond(item) <= dateEnd
               );
             });
 
@@ -256,9 +255,9 @@ export default {
         }
         case "всё время": {
           let dateRegister = this.dateRegistration;
-          dateRegister = Math.floor(dateRegister / (1000 * 60 * 60 * 24));
+          dateRegister = this.$api.offline.getDayFromMillisecond(dateRegister);
 
-          let dateNow = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+          let dateNow = this.$api.offline.getDayFromMillisecond(Date.now());
           let diff = dateNow - dateRegister + 1;
           let countStep = this.$options.maxCountStepAllTime;
 
@@ -272,7 +271,7 @@ export default {
           let step = diff / countStep;
 
           chartItems = [...Array(countStep).keys()].reverse().map((index) => {
-            let date = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+            let date = this.$api.offline.getDayFromMillisecond(Date.now());
 
             let dateStart;
             let dateEnd;
@@ -286,14 +285,14 @@ export default {
 
             let mathesFirstElements = this.firstElements.filter((item) => {
               return (
-                dateStart <= Math.floor(item / (1000 * 60 * 60 * 24)) &&
-                Math.floor(item / (1000 * 60 * 60 * 24)) <= dateEnd
+                dateStart <= this.$api.offline.getDayFromMillisecond(item) &&
+                this.$api.offline.getDayFromMillisecond(item) <= dateEnd
               );
             });
             let mathesSecondElements = this.secondElements.filter((item) => {
               return (
-                dateStart <= Math.floor(item / (1000 * 60 * 60 * 24)) &&
-                Math.floor(item / (1000 * 60 * 60 * 24)) <= dateEnd
+                dateStart <= this.$api.offline.getDayFromMillisecond(item) &&
+                this.$api.offline.getDayFromMillisecond(item) <= dateEnd
               );
             });
 
@@ -433,9 +432,9 @@ export default {
         }
         case "всё время": {
           let dateRegister = this.dateRegistration;
-          dateRegister = Math.floor(dateRegister / (1000 * 60 * 60 * 24));
+          dateRegister = this.$api.offline.getDayFromMillisecond(dateRegister);
+          let dateNow = this.$api.offline.getDayFromMillisecond(Date.now());
 
-          let dateNow = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
           let diff = dateNow - dateRegister + 1;
           let countStep = this.$options.maxCountStepAllTime;
 

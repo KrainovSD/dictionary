@@ -6,7 +6,7 @@
   <info-popup ref="info" />
   <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" ref="backDrop"></div>
-  <div class="modal__container">
+  <div class="modal__container info">
     <div class="sign" :class="signType == 'register' ? 'signUp' : ''">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">
@@ -26,7 +26,7 @@
             placeholder="NickName"
             fontSize="14"
             :errors="errors"
-            @keyup.enter="sendData"
+            @keyup="sendData"
           />
         </div>
 
@@ -39,7 +39,7 @@
             placeholder="UserName"
             fontSize="14"
             :errors="errors"
-            @keyup.enter="sendData"
+            @keyup="sendData"
           />
         </div>
 
@@ -52,7 +52,7 @@
             placeholder="Email"
             fontSize="14"
             :errors="errors"
-            @keyup.enter="sendData"
+            @keyup="sendData"
           />
         </div>
 
@@ -65,7 +65,7 @@
             placeholder="Password"
             fontSize="14"
             :errors="errors"
-            @keyup.enter="sendData"
+            @keyup="sendData"
           />
         </div>
 
@@ -78,7 +78,7 @@
             placeholder="Password"
             fontSize="14"
             :errors="errors"
-            @keyup.enter="sendData"
+            @keyup="sendData"
           />
         </div>
 
@@ -91,7 +91,7 @@
             placeholder="Repeat Password"
             fontSize="14"
             :errors="errors"
-            @keyup.enter="sendData"
+            @keyup="sendData"
           />
         </div>
 

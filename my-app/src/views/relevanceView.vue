@@ -39,24 +39,34 @@
         Чтобы добавить слово, которое часто вам встречается, в любую категорию
         для дальнейшего изучения, выберите подходящее слово в окошке справа.
       </p>
-      <button
-        class="relevance__confirmAddWord"
-        @click="wordPopupVisible = true"
-        :class="
-          currentSelectedWord.countMeetsPerDays >=
-          userInfo?.options?.[0]?.maxCountCheckRelevance
-            ? ''
-            : 'disabled'
-        "
-        :disabled="
-          currentSelectedWord.countMeetsPerDays >=
-          userInfo?.options?.[0]?.maxCountCheckRelevance
-            ? false
-            : true
-        "
-      >
-        Добавить слово на изучение
-      </button>
+      <div class="relevance__CRUDcontainer">
+        <button
+          class="relevance__CRUD"
+          @click="wordPopupVisible = true"
+          :class="
+            currentSelectedWord.countMeetsPerDays >=
+            userInfo?.options?.[0]?.maxCountCheckRelevance
+              ? ''
+              : 'disabled'
+          "
+          :disabled="
+            currentSelectedWord.countMeetsPerDays >=
+            userInfo?.options?.[0]?.maxCountCheckRelevance
+              ? false
+              : true
+          "
+        >
+          Добавить слово на изучение
+        </button>
+        <button
+          class="relevance__CRUD"
+          @click="deleteWord"
+          :class="Object.keys(currentSelectedWord).length > 0 ? '' : 'disabled'"
+          :disabled="Object.keys(currentSelectedWord).length > 0 ? false : true"
+        >
+          Удалить слово из хранилища
+        </button>
+      </div>
     </div>
 
     <div class="relevance__outputData">
@@ -170,16 +180,17 @@ export default {
       let relevance = this.userInfo?.relevance;
       relevance = relevance.filter((item) => item?.offline != "delete");
       let wordsList = relevance.map((item) => {
-        let millisecondsToDays = 1000 * 60 * 60 * 24;
         let maxDateCheckRelevance =
           this.userInfo?.options?.[0]?.maxDateCheckRelevance;
-        let now = Date.now() / millisecondsToDays;
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
         let dateOfDetected = item?.dateOfDetected;
 
         let totalCountMeets = dateOfDetected?.length;
 
         let countMeetsPerDays = dateOfDetected.filter(
-          (date) => date / millisecondsToDays >= now - maxDateCheckRelevance
+          (date) =>
+            this.$api.offline.getDayFromMillisecond(date) >=
+            now - maxDateCheckRelevance
         );
         countMeetsPerDays = countMeetsPerDays?.length;
 
@@ -316,6 +327,42 @@ export default {
         let message = err?.response?.data?.message || err?.message;
         this.isLoading = false;
         this.showInfo("Добавление слов в актуализатор", message);
+      }
+    },
+    async deleteWord() {
+      try {
+        if (Object.keys(this.currentSelectedWord).length === 0) return;
+        let confirm = await this.showConfirm(
+          "Удаление слова",
+          "Вы уверены, что хотите удалить выбранное слово?"
+        );
+        if (!confirm) return;
+        let id = [this.currentSelectedWord._id];
+        if (this.isLoading == true) return;
+        this.isLoading = true;
+
+        let res = this.$store.getters.getAuth
+          ? await this.$api.words.multipleDeleteWord({ id })
+          : this.$api.offline.multipleDeleteWord({ id });
+
+        this.isLoading = false;
+        if (this.$store.getters.getAuth) {
+          let userInfo = res?.data?.user;
+          this.$store.commit("setUserInfo", userInfo);
+          this.$api.offline.setSignatureAPI(userInfo);
+        }
+        let message = res?.data?.message || res?.message;
+        await this.showInfo("Удаление слова", message);
+      } catch (err) {
+        let message = err?.response?.data?.message || err?.message;
+        let status = err?.response?.status;
+        this.isLoading = false;
+        if (status == 0 || status == 500) {
+          message =
+            "Сервер не отвечает или интернет соединение утеряно, переводим операции в режим оффлайн, выполните операцию повторно!";
+          this.$store.commit("resetAuth");
+        }
+        this.showInfo("Удаление слова", message);
       }
     },
   },

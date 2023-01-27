@@ -27,7 +27,30 @@
           "
           @focus="focusInput = true"
           @focusout="focusInput = false"
-          v-if="fieldChangin == true"
+          v-if="fieldChangin == true && inputType == 'Number'"
+          autocomplete="off"
+          inputmode="numeric"
+        />
+        <input
+          ref="input"
+          type="text"
+          class="setting__userDataInput"
+          :class="[
+            errors[field] ? '_error' : '',
+            inputType == 'Number' ? 'number' : '',
+          ]"
+          :placeholder="placeholder"
+          :name="field"
+          :value="modelValue"
+          @input="$emit('update:modelValue', $event.target.value)"
+          @keyup.enter.stop="saveData"
+          @keyup.esc.stop="
+            fieldChangin = false;
+            $emit('close', field);
+          "
+          @focus="focusInput = true"
+          @focusout="focusInput = false"
+          v-if="fieldChangin == true && inputType == 'String'"
           autocomplete="off"
         />
         <div

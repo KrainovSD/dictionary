@@ -2,7 +2,7 @@
   <info-popup ref="info" />
   <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop z9" ref="backDrop"></div>
-  <div class="modal__container z10">
+  <div class="modal__container info z10">
     <category-icon
       v-if="addIconVisible == true"
       :icon="icon"

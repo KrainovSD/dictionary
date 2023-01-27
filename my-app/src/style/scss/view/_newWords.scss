@@ -78,7 +78,7 @@
 
 
         @media (max-width: 1023px) {
-            overflow-y: auto;
+            overflow-y: visible;
             height: auto;
             box-shadow: none;
             margin: 0;
@@ -93,9 +93,12 @@
     }
 
     &__categoryPlaceholder {
-        margin: auto;
         font-size: rem(50);
         letter-spacing: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
 
         @media (max-width: 479px) {
             font-size: rem(35);
@@ -497,6 +500,7 @@
 
 
     &__workPlace {
+        @extend %variable-maxWidth;
         margin: 0px auto;
         padding: 20px 20px;
         display: flex;

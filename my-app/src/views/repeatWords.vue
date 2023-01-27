@@ -149,19 +149,19 @@ export default {
         let infoNextRepeat =
           item.nextRepeat == 0
             ? "Сегодня"
-            : Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24)) -
-                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+            : this.$api.offline.getDayFromMillisecond(item.nextRepeat) -
+                this.$api.offline.getDayFromMillisecond(Date.now()) >
               100
             ? "Никогда"
-            : this.dateFormatter(item.nextRepeat);
+            : this.$api.offline.formatDate(item.nextRepeat);
         let infoNextReverseRepeat =
           item.nextReverseRepeat == 0
             ? "Сегодня"
-            : Math.floor(item.nextReverseRepeat / (1000 * 60 * 60 * 24)) -
-                Math.floor(Date.now() / (1000 * 60 * 60 * 24)) >
+            : this.$api.offline.getDayFromMillisecond(item.nextReverseRepeat) -
+                this.$api.offline.getDayFromMillisecond(Date.now()) >
               50
             ? "Никогда"
-            : this.dateFormatter(item.nextReverseRepeat);
+            : this.$api.offline.formatDate(item.nextReverseRepeat);
 
         let infoCountOfRepeat = 9 - item.countOfRepeat;
         let infoCountOfReverseRepeat = 9 - item.countOfReverseRepeat;
@@ -180,6 +180,7 @@ export default {
           historyOfReverseRepeat: item.historyOfReverseRepeat,
           countOfRepeat: item.countOfRepeat,
           countOfReverseRepeat: item.countOfReverseRepeat,
+          dateOfCreation: item.dateOfCreation,
           infoExample,
           infoNextRepeat,
           infoNextReverseRepeat,
@@ -198,21 +199,27 @@ export default {
       words = words.filter((item) => item?.offline != "delete");
       if (words.length == 0) return "";
       let isRed = words.filter((item) => {
-        let dateOfCreation = Math.floor(
-          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        let dateOfCreation = this.$api.offline.getDayFromMillisecond(
+          item.dateOfCreation
         );
-        let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let nextRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextRepeat
+        );
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
+
         if (nextRepeat < now && now - dateOfCreation > 1) return true;
         return false;
       });
       if (isRed.length > 0) return "red";
       let isYellow = words.filter((item) => {
-        let dateOfCreation = Math.floor(
-          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        let dateOfCreation = this.$api.offline.getDayFromMillisecond(
+          item.dateOfCreation
         );
-        let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let nextRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextRepeat
+        );
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
+
         if (nextRepeat == now || (nextRepeat < now && now - dateOfCreation > 1))
           return true;
         return false;
@@ -226,25 +233,28 @@ export default {
       words = words.filter((item) => item?.offline != "delete");
       if (words.length == 0) return "";
       let isRed = words.filter((item) => {
-        let dateOfCreation = Math.floor(
-          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        let dateOfCreation = this.$api.offline.getDayFromMillisecond(
+          item.dateOfCreation
         );
-        let nextReverseRepeat = Math.floor(
-          item.nextReverseRepeat / (1000 * 60 * 60 * 24)
+        let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextReverseRepeat
         );
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
+
         if (nextReverseRepeat < now && now - dateOfCreation > 1) return true;
         return false;
       });
+
       if (isRed.length > 0) return "red";
       let isYellow = words.filter((item) => {
-        let dateOfCreation = Math.floor(
-          item.dateOfCreation / (1000 * 60 * 60 * 24)
+        let dateOfCreation = this.$api.offline.getDayFromMillisecond(
+          item.dateOfCreation
         );
-        let nextReverseRepeat = Math.floor(
-          item.nextReverseRepeat / (1000 * 60 * 60 * 24)
+
+        let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+          item.nextReverseRepeat
         );
-        let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+        let now = this.$api.offline.getDayFromMillisecond(Date.now());
         if (
           nextReverseRepeat == now ||
           (nextReverseRepeat < now && now - dateOfCreation > 1)
@@ -281,23 +291,6 @@ export default {
         right: box.right + scrollX,
         bottom: box.bottom + scrollY,
       };
-    },
-    dateFormatter(date) {
-      date = new Date(date);
-      let minute = date.getMinutes();
-      let hour = date.getHours();
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
-
-      if (minute >= 0 && minute < 10) {
-        minute = `0${minute}`;
-      }
-      if (hour >= 0 && hour < 10) {
-        hour = `0${hour}`;
-      }
-
-      return `${day}-${month}-${year}`;
     },
     filterWordsList(typeFilter) {
       let functions = {
@@ -360,18 +353,21 @@ export default {
       let words = this.userInfo.wordsToRepeat;
       if (type == "repeat") {
         words = words.filter((item) => {
-          let nextRepeat = Math.floor(item.nextRepeat / (1000 * 60 * 60 * 24));
-          let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+          let nextRepeat = this.$api.offline.getDayFromMillisecond(
+            item.nextRepeat
+          );
+          let now = this.$api.offline.getDayFromMillisecond(Date.now());
+
           if (nextRepeat > now) return false;
           return true;
         });
       }
       if (type == "reRepeat") {
         words = words.filter((item) => {
-          let nextReverseRepeat = Math.floor(
-            item.nextReverseRepeat / (1000 * 60 * 60 * 24)
+          let nextReverseRepeat = this.$api.offline.getDayFromMillisecond(
+            item.nextReverseRepeat
           );
-          let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+          let now = this.$api.offline.getDayFromMillisecond(Date.now());
           if (nextReverseRepeat > now) return false;
           return true;
         });

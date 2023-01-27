@@ -196,11 +196,11 @@ export default {
     },
     lastRepeat() {
       if (
-        this.userInfo?.statistics?.[0]?.lastRepeatKnownWords != 0 &&
-        this.userInfo?.statistics?.[0]?.lastRepeatKnownWords
+        this.userInfo.statistics?.[0]?.lastRepeatKnownWords != 0 &&
+        this.userInfo.statistics?.[0]?.lastRepeatKnownWords
       )
-        return this.dateFormatter(
-          this.userInfo?.statistics?.[0]?.lastRepeatKnownWords
+        return this.$api.offline.formatDate(
+          this.userInfo.statistics[0].lastRepeatKnownWords
         );
       return "Никогда";
     },
@@ -209,7 +209,7 @@ export default {
         this.userInfo?.statistics?.[0]?.lastReverseRepeatKnownWords != 0 &&
         this.userInfo?.statistics?.[0]?.lastReverseRepeatKnownWords
       )
-        return this.dateFormatter(
+        return this.$api.offline.formatDate(
           this.userInfo?.statistics?.[0]?.lastReverseRepeatKnownWords
         );
       return "Никогда";
@@ -237,9 +237,12 @@ export default {
         let infoLastRepeat;
         let infoLastReverseRepeat;
         if (item.lastRepeat == 0) infoLastRepeat = "Никогда";
-        else infoLastRepeat = this.dateFormatter(item.lastRepeat);
+        else infoLastRepeat = this.$api.offline.formatDate(item.lastRepeat);
         if (item.lastReverseRepeat == 0) infoLastReverseRepeat = "Никогда";
-        else infoLastReverseRepeat = this.dateFormatter(item.lastReverseRepeat);
+        else
+          infoLastReverseRepeat = this.$api.offline.formatDate(
+            item.lastReverseRepeat
+          );
 
         let infoCountRepeat = item.historyOfRepeat.length;
         let infoCountReverseRepeat = item.historyOfReverseRepeat.length;
@@ -261,7 +264,7 @@ export default {
           irregularVerb: item.irregularVerb,
           lastRepeat: item.lastRepeat,
           lastReverseRepeat: item.lastReverseRepeat,
-          dateOfKnown: this.dateFormatter(item.dateOfKnown),
+          dateOfKnown: item.dateOfKnown,
           infoExample,
           infoLastRepeat,
           infoLastReverseRepeat,
@@ -276,11 +279,11 @@ export default {
     },
     colorStandartRepeat() {
       if (!this.userInfo?.statistics?.[0]?.lastRepeatKnownWords) return "red";
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-      let lastRepeatKnownWords = Math.floor(
-        this.userInfo?.statistics?.[0]?.lastRepeatKnownWords /
-          (1000 * 60 * 60 * 24)
+      let now = this.$api.offline.getDayFromMillisecond(Date.now());
+      let lastRepeatKnownWords = this.$api.offline.getDayFromMillisecond(
+        this.userInfo?.statistics?.[0]?.lastRepeatKnownWords
       );
+
       if (now > lastRepeatKnownWords) {
         if (now - lastRepeatKnownWords == 1) return "yellow";
         return "red";
@@ -291,11 +294,11 @@ export default {
     colorReverseRepeat() {
       if (!this.userInfo?.statistics?.[0]?.lastReverseRepeatKnownWords)
         return "red";
-      let now = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-      let lastReverseRepeatKnownWords = Math.floor(
-        this.userInfo?.statistics?.[0]?.lastReverseRepeatKnownWords /
-          (1000 * 60 * 60 * 24)
+      let now = this.$api.offline.getDayFromMillisecond(Date.now());
+      let lastReverseRepeatKnownWords = this.$api.offline.getDayFromMillisecond(
+        this.userInfo?.statistics?.[0]?.lastReverseRepeatKnownWords
       );
+
       if (now > lastReverseRepeatKnownWords) {
         if (now - lastReverseRepeatKnownWords == 1) return "yellow";
         return "red";
@@ -340,23 +343,6 @@ export default {
     caseOfCount(wrongs) {
       if (wrongs == 2 || wrongs == 3 || wrongs == 4) return "раза";
       return "раз";
-    },
-    dateFormatter(date) {
-      date = new Date(date);
-      let minute = date.getMinutes();
-      let hour = date.getHours();
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
-
-      if (minute >= 0 && minute < 10) {
-        minute = `0${minute}`;
-      }
-      if (hour >= 0 && hour < 10) {
-        hour = `0${hour}`;
-      }
-
-      return `${day}-${month}-${year}`;
     },
     filterWordsList(typeFilter) {
       let functions = {

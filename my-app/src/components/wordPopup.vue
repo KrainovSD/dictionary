@@ -8,7 +8,7 @@
     @close="categoryPopupVisible = false"
   />
   <div class="modal__backDrop" ref="backDrop"></div>
-  <div class="modal__container">
+  <div class="modal__container info">
     <div class="wordPopup">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">

@@ -4,13 +4,18 @@
 }
 
 .wordPopup {
-    margin: auto auto auto auto;
+    margin: auto;
     z-index: 2;
     background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
     display: flex;
     flex-direction: column;
     max-width: rem(450);
     width: 100vw;
+    max-height: 90vh;
+
+    @media (max-width: 1200px) {
+        overflow: auto;
+    }
 
     &__containerCategory {
         width: 100%;

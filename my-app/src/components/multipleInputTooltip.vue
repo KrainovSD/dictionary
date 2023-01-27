@@ -11,6 +11,7 @@
       ]"
       :name="`${field}_${index}`"
       autocomplete="off"
+      inputmode="numeric"
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
       @keyup.enter.stop="$emit('onEnter')"

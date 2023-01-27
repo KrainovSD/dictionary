@@ -6,13 +6,15 @@
 
 
 .categoryPopup {
-    margin: rem(30) auto 0 auto;
+    margin: auto;
     z-index: 4;
     background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
     display: flex;
     flex-direction: column;
     max-width: rem(450);
     width: 100vw;
+    max-height: 90vh;
+    overflow: auto;
 
     &__helper {
         position: absolute;

@@ -1,5 +1,6 @@
 import store from "../store/index";
 import AES from "crypto-js/aes";
+import Utf8 from "crypto-js/enc-utf8.js";
 const countWordsToActiveCategory = 2;
 const secretSignature = "D,BSDADKM@dskaosdk32";
 /*
@@ -11,6 +12,11 @@ export default function () {
     addCategory(data) {
       let { name, icon, regularityToRepeat } = data;
       let userInfo = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
 
       let hasCategory = isHasCategory(name, null, userInfo);
       if (hasCategory) throw new Error("Такое имя категории уже существует!");
@@ -44,6 +50,11 @@ export default function () {
       let { id, name, icon, regularityToRepeat } = data;
       let userInfo = getUserInfoFromLocalStorage();
 
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let activeCategory = isActiveCategory(id, userInfo);
       if (activeCategory)
         throw new Error("Категория уже поставлена на изучение!");
@@ -72,6 +83,11 @@ export default function () {
       if (!id || typeof id != "string" || id.trim()?.length == 0)
         throw new Error("Неверный тип ID!");
       let userInfo = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
 
       let index = userInfo?.categoriesToLearn.findIndex(
         (item) => item._id == id
@@ -105,11 +121,28 @@ export default function () {
       return { message: "Операция успешно выполнена!" };
     },
     addWord(data) {
+      const fieldForFix = ["word", "translate", "transcription"];
+      for (let field in data) {
+        let dataField = data[field];
+        if (!fieldForFix.includes(field)) continue;
+        if (dataField.trim() == "") throw new Error(`Поле ${field} пустое!`);
+        data[field] = data[field].trim().toLowerCase();
+      }
+
       let { category, word, translate, transcription, description, example } =
         data;
       let irregularVerb = checkIrregularVerb(word);
       if (irregularVerb) word = fixIrregularVerb(word);
       let userInfo = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
+      if (!isHasCurrentCategory(category, userInfo)) {
+        throw new Error("Категории не существует!");
+      }
 
       let statusCategory = isActiveCategory(category, userInfo);
       if (statusCategory)
@@ -155,10 +188,23 @@ export default function () {
       return { message: "Операция успешно выполнена!" };
     },
     updateWord(data) {
+      const fieldForFix = ["word", "translate", "transcription"];
+      for (let field in data) {
+        let dataField = data[field];
+        if (!fieldForFix.includes(field)) continue;
+        if (dataField.trim() == "") throw new Error(`Поле ${field} пустое!`);
+        data[field] = data[field].trim().toLowerCase();
+      }
+
       let { id, word, translate, transcription, description, example } = data;
       let irregularVerb = checkIrregularVerb(word);
       if (irregularVerb) word = fixIrregularVerb(word);
       let userInfo = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
 
       let hasWord = isAlreadyHasWord(word, id, userInfo);
       if (hasWord) throw new Error("Такое слово уже на изучении или изучено!");
@@ -184,42 +230,18 @@ export default function () {
       store.commit("resetAuth");
       return { message: "Операция успешно выполнена!" };
     },
-    deleteWord(data) {
-      let id = data;
-      if (!id || typeof id != "string" || id.trim()?.length == 0)
-        throw new Error("Неверный тип ID!");
-      let userInfo = getUserInfoFromLocalStorage();
-
-      let index = userInfo.knownWords.findIndex((item) => item._id == id);
-      if (index != -1) {
-        return deleteKnownWord(id, index);
-      }
-
-      index = userInfo?.wordsToStudy.findIndex((item) => item._id == id);
-      if (index == -1) throw new Error("Слова не существует!");
-      let activeCategory = isActiveCategory(
-        userInfo?.wordsToStudy?.[index]?.category,
-        userInfo
-      );
-      if (activeCategory) throw new Error("Слово в активной категории!");
-
-      if (userInfo.wordsToStudy[index].offline == "add")
-        userInfo.wordsToStudy = userInfo.wordsToStudy.filter(
-          (item) => item._id != id
-        );
-      else userInfo.wordsToStudy[index].offline = "delete";
-
-      userInfo = setSignature(userInfo);
-      if (!userInfo) throw new Error("Не удалось поставить подпись!");
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      store.commit("resetAuth");
-      return { message: "Операция успешно выполнена!" };
-    },
     multipleDeleteWord(data) {
       let { id } = data;
       let userInfo = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let knownWordsID = [];
       let studyWordsID = [];
+      let relevanceID = [];
       for (let item of id) {
         let index = userInfo.knownWords.findIndex((word) => word._id == item);
         if (index != -1) {
@@ -230,6 +252,12 @@ export default function () {
         let index = userInfo.wordsToStudy.findIndex((word) => word._id == item);
         if (index != -1) {
           studyWordsID.push(item);
+        }
+      }
+      for (let item of id) {
+        let index = userInfo.relevance.findIndex((word) => word._id == item);
+        if (index != -1) {
+          relevanceID.push(item);
         }
       }
 
@@ -246,11 +274,21 @@ export default function () {
       if (wordsInActiveCategory.length > 0)
         throw new Error("Слово в активной категории!");
 
+      if (
+        knownWordsID.lenght === 0 &&
+        studyWordsID.length === 0 &&
+        relevanceID.length === 0
+      )
+        throw new Error("Нет выбранных слов!");
+
       if (knownWordsID.length > 0) {
         userInfo = multiPullElement("knownWords", knownWordsID, userInfo);
       }
       if (studyWordsID.length > 0) {
         userInfo = multiPullElement("wordsToStudy", studyWordsID, userInfo);
+      }
+      if (relevanceID.length > 0) {
+        userInfo = multiPullElement("relevance", relevanceID, userInfo);
       }
 
       userInfo = setSignature(userInfo);
@@ -262,6 +300,11 @@ export default function () {
     startLearnCategory(data) {
       let { id } = data;
       let userInfo = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
 
       let hasWordsInCategory = isHasWordsInCategory(id, userInfo);
       if (!hasWordsInCategory)
@@ -290,6 +333,12 @@ export default function () {
       let { words } = data;
       words = [...new Set(words)];
       let userInfo = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(userInfo)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       /* Находим уже имеюшиеся слова, которые добавлять не нужно*/
       let hasWords = words.filter((item) => {
         let isHasWord = isAlreadyHasWord(item, null, userInfo);
@@ -308,7 +357,7 @@ export default function () {
       );
       /* Добавляем слова которых нигде нет*/
       let newRelevances = newWords.map((item) => {
-        let word = item;
+        let word = item.trim().toLowerCase();
         let irregularVerb = checkIrregularVerb(word);
         if (irregularVerb) {
           let word = fixIrregularVerb(word);
@@ -392,6 +441,12 @@ export default function () {
     pushLearnAnswers(data) {
       let { categoryID, words } = data;
       let user = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(user)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let wordsWithWrong = words.filter((item) => {
         if (item.wrong && typeof item?.wrong == "boolean") return true;
         return false;
@@ -505,6 +560,12 @@ export default function () {
     pushReLearnAnswers(data) {
       let { categoryID, words } = data;
       let user = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(user)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let wordsWithWrong = words.filter((item) => {
         if (item.wrong && typeof item?.wrong == "boolean") return true;
         return false;
@@ -619,6 +680,12 @@ export default function () {
       /* Сбор информации о пользователе и списке слов */
       let { words } = data;
       let user = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(user)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let message = "Слова успешно повторены!\n";
       /* Обработка слов с ошибками */
       let wordsWithWrong = words.filter(
@@ -683,6 +750,12 @@ export default function () {
       /* Сбор информации о пользователе и списке слов */
       let { words } = data;
       let user = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(user)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let message = "Слова успешно повторены!\n";
       /* Обработка слов с ошибками */
       let wordsWithWrong = words.filter(
@@ -748,6 +821,11 @@ export default function () {
       /* Получение информации о пользователе и списке слов */
       let { words } = data;
       let user = getUserInfoFromLocalStorage();
+      if (!checkSignature(user)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let message = "Обучение пройдено успешно!\n";
       /* Обработка слов с ошибками */
       let wordsWithWrong = words.filter(
@@ -854,6 +932,12 @@ export default function () {
       /* Получение информации о пользователе и списке слов */
       let { words } = data;
       let user = getUserInfoFromLocalStorage();
+
+      if (!checkSignature(user)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let message = "Обучение пройдено успешно!\n";
       /* Обработка слов с ошибками */
       let wordsWithWrong = words.filter(
@@ -959,6 +1043,11 @@ export default function () {
     },
     checkStreak() {
       let user = getUserInfoFromLocalStorage();
+      if (!checkSignature(user)) {
+        clearLocalStorage();
+        throw new Error("Старая подпись не прошла проверку!");
+      }
+
       let message = "";
 
       let checkStreak = isSuccessStreak(user);
@@ -992,22 +1081,31 @@ export default function () {
       let userInfo = getUserInfoFromLocalStorage();
       return userInfo;
     },
+    getDayFromMillisecond(date) {
+      let day = millisecondsToDays(date);
+      return day;
+    },
+    formatDate(date) {
+      date = fixDateToUTC3(date);
+      date = new Date(date);
+      let minute = date.getUTCMinutes();
+      let hour = date.getUTCHours();
+      const day = date.getUTCDate();
+      const month = date.getUTCMonth() + 1;
+      const year = date.getUTCFullYear();
+
+      if (minute >= 0 && minute < 10) {
+        minute = `0${minute}`;
+      }
+      if (hour >= 0 && hour < 10) {
+        hour = `0${hour}`;
+      }
+
+      return `${day}-${month}-${year}`;
+    },
   };
 }
-function deleteKnownWord(id, index) {
-  let userInfo = getUserInfoFromLocalStorage();
-  console.log(index);
-  console.log(userInfo.knownWords[index]);
-  if (userInfo.knownWords[index].offline == "add")
-    userInfo.knownWords = userInfo.knownWords.filter((item) => item._id != id);
-  else userInfo.knownWords[index].offline = "delete";
 
-  userInfo = setSignature(userInfo);
-  if (!userInfo) throw new Error("Не удалось поставить подпись!");
-  localStorage.setItem("userInfo", JSON.stringify(userInfo));
-  store.commit("resetAuth");
-  return { message: "Операция успешно выполнена!" };
-}
 function pullStudiedCategory(categoryID, user) {
   /* Проверка нет ли слов из категории во вкладке Изученные */
   let words = user.wordsToStudy.filter((item) =>
@@ -1235,74 +1333,54 @@ function getUserInfoFromLocalStorage() {
       throw new Error("Данные повреждены");
     if (info != null) userInfo = info;
     else {
-      userInfo = {
-        knownWords: [],
-        wordsToStudy: [],
-        wordsToRepeat: [],
-        relevance: [],
-        options: [
-          {
-            countKnownWordsAtOneTime: 50,
-            countWrongsToAddToRepeat: 3,
-            regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-            maxDateCheckRelevance: 45,
-            maxCountCheckRelevance: 3,
-          },
-        ],
-        statistics: [
-          {
-            lastLearning: 0,
-            bestStreak: 0,
-            lastRepeatKnownWords: 0,
-            lastReverseRepeatKnownWords: 0,
-          },
-        ],
-        categoriesToLearn: [],
-        offline: "new",
-      };
-
-      userInfo = setSignature(userInfo);
-      if (!userInfo) throw new Error("Не удалось поставить подпись!");
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      userInfo = clearLocalStorage();
     }
     return userInfo;
   } catch (err) {
     console.log(err);
 
-    alert(
-      "Ваши локальные пользовательские данные были испорчены, взсвязи с этим они были очищены!"
-    );
-    localStorage.clear();
-    let userInfo = {
-      knownWords: [],
-      wordsToStudy: [],
-      wordsToRepeat: [],
-      relevance: [],
-      options: [
-        {
-          countKnownWordsAtOneTime: 50,
-          countWrongsToAddToRepeat: 3,
-          regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
-          maxDateCheckRelevance: 45,
-          maxCountCheckRelevance: 3,
-        },
-      ],
-      statistics: [
-        {
-          lastLearning: 0,
-          bestStreak: 0,
-          lastRepeatKnownWords: 0,
-          lastReverseRepeatKnownWords: 0,
-        },
-      ],
-      categoriesToLearn: [],
-      offline: "new",
-    };
-    userInfo = setSignature(userInfo);
-    if (!userInfo) throw new Error("Не удалось поставить подпись!");
-    localStorage.setItem("userInfo", JSON.stringify(userInfo));
-    return userInfo;
+    return clearLocalStorage();
   }
+}
+function clearLocalStorage() {
+  alert(
+    "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены! Чтобы продолжить накапливать прогресс в оффлайн версии, необходимо залогиниться и синхронизировать свои данные вновь!"
+  );
+  localStorage.clear();
+  let userInfo = {
+    nickName: "none",
+    knownWords: [],
+    wordsToStudy: [],
+    wordsToRepeat: [],
+    relevance: [],
+    options: [
+      {
+        countKnownWordsAtOneTime: 50,
+        countWrongsToAddToRepeat: 3,
+        regularityToRepeat: [2, 2, 2, 4, 4, 4, 8, 8],
+        maxDateCheckRelevance: 45,
+        maxCountCheckRelevance: 3,
+      },
+    ],
+    statistics: [
+      {
+        bestStreak: 0,
+        lastRepeatKnownWords: 0,
+        lastReverseRepeatKnownWords: 0,
+        historyOfRepeatKnownWords: [],
+        historyOfReverseRepeatKnownWords: [],
+        currentStreak: 0,
+        dateOfLastStreak: 0,
+        lastDailyCheckStreak: 0,
+      },
+    ],
+    categoriesToLearn: [],
+  };
+
+  userInfo = setSignature(userInfo);
+  if (!userInfo) throw new Error("Не удалось поставить подпись!");
+  localStorage.setItem("userInfo", JSON.stringify(userInfo));
+  return userInfo;
 }
 
 function checkIrregularVerb(word) {
@@ -1374,18 +1452,29 @@ function isHasCategory(name, id, userInfo) {
   if (hasCategory.length == 0) return false;
   return true;
 }
-
-function millisecondsToDays(millisecond) {
-  let day = 1000 * 60 * 60 * 24;
-  return Math.floor(millisecond / day);
+function isHasCurrentCategory(id, userInfo) {
+  let index = userInfo.categoriesToLearn.findIndex((item) => item._id == id);
+  if (index == -1) return false;
+  return true;
 }
+
 function daysToMilliseconds(days) {
   let day = 1000 * 60 * 60 * 24;
   return days * day;
 }
+function millisecondsToDays(date) {
+  let day = Math.floor(fixDateToUTC3(date) / (1000 * 60 * 60 * 24));
+  return day;
+}
+function fixDateToUTC3(date) {
+  let fixedDate = date + 1000 * 60 * 60 * 3;
+  return fixedDate;
+}
+
 function setSignature(userInfo) {
   try {
     let user = {
+      nickName: userInfo.nickName,
       knownWords: userInfo.knownWords,
       categoriesToLearn: userInfo.categoriesToLearn,
       wordsToStudy: userInfo.wordsToStudy,
@@ -1396,6 +1485,7 @@ function setSignature(userInfo) {
     };
 
     let signature = {
+      nickName: JSON.stringify(userInfo.nickName).split(""),
       knownWords: JSON.stringify(userInfo.knownWords).split(""),
       categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(""),
       wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(""),
@@ -1416,10 +1506,6 @@ function setSignature(userInfo) {
       let hash = AES.encrypt(`${signature[key]}`, secretSignature);
       hash = hash.toString();
       signature[key] = hash;
-      /* import Utf8 from "crypto-js/enc-utf8";
-      let descrypt = AES.decrypt(hash, secretSignature);
-      descrypt = descrypt.toString(Utf8);
-      */
     }
     userInfo.signature = signature;
     return userInfo;
@@ -1427,6 +1513,44 @@ function setSignature(userInfo) {
     console.log(err);
     return false;
   }
+}
+function checkSignature(userInfo) {
+  let user = {
+    nickName: userInfo.nickName,
+    knownWords: userInfo.knownWords,
+    categoriesToLearn: userInfo.categoriesToLearn,
+    wordsToStudy: userInfo.wordsToStudy,
+    wordsToRepeat: userInfo.wordsToRepeat,
+    relevance: userInfo.relevance,
+    options: userInfo.options,
+    statistics: userInfo.statistics,
+  };
+  let info = {
+    nickName: JSON.stringify(userInfo.nickName).split(""),
+    knownWords: JSON.stringify(userInfo.knownWords).split(""),
+    categoriesToLearn: JSON.stringify(userInfo.categoriesToLearn).split(""),
+    wordsToStudy: JSON.stringify(userInfo.wordsToStudy).split(""),
+    wordsToRepeat: JSON.stringify(userInfo.wordsToRepeat).split(""),
+    relevance: JSON.stringify(userInfo.relevance).split(""),
+    options: JSON.stringify(userInfo.options).split(""),
+    statistics: JSON.stringify(userInfo.statistics).split(""),
+    data: JSON.stringify(user).split(""),
+  };
+  for (let key in info) {
+    let amountDiffSymbol = {};
+    info[key].forEach((x) => {
+      amountDiffSymbol[x] = (amountDiffSymbol[x] || 0) + 1;
+    });
+    info[key] = JSON.stringify(amountDiffSymbol);
+  }
+
+  for (let key in userInfo.signature) {
+    let hash = userInfo.signature[key];
+    let descrypt = AES.decrypt(hash, secretSignature);
+    descrypt = descrypt.toString(Utf8);
+    if (info[key] != descrypt) return false;
+  }
+  return true;
 }
 
 function isSuccessStreak(user) {

@@ -2,7 +2,7 @@
   <info-popup ref="info" />
   <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop z9" ref="backDrop"></div>
-  <div class="modal__container z10">
+  <div class="modal__container info z10">
     <div class="forgotPassword">
       <close-modal-button @close="closePopup" class="sign__closeButton" />
       <div class="sign__container">
@@ -190,6 +190,8 @@ export default {
   display: flex;
   flex-direction: column;
   width: 345px;
+  max-height: 100vh;
+  overflow: auto;
 }
 @media (max-width: 479px) {
   .forgotPassword {

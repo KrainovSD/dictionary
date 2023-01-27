@@ -21,6 +21,7 @@
       @input="$emit('update:modelValue', $event.target.value)"
       @focus="focusInput = true"
       @focusout="focusInput = false"
+      @keyup.enter="$emit('keyup')"
     />
     <img
       :src="eyeIcon"
@@ -104,7 +105,7 @@
 
 <script>
 export default {
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "keyup"],
   props: {
     modelValue: String,
     type: String,

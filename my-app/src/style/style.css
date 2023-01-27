@@ -298,34 +298,38 @@ body {
   }
 }
 @media (min-width: 1200px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeFeature__container, .homeImg__headerContainer, .homeImg__container, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 1240px;
     width: 100%;
   }
 }
 @media (min-width: 1024px) and (max-width: 1199px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeFeature__container, .homeImg__headerContainer, .homeImg__container, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 1199px;
     width: 100%;
   }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeFeature__container, .homeImg__headerContainer, .homeImg__container, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 1023px;
     width: 100%;
   }
 }
 @media (min-width: 480px) and (max-width: 767px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeFeature__container, .homeImg__headerContainer, .homeImg__container, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 767px;
     width: 100%;
   }
 }
 @media (max-width: 479px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeFeature__container, .homeImg__headerContainer, .homeImg__container, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 479px;
     width: 100%;
   }
+}
+
+* {
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -337,7 +341,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 110vh;
   background-color: rgba(0, 0, 0, 0.3);
   z-index: 7;
   display: flex;
@@ -387,6 +391,11 @@ body {
 }
 .modal__container.info {
   position: fixed;
+}
+.modal__container.lcard {
+  position: fixed;
+  bottom: 200px;
+  height: calc(100% - 240px);
 }
 
 .workplace {
@@ -721,7 +730,6 @@ body {
 
 .homeImg {
   background-image: url("../assets/books.jpg");
-  width: 100%;
   background-size: cover;
   background-position: center;
   display: flex;
@@ -729,6 +737,7 @@ body {
   height: 100%;
   padding: 21.4285714286rem 0;
   overflow: hidden;
+  margin: 0 auto;
 }
 .homeImg__container {
   margin: auto;
@@ -804,6 +813,7 @@ body {
   padding: 2.1428571429rem 1.4285714286rem;
   box-shadow: 0px 0px 8px 0px #171A36;
   overflow: hidden;
+  margin: 0 auto;
 }
 @media (max-width: 767px) {
   .homeFeature {
@@ -879,9 +889,9 @@ body {
 .homeStart {
   display: flex;
   background: linear-gradient(to top, #55EFCB 0%, #5BCAFF 100%);
-  width: 100%;
   box-shadow: 0px 0px 8px 0px #6A6E9B;
   overflow: hidden;
+  margin: 0 auto;
 }
 .homeStart__container {
   width: 100%;
@@ -1132,7 +1142,7 @@ body {
 }
 @media (max-width: 1023px) {
   .categories__list {
-    overflow-y: auto;
+    overflow-y: visible;
     height: auto;
     box-shadow: none;
     margin: 0;
@@ -1143,9 +1153,12 @@ body {
   }
 }
 .categories__categoryPlaceholder {
-  margin: auto;
   font-size: 3.5714285714rem;
   letter-spacing: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 @media (max-width: 479px) {
   .categories__categoryPlaceholder {
@@ -2331,7 +2344,10 @@ body {
   padding: 1.0714285714rem 0;
   font-size: 1.1428571429rem;
 }
-.relevance__confirmAddWord {
+.relevance__CRUDcontainer {
+  display: flex;
+}
+.relevance__CRUD {
   padding: 0.5714285714rem 0.9285714286rem;
   border-radius: 1.4285714286rem;
   font-size: 1.1428571429rem;
@@ -2339,14 +2355,10 @@ body {
   box-shadow: 0px 3px 13px 0px #C2CEF0;
   color: white;
   font-family: antique;
-  margin: auto 0 0 auto;
+  margin: auto;
+  max-width: 45%;
 }
-@media (max-width: 767px) {
-  .relevance__confirmAddWord {
-    margin: 12px auto 0 auto;
-  }
-}
-.relevance__confirmAddWord.disabled {
+.relevance__CRUD.disabled {
   background-color: #828386;
   box-shadow: 0px 3px 13px 0px #999b9e;
 }
@@ -2435,11 +2447,12 @@ body {
 
 .sign {
   margin: auto;
-  z-index: 2;
   background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
   display: flex;
   flex-direction: column;
   width: 24.6428571429rem;
+  max-height: 100vh;
+  overflow: auto;
 }
 @media (max-width: 350px) {
   .sign {
@@ -2545,13 +2558,19 @@ body {
 }
 
 .wordPopup {
-  margin: auto auto auto auto;
+  margin: auto;
   z-index: 2;
   background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
   display: flex;
   flex-direction: column;
   max-width: 32.1428571429rem;
   width: 100vw;
+  max-height: 90vh;
+}
+@media (max-width: 1200px) {
+  .wordPopup {
+    overflow: auto;
+  }
 }
 .wordPopup__containerCategory {
   width: 100%;
@@ -2810,13 +2829,15 @@ body {
 }
 
 .categoryPopup {
-  margin: 2.1428571429rem auto 0 auto;
+  margin: auto;
   z-index: 4;
   background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
   display: flex;
   flex-direction: column;
   max-width: 32.1428571429rem;
   width: 100vw;
+  max-height: 90vh;
+  overflow: auto;
 }
 .categoryPopup__helper {
   position: absolute;
@@ -2917,18 +2938,26 @@ body {
   width: 450px;
   display: flex;
   flex-direction: column;
-  min-height: 30.3571428571rem;
+  max-height: calc(100vh - 200px);
+  height: auto;
+  overflow: auto;
 }
 @media (max-width: 479px) {
   .learnCard {
     width: 320px;
   }
 }
+.learnCard._mobile {
+  margin: auto auto 0 auto;
+}
 .learnCard__container {
   padding: 1.4285714286rem;
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+.learnCard__container._mobile {
+  padding-bottom: 0px;
 }
 .learnCard__progressContainer {
   padding-bottom: 2.1428571429rem;
@@ -2970,7 +2999,7 @@ body {
   margin: 0.5714285714rem auto;
 }
 .learnCard__confirmContainer {
-  margin: 0.9285714286rem auto 0;
+  margin: 0.9285714286rem auto 13px;
   width: 35%;
 }
 @media (max-width: 479px) {
@@ -2979,7 +3008,6 @@ body {
   }
 }
 .learnCard__optionContainer {
-  padding-top: 4.2857142857rem;
   padding-bottom: 0.7142857143rem;
   max-width: 410px;
   display: grid;
@@ -3036,10 +3064,7 @@ body {
 .learnCard__workContainer {
   display: flex;
   flex-direction: column;
-  margin: auto 0 0 0;
-}
-.learnCard__workContainer.reverse {
-  min-height: 24.2857142857rem;
+  margin: 50px 0 0 0;
 }
 .learnCard__answer {
   text-align: center;

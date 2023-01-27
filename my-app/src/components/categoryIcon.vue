@@ -133,7 +133,7 @@ export default {
 
 <style>
 .categoryIcon {
-  position: absolute;
+  margin: auto;
   top: 30px;
   left: 70%;
   background: linear-gradient(-42deg, #e7fcf5 50%, #fce5f9 50%);
@@ -142,6 +142,8 @@ export default {
   max-width: 320px;
   width: 100vw;
   animation: appearBackDrop 0.4s ease;
+  max-height: 90vh;
+  overflow: auto;
 }
 @media (max-width: 1199px) {
   .categoryIcon {

@@ -1,15 +1,16 @@
 <template v-if="visible == true">
   <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" ref="backDrop"></div>
-  <div class="modal__container">
+  <div class="modal__container" :class="isMobile ? 'lcard' : 'info'">
     <info-popup ref="info" />
     <confirm-popup ref="confirm" />
-    <div class="learnCard">
+
+    <div class="learnCard" :class="isMobile ? '_mobile' : ''">
       <close-modal-button
         @close="closePopup('event')"
         class="sign__closeButton"
       />
-      <div class="learnCard__container">
+      <div class="learnCard__container" :class="isMobile ? '_mobile' : ''">
         <div class="learnCard__progressContainer">
           <p class="learnCard__countWord">{{ progress }}/{{ countWords }}</p>
           <div class="learnCard__progressBar">
@@ -21,7 +22,10 @@
         </div>
         <template v-if="kindOfLearn == 'standart'">
           <p class="learnCard__word">{{ word.translate }}</p>
-          <p class="learnCard__description">
+          <p
+            class="learnCard__description"
+            v-if="word.description?.trim()?.length > 0"
+          >
             Description: {{ word.description }}
           </p>
           <div class="learnCard__workContainer">
@@ -49,16 +53,17 @@
               </p>
               <div class="learnCard__input">
                 <interactive-input
-                  type="input"
-                  v-model="answer"
-                  field="answer"
                   fontSize="18"
-                  :errors="errors"
+                  :errors="errors.answer"
+                  :answer="answer"
                   :interactive="interactiveInput"
+                  :isMobile="isMobile"
                   placeholder="Answer"
+                  @answer="(payload) => (this.answer = payload)"
+                  @enterDown="throttleNormalConfirm"
                 />
               </div>
-              <div class="learnCard__confirmContainer">
+              <div class="learnCard__confirmContainer" v-if="!isMobile">
                 <confirm-button
                   text="Подтвердить"
                   @click="throttleNormalConfirm"
@@ -71,7 +76,10 @@
 
         <template v-if="kindOfLearn == 'reverse'">
           <p class="learnCard__word">{{ word.word }}</p>
-          <p class="learnCard__description">
+          <p
+            class="learnCard__description"
+            v-if="word.description?.trim()?.length > 0"
+          >
             Description: {{ word.description }}
           </p>
           <div class="learnCard__workContainer reverse">
@@ -97,7 +105,7 @@
             </div>
             <div
               class="learnCard__confirmContainer"
-              v-if="isVisibleNext == true"
+              v-if="isVisibleAnswer == true"
             >
               <confirm-button
                 :text="`Далее (${this.timerToShowAnswer} ${secondFormat})`"
@@ -150,6 +158,7 @@ export default {
       isVisibleNext: false,
       isLoading: false,
       isMayEnterAnswer: true,
+      isMobile: false,
     };
   },
   spareTranslates: [
@@ -272,7 +281,7 @@ export default {
     "позволять",
     "тип",
   ],
-  timeToShowAnswer: 8000,
+  timeToShowAnswer: 5000,
   countTryToAnswer: 3,
   delayToEnterAnswer: 1200,
   enterAnswerController: null,
@@ -291,6 +300,14 @@ export default {
   mounted() {
     document.addEventListener("keyup", this.keyBoardEvent);
     window.addEventListener("storage", this.resetStudy);
+    window.removeEventListener("touchstart", this.switchMobile);
+
+    const devices = new RegExp(
+      "Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini",
+      "i"
+    );
+    if (devices.test(window.navigator.userAgent)) this.isMobile = true;
+    window.addEventListener("touchstart", this.switchMobile);
   },
   computed: {
     headerInfo() {
@@ -341,6 +358,9 @@ export default {
   },
 
   methods: {
+    switchMobile() {
+      this.isMobile = true;
+    },
     resetStudy() {
       this.$options.promiseController.resolve({ resetStudy: true });
     },
@@ -472,7 +492,12 @@ export default {
         this.isMayEnterAnswer = true;
       }, this.$options.delayToEnterAnswer);
     },
-    async start(learnType, words, categoryID = "undefined") {
+    async start(
+      learnType,
+      words,
+      categoryID = "undefined",
+      isPlannedLearn = true
+    ) {
       try {
         this.learnType = learnType;
         this.countWords = words.length;
@@ -498,6 +523,7 @@ export default {
 
         for (let word of words) {
           this.isVisibleAnswer = false;
+          this.isVisibleNext = false;
           let answer = {};
           this.try = 0;
           this.word = word;
@@ -513,7 +539,8 @@ export default {
           answers.push(answer);
           if (this.progress != this.countWords) this.progress++;
 
-          localStorage.setItem(this.learnType, JSON.stringify(answers));
+          if (isPlannedLearn)
+            localStorage.setItem(this.learnType, JSON.stringify(answers));
         }
         if (this.isLoading == true) return;
         this.isLoading = true;
@@ -544,6 +571,7 @@ export default {
           this.$store.commit("resetAuth");
           return this.closePopup();
         }
+        localStorage.removeItem(this.learnType);
         await this.showInfo("Обучение", message);
         return this.closePopup();
       }
@@ -648,7 +676,6 @@ export default {
     },
     nextWord() {
       if (this.isVisibleAnswer == false || this.isVisibleNext == false) return;
-      this.isVisibleNext = false;
       clearTimeout(this.$options.setTimeoutController);
       clearInterval(this.$options.timerContoller);
       this.$options.promiseController.resolve(this.isCorrectAnswer);

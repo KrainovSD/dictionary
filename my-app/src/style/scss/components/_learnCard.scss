@@ -12,10 +12,16 @@ $learnWidthMimi: 320px;
     width: $learnWidth;
     display: flex;
     flex-direction: column;
-    min-height: rem(425);
+    max-height: calc(100vh - 200px);
+    height: auto;
+    overflow: auto;
 
     @media (max-width: 479px) {
         width: $learnWidthMimi;
+    }
+
+    &._mobile {
+        margin: auto auto 0 auto;
     }
 
 
@@ -25,6 +31,10 @@ $learnWidthMimi: 320px;
         display: flex;
         flex-direction: column;
         height: 100%;
+
+        &._mobile {
+            padding-bottom: 0px;
+        }
     }
 
     &__progressContainer {
@@ -78,7 +88,7 @@ $learnWidthMimi: 320px;
 
 
     &__confirmContainer {
-        margin: rem(13) auto 0;
+        margin: rem(13) auto 13px;
         width: 35%;
 
         @media (max-width: 479px) {
@@ -88,7 +98,6 @@ $learnWidthMimi: 320px;
 
 
     &__optionContainer {
-        padding-top: rem(60);
         padding-bottom: rem(10);
         max-width: 410px;
         display: grid;
@@ -157,11 +166,7 @@ $learnWidthMimi: 320px;
     &__workContainer {
         display: flex;
         flex-direction: column;
-        margin: auto 0 0 0;
-
-        &.reverse {
-            min-height: rem(340);
-        }
+        margin: 50px 0 0 0;
     }
 
     &__answer {
