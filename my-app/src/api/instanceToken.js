@@ -1,12 +1,11 @@
 import axios from "axios";
-import config from "../../config";
 import store from "../store/index";
 const HEADER = "Authorization";
 //store.commit("setAccessToken", "dsdsdsd");
 //store.getters.getAccessToken
 axios.defaults.withCredentials = true; // DEV MOD
 const instance = axios.create({
-  baseURL: config.UI.host,
+  timeout: 5000,
 });
 
 instance.interceptors.request.use(async function (request) {
@@ -50,7 +49,7 @@ export default instance;
 function refreshToken() {
   return new Promise((resolve, reject) => {
     axios
-      .post(`${config.UI.host}/auth/tokens`)
+      .post(`/auth/tokens`)
       .then((res) => {
         let accessToken = res.data.token;
         store.commit("setAccessToken", accessToken);

@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 import * as dotenv from 'dotenv';
-dotenv.config({ path: 'config.env' });
+dotenv.config({ path: 'config.env', silent: true });
 
 import { WordController } from '../controllers/index.js';
 import { wordsValidation } from '../validations.js';

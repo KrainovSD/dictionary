@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-dotenv.config({ path: 'config.env' });
+dotenv.config({ path: 'config.env', silent: true });
 const secretAccessToken = process.env.SECRET_ACCESS_TOKEN;
 const secretRefreshToken = process.env.SECRET_REFRESH_TOKEN;
 const secretPassword = process.env.SECRET_PASSWORD_TO_HASH;

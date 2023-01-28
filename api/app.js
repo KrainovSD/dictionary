@@ -1,11 +1,18 @@
 import * as dotenv from 'dotenv';
-dotenv.config({ path: 'config.env' });
+dotenv.config({ path: 'config.env', silent: true });
 import express from 'express';
 const app = express();
 app.use(express.json()); // req.body only for application/json
 //app.use(express.urlencoded({extended: true})); // req.body only for application/x-www-form-urlencoded
 import cookieParser from 'cookie-parser';
 app.use(cookieParser()); // req.cookies
+
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+app.use(express.static(path.join(__dirname, './dist')));
 
 import mongoose from 'mongoose';
 mongoose
@@ -52,6 +59,9 @@ import untils from './untils/index.js';
 import routes from './routes/index.js';
 import logger from './logger.js';
 app.use(untils.reqLogger);
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, './dist/index.html'));
+});
 app.use('/auth', routes.auth);
 app.use('/user', routes.user);
 app.use('/words', routes.words);
