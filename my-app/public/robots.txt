@@ -1,2 +1,20 @@
 User-agent: *
-Disallow:
+Allow: /main
+Allow: /learn
+Allow: /actual
+Allow: /docs
+Allow: /contacts
+Allow: *.js
+Allow: *.png
+Allow: *.jpg
+Allow: *.gif
+Allow: *.css
+Disallow: /pass
+Disallow: /confirm
+Disallow: /email
+Disallow: /pass
+
+Sitemap: https://krainovdictionary.ru/sitemap.xml
+Host: https://krainovdictionary.ru
+
+

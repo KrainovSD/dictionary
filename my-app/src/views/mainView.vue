@@ -170,9 +170,7 @@ export default {
         this.userInfo?.avatar != "" &&
         Object.keys(this.userInfo).length > 0
       ) {
-        //const path = `../../upload/${this.userInfo.nickName}/${this.userInfo.avatar}`
-        //return path;
-        return require(`../assets/${this.userInfo.nickName}/${this.userInfo.avatar}`);
+        return `https://krainovdictionary.ru/uploads/${this.userInfo.nickName}/${this.userInfo.avatar}`;
       }
       return require("../assets/avatar.png");
     },
@@ -212,8 +210,7 @@ export default {
     },
     openTestPanel() {
       /* alt x2, ctrl x3, click, alt*/
-      this.isTestVisible = true;
-
+      //this.isTestVisible = true;
       /*let pattern = this.testCombination.length;
       if (pattern == 0 || pattern == 1 || pattern == 6) {
         if (e.altKey && !e.ctrlKey) this.testCombination.push(true);

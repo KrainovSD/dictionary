@@ -147,8 +147,6 @@ export default {
           email: form.email,
           key: this.key,
         });
-      } else {
-        console.log(this.errors);
       }
     },
     async showInfo(header, title) {
@@ -172,7 +170,7 @@ export default {
           this.responseMessage = message;
           return;
         }
-        console.log(err);
+
         this.responseMessage = "Сервер не отвечает";
       }
     },

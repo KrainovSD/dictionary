@@ -123,7 +123,6 @@ export default {
           this.adviceWord = "";
           this.adviceTranscription = "";
           this.adviceTranslate = [];
-          console.log(err);
         }
       }, this.$options.delayAPI);
     },

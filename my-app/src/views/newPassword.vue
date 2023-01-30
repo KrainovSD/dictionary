@@ -143,8 +143,6 @@ export default {
 
       if (Object.keys(this.errors).length === 0) {
         this.sendData({ password: form.password, key: this.key });
-      } else {
-        console.log(this.errors);
       }
     },
     async sendData(form) {
@@ -165,7 +163,6 @@ export default {
           this.responseMessage = message;
           return;
         }
-        console.log(err);
         this.responseMessage = "Сервер не отвечает";
       }
     },

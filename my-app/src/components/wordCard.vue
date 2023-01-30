@@ -276,7 +276,6 @@ export default {
     },
     multiSelecteditems: {
       handler() {
-        console.log("1");
         if (this.currentMultiSelectedWords != this.multiSelecteditems)
           this.$emit("changeMultiSelected", this.multiSelecteditems);
       },
@@ -284,7 +283,6 @@ export default {
     },
     currentMultiSelectedWords: {
       handler() {
-        console.log("2");
         if (this.currentMultiSelectedWords != this.multiSelecteditems) {
           this.multiSelecteditems = this.currentMultiSelectedWords;
           this.multiMod = false;

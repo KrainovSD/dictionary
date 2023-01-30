@@ -148,8 +148,6 @@ export default {
 
       if (Object.keys(this.errors).length === 0) {
         this.sendData(form);
-      } else {
-        console.log(this.errors);
       }
     },
     async sendData(form) {
@@ -167,7 +165,6 @@ export default {
           this.responseMessage = err?.response?.data?.message;
           return;
         }
-        console.log(err);
         this.responseMessage = "Сервер не отвечает";
       }
     },

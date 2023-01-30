@@ -280,7 +280,6 @@ export default {
             break;
           }
         }
-        console.log(this.errors);
         if (
           field != "regularityToRepeat" ||
           (Object.keys(this.errors?.regularityToRepeat).length == 0 &&

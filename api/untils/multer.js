@@ -20,10 +20,10 @@ const storageConfig = multer.diskStorage({
       let user = await User.findOne({ _id: req.userId });
       let nickName = user.nickName;
       // Путь куда сохраняется файл полностью прописывается
-      let dir = `./uploads/${nickName}`;
+      let dir = `./dist/uploads/${nickName}`;
       if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
 
-      fs.mkdirSync(__dirname + `./uploads/${nickName}`);
+      fs.mkdirSync(__dirname + `./dist/uploads/${nickName}`);
       cb(null, dir);
     } catch (error) {
       console.error(error);

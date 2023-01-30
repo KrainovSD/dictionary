@@ -1150,7 +1150,6 @@ function pullStudiedCategory(categoryID, user) {
   return user;
 }
 function pushWrongsInWords(words, typeWords, user) {
-  console.log(words);
   let message = "";
   const maxWrongs = user.options[0].countWrongsToAddToRepeat;
 
@@ -1284,7 +1283,6 @@ function multiSetElement(field, changeFields, userInfo) {
     }
     return userInfo;
   } catch (err) {
-    console.log(err);
     return false;
   }
 }
@@ -1340,8 +1338,6 @@ function getUserInfoFromLocalStorage() {
     }
     return userInfo;
   } catch (err) {
-    console.log(err);
-
     return clearLocalStorage();
   }
 }
@@ -1514,7 +1510,6 @@ function setSignature(userInfo) {
     userInfo.signature = signature;
     return userInfo;
   } catch (err) {
-    console.log(err);
     return false;
   }
 }
@@ -1589,7 +1584,6 @@ function isSuccessStreak(user) {
 
     return { increaseStreak: true };
   } catch (err) {
-    console.log(err);
     return false;
   }
 }

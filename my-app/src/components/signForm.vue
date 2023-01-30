@@ -367,7 +367,6 @@ export default {
           this.responseMessage = message;
           return;
         }
-        console.log(err);
         this.responseMessage = "Сервер не отвечает";
       }
     },
@@ -391,7 +390,6 @@ export default {
           this.responseMessage = message;
           return;
         }
-        console.log(err);
         this.responseMessage = "Сервер не отвечает";
       }
     },
@@ -411,12 +409,10 @@ export default {
       this.validateForm(form);
       if (Object.keys(this.errors).length === 0) {
         if (this.signType == "login") this.login(form);
-        if (this.signType == "register") {
+        else if (this.signType == "register") {
           delete form.repeatPassword;
           this.register(form);
         }
-      } else {
-        console.log(this.errors);
       }
     },
   },

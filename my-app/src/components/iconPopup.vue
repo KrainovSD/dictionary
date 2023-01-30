@@ -65,7 +65,7 @@ export default {
         this.userInfo?.avatar != "" &&
         Object.keys(this.userInfo).length > 0
       ) {
-        return require(`../assets/avatar/${this.userInfo.nickName}/${this.userInfo.avatar}`);
+        return `https://krainovdictionary.ru/uploads/${this.userInfo.nickName}/${this.userInfo.avatar}`;
       }
       return require("../assets/avatar.png");
     },
@@ -98,8 +98,7 @@ export default {
         this.error = "Неверный формат файла!";
         return;
       }
-      if (!FileReader) console.log("не поддерживается");
-      if (event.target.files.lenght) console.log("Ничего не загружено");
+      if (!FileReader) return;
       let reader = new FileReader();
       reader.onload = () => {
         this.icon = reader.result.substring(reader.result.indexOf(",") + 1);

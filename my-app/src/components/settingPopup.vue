@@ -279,7 +279,7 @@ export default {
         this.userInfo?.avatar != "" &&
         Object.keys(this.userInfo).length > 0
       ) {
-        return require(`../assets/avatar/${this.userInfo.nickName}/${this.userInfo.avatar}`);
+        return `https://krainovdictionary.ru/uploads/${this.userInfo.nickName}/${this.userInfo.avatar}`;
       }
       return require("../assets/avatar.png");
     },
@@ -552,7 +552,6 @@ export default {
         this.$api.offline.setSignatureAPI(userInfo);
         this.showInfo("Импорт", "Файл успешно импортирован!");
       } catch (err) {
-        console.log(err);
         this.isLoading = false;
         this.showInfo("Импорт", "Неверный формат файла или данных!");
         return;

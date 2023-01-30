@@ -1,8 +1,7 @@
 import axios from "axios";
 import store from "../store/index";
 const HEADER = "Authorization";
-//store.commit("setAccessToken", "dsdsdsd");
-//store.getters.getAccessToken
+
 axios.defaults.withCredentials = true; // DEV MOD
 const instance = axios.create({
   timeout: 5000,

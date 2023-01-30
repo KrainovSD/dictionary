@@ -1019,7 +1019,6 @@ export default {
         let message = res?.data?.message || res?.message;
         await this.showInfo("Удаление слова", message);
       } catch (err) {
-        console.log(err);
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
         this.isLoading = false;

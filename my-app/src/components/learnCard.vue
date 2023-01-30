@@ -578,7 +578,6 @@ export default {
         await this.showInfo("Обучение", message);
         return this.closePopup();
       } catch (err) {
-        console.log(err);
         let message = err?.response?.data?.message || err?.message;
         let status = err?.response?.status;
         this.isLoading = false;
