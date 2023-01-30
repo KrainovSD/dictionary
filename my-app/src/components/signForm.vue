@@ -148,10 +148,10 @@ export default {
   },
   data() {
     return {
-      nickName: "KrainovSD",
+      nickName: "",
       userName: "",
       email: "",
-      password: "denis010542",
+      password: "",
       repeatPassword: "",
       errors: {},
       responseMessage: "",

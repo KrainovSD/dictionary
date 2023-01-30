@@ -50,6 +50,13 @@
     <div class="keyboard__key">ː</div>
     <div class="keyboard__key spaceMobile">_</div>
     <div class="keyboard__key backspace">←</div>
+
+    <div class="keyboard__key insert">
+      <img src="@/assets/insert.png" alt="" class="keyboard__img" />
+    </div>
+    <div class="keyboard__key clear">
+      <img src="@/assets/clear.png" alt="" class="keyboard__img" />
+    </div>
   </div>
   <input
     readonly
@@ -61,7 +68,6 @@
     @focus="isFocus = true"
     @focusout="isFocus = false"
     @keypress.prevent=""
-    @keyup="enterTranscription"
     @input="
       (e) => {
         $emit('changeTranscription', e.target.value);
@@ -71,7 +77,7 @@
     ref="transcription"
   />
   <div
-    class="wordPopup__tooltip"
+    class="inputTooltip__tooltip"
     v-if="error && isFocus"
     :tooltip="error"
   ></div>
@@ -88,44 +94,59 @@ export default {
     return { isFocus: false };
   },
   methods: {
-    enterTranscription(event) {
-      if (event?.type == "keyup") {
+    async enterTranscription(event) {
+      /*if (event?.type == "keyup") {
         let input = this.$refs.transcription;
         this.$emit("changeTranscription", input.value);
         return;
-      }
+      }*/
 
       event.preventDefault();
-      if (!event.target.classList.contains("keyboard__key")) return;
-      let symbol = event.target.textContent;
+      let target = event.target;
+      if (!target.classList.contains("keyboard__key")) {
+        if (target.parentNode.classList.contains("keyboard__key")) {
+          target = target.parentNode;
+        } else return;
+      }
       let input = this.$refs.transcription;
-      //let cursor = input.selectionStart;
-      let text = input.value;
-      switch (symbol) {
-        case "_": {
-          input.value = text + " ";
-          /*input.value =
+      if (target.classList.contains("insert")) {
+        let text = await navigator.clipboard.readText();
+        console.log(text);
+        if (typeof text == "string") input.value += text;
+      } else if (target.classList.contains("clear")) {
+        input.value = "";
+      } else {
+        let symbol = target.textContent;
+
+        //let cursor = input.selectionStart;
+        let text = input.value;
+        switch (symbol) {
+          case "_": {
+            input.value = text + " ";
+            /*input.value =
             text.substring(0, cursor) + " " + text.substring(cursor);
           input.selectionStart = input.selectionEnd = cursor + 1;*/
 
-          break;
-        }
-        case "←": {
-          input.value = text.substring(0, text.length - 1);
-          /*input.value = text.substring(0, cursor - 1) + text.substring(cursor);
+            break;
+          }
+          case "←": {
+            input.value = text.substring(0, text.length - 1);
+            /*input.value = text.substring(0, cursor - 1) + text.substring(cursor);
           input.selectionStart = input.selectionEnd = cursor - 1;*/
 
-          break;
-        }
-        default: {
-          input.value = text + symbol;
-          /*input.value =
+            break;
+          }
+          default: {
+            input.value = text + symbol;
+            /*input.value =
             text.substring(0, cursor) + symbol + text.substring(cursor);
           input.selectionStart = input.selectionEnd = cursor + 1;*/
 
-          break;
+            break;
+          }
         }
       }
+
       this.$emit("changeTranscription", input.value);
     },
   },
@@ -142,27 +163,24 @@ export default {
 
 <style>
 .keyboard {
-  position: absolute;
-  width: 905px;
-  z-index: 2;
-  top: 70%;
+  position: fixed;
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
+  width: 905px;
+  z-index: 2;
   background-color: #e7fcf5;
   margin: 20px auto auto auto;
   background: rgba(112, 110, 110, 0.452);
   padding: 10px 10px 5px 10px;
   display: grid;
   gap: 0px 5px;
-  grid-template-columns: repeat(auto-fit, 50px);
+  grid-template-columns: repeat(16, 50px);
   grid-auto-rows: 50px;
 }
 
-.keyboard div {
-  display: flex;
-  margin-bottom: 5px;
-}
 .keyboard__key {
+  display: flex;
   background-color: white;
   border-radius: 10px;
   font-size: 22px;
@@ -185,26 +203,41 @@ export default {
 .keyboard__key.spaceMobile {
   display: none;
 }
+.keyboard__key.backspace {
+  grid-column: 15/17;
+}
+.keyboard__key.insert {
+  grid-column: 4/7;
+}
+.keyboard__key.clear {
+  grid-column: 11/14;
+}
+
+.keyboard__img {
+  width: 22px;
+  height: 22px;
+}
 
 @media (max-width: 1023px) {
   .keyboard {
     position: fixed;
     top: 0px;
     left: 50%;
+    bottom: auto;
     transform: translateX(-50%);
     background-color: #e7fcf5;
     background: rgb(99, 98, 98);
     margin: 0;
-    width: auto;
-    grid-template-columns: repeat(16, 40px);
-    grid-auto-rows: 40px;
+    width: 100vw;
+    grid-template-columns: repeat(16, minmax(40px, 1fr));
+    grid-template-rows: repeat(4, 40px);
     gap: 5px;
   }
 }
 @media (max-width: 767px) {
   .keyboard {
-    grid-template-columns: repeat(16, 26px);
-    grid-auto-rows: 35px;
+    grid-template-columns: repeat(16, minmax(26px, 1fr));
+    grid-template-rows: repeat(4, 40px);
     gap: 5px 2.5px;
   }
 }
@@ -232,6 +265,12 @@ export default {
     margin-bottom: 2.5px;
     height: 32px;
     flex-basis: calc(12.5% - 5px);
+  }
+  .keyboard__key.insert {
+    flex-basis: calc(12.5% * 2 - 5px);
+  }
+  .keyboard__key.clear {
+    flex-basis: calc(12.5% * 2 - 5px);
   }
 }
 </style>

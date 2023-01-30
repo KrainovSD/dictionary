@@ -12,10 +12,8 @@
     max-width: rem(450);
     width: 100vw;
     max-height: 90vh;
+    overflow: auto;
 
-    @media (max-width: 1200px) {
-        overflow: auto;
-    }
 
     &__containerCategory {
         width: 100%;

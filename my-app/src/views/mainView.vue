@@ -138,15 +138,9 @@ export default {
     };
   },
   async mounted() {
-    window.addEventListener(
-      "load",
-      function () {
-        setTimeout(function () {
-          window.scrollTo(0, 1);
-        }, 1);
-      },
-      false
-    );
+    console.log("v1");
+    console.log(process.env);
+    console.log(process.env.VUE_APP_PRODUCTION);
 
     await this.syncUserInfoWithServer();
 
@@ -176,7 +170,9 @@ export default {
         this.userInfo?.avatar != "" &&
         Object.keys(this.userInfo).length > 0
       ) {
-        return require(`../assets/avatar/${this.userInfo.nickName}/${this.userInfo.avatar}`);
+        //const path = `../../upload/${this.userInfo.nickName}/${this.userInfo.avatar}`
+        //return path;
+        return require(`../assets/${this.userInfo.nickName}/${this.userInfo.avatar}`);
       }
       return require("../assets/avatar.png");
     },

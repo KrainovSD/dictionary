@@ -85,8 +85,8 @@ export default {
 .inputTooltip__tooltip {
   position: absolute;
   display: inline-block;
-  left: 100%;
-  top: 50%;
+  left: 50%;
+  top: -10%;
 }
 .inputTooltip__tooltip::after {
   content: attr(tooltip);
@@ -95,7 +95,7 @@ export default {
   text-align: center;
   color: white;
   font-size: 16px;
-  min-width: 250px;
+  min-width: 200px;
   border-radius: 5px;
   pointer-events: none;
   padding: 9px 9px;
@@ -103,7 +103,7 @@ export default {
   left: 200%;
   top: 50%;
   margin-left: 8px;
-  transform: translateX(0%) translateY(-50%);
+  transform: translateX(-50%) translateY(-100%);
 }
 
 .inputTooltip__tooltip::before {
@@ -116,7 +116,7 @@ export default {
   left: 100%;
   top: 50%;
   margin-left: 1px;
-  transform: translatey(-50%) rotate(90deg);
+  transform: translatey(-50%) rotate(0deg);
 }
 
 .inputTooltip__tooltip.top {
@@ -128,18 +128,5 @@ export default {
 }
 .inputTooltip__tooltip.top::before {
   transform: translatey(-50%) rotate(0deg);
-}
-@media (max-width: 767px) {
-  .inputTooltip__tooltip {
-    left: 50%;
-    top: -10%;
-  }
-  .inputTooltip__tooltip::after {
-    transform: translateX(-50%) translateY(-100%);
-  }
-
-  .inputTooltip__tooltip::before {
-    transform: translatey(-50%) rotate(0deg);
-  }
 }
 </style>

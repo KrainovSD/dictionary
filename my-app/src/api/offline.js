@@ -1328,6 +1328,9 @@ function makeID() {
 function getUserInfoFromLocalStorage() {
   try {
     let userInfo = {};
+    if (localStorage.getItem("userInfo") == null) {
+      clearLocalStorage(false);
+    }
     let info = JSON.parse(localStorage.getItem("userInfo"));
     if (typeof info != "object" && info != null && !info)
       throw new Error("Данные повреждены");
@@ -1342,10 +1345,11 @@ function getUserInfoFromLocalStorage() {
     return clearLocalStorage();
   }
 }
-function clearLocalStorage() {
-  alert(
-    "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены! Чтобы продолжить накапливать прогресс в оффлайн версии, необходимо залогиниться и синхронизировать свои данные вновь!"
-  );
+function clearLocalStorage(withAlert = true) {
+  if (withAlert)
+    alert(
+      "Ваши локальные пользовательские данные были испорчены, всвязи с этим они были очищены! Чтобы продолжить накапливать прогресс в оффлайн версии, необходимо залогиниться и синхронизировать свои данные вновь!"
+    );
   localStorage.clear();
   let userInfo = {
     nickName: "none",

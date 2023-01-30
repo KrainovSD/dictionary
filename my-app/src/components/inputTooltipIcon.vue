@@ -268,8 +268,9 @@ export default {
 .inputIconContainer__tooltip {
   position: absolute;
   display: inline-block;
-  left: 100%;
-  top: 50%;
+  height: auto;
+  left: 50%;
+  top: -10%;
 }
 .inputIconContainer__tooltip::after {
   content: attr(tooltip);
@@ -278,7 +279,7 @@ export default {
   text-align: center;
   color: white;
   font-size: 16px;
-  min-width: 250px;
+  min-width: 200px;
   border-radius: 5px;
   pointer-events: none;
   padding: 9px 9px;
@@ -286,7 +287,7 @@ export default {
   left: 200%;
   top: 50%;
   margin-left: 8px;
-  transform: translateX(0%) translateY(-50%);
+  transform: translateX(-50%) translateY(-100%);
 }
 .inputIconContainer__tooltip::before {
   content: "";
@@ -298,7 +299,7 @@ export default {
   left: 100%;
   top: 50%;
   margin-left: 1px;
-  transform: translatey(-50%) rotate(90deg);
+  transform: translatey(-50%) rotate(0deg);
 }
 
 .inputIconContainer__eye {
@@ -386,20 +387,6 @@ export default {
   }
   .inputIconContainer__adviceMobile .inputIconContainer__progressBar {
     border: 1px solid black;
-  }
-}
-
-@media (max-width: 767px) {
-  .inputIconContainer__tooltip {
-    left: 50%;
-    top: -10%;
-  }
-  .inputIconContainer__tooltip::after {
-    transform: translateX(-50%) translateY(-100%);
-  }
-
-  .inputIconContainer__tooltip::before {
-    transform: translatey(-50%) rotate(0deg);
   }
 }
 </style>

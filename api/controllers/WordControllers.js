@@ -1,23 +1,8 @@
-import { signedCookies } from 'cookie-parser';
-
 import User from '../models/Users.js';
-import { message } from './UserControllers.js';
-/* 
-1. StartLearnCategory: 
-- не активная категория
-- есть слова, хотябы одно
-2. addCategory: 
-- не повторяющееся имя
-3. addWord: 
-- не активная категория
-- не повторяющиеся слово
-4. updateCategory:
-- не активная категория
-- не менять имя на то которое есть
-5. updateWord:
-- не менять имя на то, которое есть
-*/
-const countWordsToActiveCategory = 2;
+import * as dotenv from 'dotenv';
+dotenv.config({ path: 'config.env', silent: true });
+
+const countWordsToActiveCategory = process.env.COUNT_WORDS_TO_ACTIVE_CATEGORY;
 
 export const startLearnCategory = async (req, res) => {
   try {

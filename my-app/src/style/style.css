@@ -2566,11 +2566,7 @@ body {
   max-width: 32.1428571429rem;
   width: 100vw;
   max-height: 90vh;
-}
-@media (max-width: 1200px) {
-  .wordPopup {
-    overflow: auto;
-  }
+  overflow: auto;
 }
 .wordPopup__containerCategory {
   width: 100%;
@@ -2938,7 +2934,7 @@ body {
   width: 450px;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 200px);
+  max-height: 95vh;
   height: auto;
   overflow: auto;
 }

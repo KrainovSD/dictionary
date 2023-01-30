@@ -1,11 +1,26 @@
 <template v-if="visible == true">
   <loading-popup v-if="isLoading == true" />
   <div class="modal__backDrop" ref="backDrop"></div>
-  <div class="modal__container" :class="isMobile ? 'lcard' : 'info'">
+  <div
+    class="modal__container"
+    :class="isMobile && kindOfLearn == 'standart' ? 'lcard' : 'info'"
+  >
     <info-popup ref="info" />
     <confirm-popup ref="confirm" />
-
-    <div class="learnCard" :class="isMobile ? '_mobile' : ''">
+    <interactive-input-keyboard
+      fontSize="18"
+      :errors="errors.answer"
+      :answer="answer"
+      :interactive="interactiveInput"
+      placeholder="Answer"
+      @answer="(payload) => (this.answer = payload)"
+      @enterDown="throttleNormalConfirm"
+      v-if="isMobile"
+    />
+    <div
+      class="learnCard"
+      :class="isMobile && kindOfLearn == 'standart' ? '_mobile' : ''"
+    >
       <close-modal-button
         @close="closePopup('event')"
         class="sign__closeButton"
@@ -55,12 +70,12 @@
                 <interactive-input
                   fontSize="18"
                   :errors="errors.answer"
-                  :answer="answer"
+                  v-model="answer"
                   :interactive="interactiveInput"
-                  :isMobile="isMobile"
                   placeholder="Answer"
                   @answer="(payload) => (this.answer = payload)"
                   @enterDown="throttleNormalConfirm"
+                  v-if="!isMobile"
                 />
               </div>
               <div class="learnCard__confirmContainer" v-if="!isMobile">
@@ -126,6 +141,7 @@ import confirmButton from "../components/confirmButton.vue";
 import infoPopup from "../components/infoPopup.vue";
 import confirmPopup from "../components/confirmPopup.vue";
 import interactiveInput from "../components/interactiveInput.vue";
+import interactiveInputKeyboard from "../components/interactiveInputKeyboard.vue";
 import closeModalButton from "../components/closeModalButton.vue";
 import loadingPopup from "../components/loadingPopup.vue";
 
@@ -135,6 +151,7 @@ export default {
     confirmButton,
     infoPopup,
     interactiveInput,
+    interactiveInputKeyboard,
     confirmPopup,
     closeModalButton,
     loadingPopup,
@@ -291,6 +308,7 @@ export default {
   beforeUnmount() {
     document.removeEventListener("keyup", this.keyBoardEvent);
     window.removeEventListener("storage", this.resetStudy);
+    window.removeEventListener("touchstart", this.switchMobile);
     clearTimeout(this.$options.enterAnswerController);
     if (this.isVisibleAnswer == false) return;
     clearTimeout(this.$options.setTimeoutController);
@@ -300,7 +318,6 @@ export default {
   mounted() {
     document.addEventListener("keyup", this.keyBoardEvent);
     window.addEventListener("storage", this.resetStudy);
-    window.removeEventListener("touchstart", this.switchMobile);
 
     const devices = new RegExp(
       "Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini",

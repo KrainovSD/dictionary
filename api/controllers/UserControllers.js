@@ -8,6 +8,7 @@ const secretSyncSignature = process.env.SECRET_SYNC_SIGNATURE;
 const timeExistForCheckKeys = 5; // В минутах
 const maxSizeAvatar = 1 * 1024 * 1024;
 const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;
+const HOST = process.env.HOST;
 
 import User from '../models/Users.js';
 
@@ -101,10 +102,8 @@ export const register = async (req, res) => {
       from: process.env.POST_LOGIN,
       to: req.body.email,
       subject: `Подтверждение аккаунта`,
-      //text: `Перейдите по ссылке, чтобы активировать аккаунт: http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}`,
-      //html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://${process.env.HOST}:${process.env.PORT}/confirm/${user.confirmKey}">Confirm</a> `,
-      text: `Перейдите по ссылке, чтобы активировать аккаунт: http://192.168.0.103:8080/confirm/${user.confirmKey}`,
-      html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="http://192.168.0.103:8080/confirm/${user.confirmKey}">Confirm</a> `,
+      text: `Перейдите по ссылке, чтобы активировать аккаунт: https://${HOST}/confirm/${user.confirmKey}`,
+      html: `Перейдите по ссылке, чтобы активировать аккаунт: <a href="https://${HOST}/confirm/${user.confirmKey}">Confirm</a> `,
     };
     await transporter.sendMail(message);
 
@@ -372,8 +371,8 @@ export const changeEmail = async (req, res) => {
       from: process.env.POST_LOGIN,
       to: email,
       subject: `Смена почты`,
-      text: `Перейдите по ссылке, чтобы изменить Email: http://${process.env.HOST}:${process.env.PORT}/confirm/${confirmKey}`,
-      html: `Перейдите по ссылке, чтобы изменить Email:  <a href="http://${process.env.HOST}:${process.env.PORT}/confirm/${confirmKey}">Confirm</a> `,
+      text: `Перейдите по ссылке, чтобы изменить Email: https://${HOST}/confirm/${confirmKey}`,
+      html: `Перейдите по ссылке, чтобы изменить Email:  <a href="https://${HOST}/confirm/${confirmKey}">Confirm</a> `,
     };
     await transporter.sendMail(message);
 
@@ -441,8 +440,8 @@ export const forgotPassword = async (req, res) => {
       from: process.env.POST_LOGIN,
       to: req.body.email,
       subject: `Смена пароля`,
-      text: `Перейдите по ссылке для смены пароля на вашем аккаунте: http://${process.env.HOST}:${process.env.PORT}/pass/${resetPasswordKey}`,
-      html: `Перейдите по ссылке для смены пароля на вашем аккаунте: <a href="http://${process.env.HOST}:${process.env.PORT}/pass/${resetPasswordKey}">ResetPassword</a> `,
+      text: `Перейдите по ссылке для смены пароля на вашем аккаунте: https://${HOST}/pass/${resetPasswordKey}`,
+      html: `Перейдите по ссылке для смены пароля на вашем аккаунте: <a href="https://${HOST}/pass/${resetPasswordKey}">ResetPassword</a> `,
     };
     await transporter.sendMail(message);
 
@@ -625,8 +624,8 @@ const changeInfoEmail = async (req, res) => {
       from: process.env.POST_LOGIN,
       to: email,
       subject: `Выбор почты`,
-      text: `Перейдите по ссылке, чтобы указать новый Email: http://${process.env.HOST}:${process.env.PORT}/email/${confirmKey}`,
-      html: `Перейдите по ссылке, чтобы указать новый Email:  <a href="http://${process.env.HOST}:${process.env.PORT}/email/${confirmKey}">Confirm</a> `,
+      text: `Перейдите по ссылке, чтобы указать новый Email: https://${HOST}/email/${confirmKey}`,
+      html: `Перейдите по ссылке, чтобы указать новый Email:  <a href="https://${HOST}/email/${confirmKey}">Confirm</a> `,
     };
     await transporter.sendMail(message);
 

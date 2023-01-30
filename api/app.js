@@ -32,13 +32,12 @@ mongoose.connection.on('close', () => {
   console.log('DB close connect');
 });
 const port = process.env.PORT || 3000;
-const host = process.env.HOST;
-app.listen(port, host, (err) => {
+app.listen(port, (err) => {
   if (err) {
     console.log(err);
     logger(err, 'start server');
   }
-  console.log(`Server has started on port ${port} and host ${host}`);
+  console.log(`Server has started on port ${port}`);
 });
 
 const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;

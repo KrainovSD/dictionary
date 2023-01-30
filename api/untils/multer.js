@@ -23,7 +23,7 @@ const storageConfig = multer.diskStorage({
       let dir = `./uploads/${nickName}`;
       if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
 
-      fs.mkdirSync(__dirname + `/../uploads/${nickName}`);
+      fs.mkdirSync(__dirname + `./uploads/${nickName}`);
       cb(null, dir);
     } catch (error) {
       console.error(error);
