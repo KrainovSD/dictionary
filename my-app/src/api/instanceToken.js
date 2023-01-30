@@ -2,10 +2,19 @@ import axios from "axios";
 import store from "../store/index";
 const HEADER = "Authorization";
 
-axios.defaults.withCredentials = true; // DEV MOD
-const instance = axios.create({
-  timeout: 5000,
-});
+let instance;
+const PRODUCTION = process.env.NODE_ENV == "production" ? true : false;
+if (PRODUCTION) {
+  instance = axios.create({
+    timeout: 5000,
+  });
+} else {
+  axios.defaults.withCredentials = true; // DEV MOD
+  instance = axios.create({
+    baseURL: "http://192.168.0.103:3000/",
+    timeout: 5000,
+  });
+}
 
 instance.interceptors.request.use(async function (request) {
   let accessToken = store.getters.getAccessToken;
@@ -45,10 +54,17 @@ instance.interceptors.response.use(
 
 export default instance;
 
+let tokenUrl;
+if (PRODUCTION) {
+  tokenUrl = "/auth/tokens";
+} else {
+  tokenUrl = "http://192.168.0.103:3000/auth/tokens";
+}
+
 function refreshToken() {
   return new Promise((resolve, reject) => {
     axios
-      .post(`/auth/tokens`)
+      .post(tokenUrl)
       .then((res) => {
         let accessToken = res.data.token;
         store.commit("setAccessToken", accessToken);

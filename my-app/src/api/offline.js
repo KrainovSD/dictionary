@@ -1,8 +1,9 @@
 import store from "../store/index";
 import AES from "crypto-js/aes";
 import Utf8 from "crypto-js/enc-utf8.js";
-const countWordsToActiveCategory = 2;
-const secretSignature = "D,BSDADKM@dskaosdk32";
+const countWordsToActiveCategory =
+  process.env.VUE_APP_COUNT_WORDS_TO_ACTIVE_CATEGORY || 20;
+const secretSignature = process.env.VUE_APP_SYNC_SIGNATURE;
 /*
 let userInfo = store.getters.userInfo;
 store.commit("resetAuth");*/

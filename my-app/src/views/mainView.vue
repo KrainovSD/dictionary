@@ -138,10 +138,6 @@ export default {
     };
   },
   async mounted() {
-    console.log("v1");
-    console.log(process.env);
-    console.log(process.env.VUE_APP_PRODUCTION);
-
     await this.syncUserInfoWithServer();
 
     if (!this.auth) await this.checkAuth();

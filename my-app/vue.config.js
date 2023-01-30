@@ -11,3 +11,5 @@ module.exports = defineConfig({
     },
   },
 });
+process.env.VUE_APP_COUNT_WORDS_TO_ACTIVE_CATEGORY = 3;
+process.env.VUE_APP_SYNC_SIGNATURE = "@mdfsakdmcx,234weds@";

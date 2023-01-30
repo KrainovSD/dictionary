@@ -53,6 +53,7 @@ if (!PRODUCTION) {
     next();
   });
 }
+console.log(process.env);
 
 import untils from './untils/index.js';
 import routes from './routes/index.js';

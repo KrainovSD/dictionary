@@ -404,7 +404,8 @@ import loadingPopup from "../components/loadingPopup.vue";
 import wordCard from "../components/wordCard";
 import { nextTick } from "@vue/runtime-core";
 export default {
-  countWordsToActiveCategory: 2,
+  countWordsToActiveCategory:
+    process.env.VUE_APP_COUNT_WORDS_TO_ACTIVE_CATEGORY || 20,
   components: {
     categoryPopup,
     wordPopup,

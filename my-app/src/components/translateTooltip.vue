@@ -146,8 +146,8 @@ export default {
 
 <style>
 .translateTooltip {
-  position: absolute;
-  left: -112%;
+  position: fixed;
+  left: calc(50% - 350px - 200px);
   top: 50%;
   background: rgba(0, 0, 0, 0.7);
   color: white;
@@ -156,6 +156,7 @@ export default {
   border-radius: 5px;
   padding: 9px 9px;
   margin-left: 8px;
+  z-index: 8;
   transform: translateX(0%) translateY(-50%);
 }
 @media (max-width: 1199px) {

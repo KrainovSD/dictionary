@@ -2,6 +2,7 @@ import User from '../models/Users.js';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: 'config.env', silent: true });
 
+const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;
 const countWordsToActiveCategory = process.env.COUNT_WORDS_TO_ACTIVE_CATEGORY;
 
 export const startLearnCategory = async (req, res) => {
