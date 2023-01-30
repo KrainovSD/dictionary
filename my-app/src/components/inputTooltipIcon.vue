@@ -208,7 +208,31 @@ export default {
         blackList: false,
       };
 
-      const blackList = ["password", "world"];
+      const blackList = [
+        "password",
+        "world",
+        "qwerty",
+        "pass",
+        "123456",
+        "пароль",
+        "111111",
+        "1q2w3e",
+        "qwertyuiop",
+        "1234567890",
+        "admin",
+        "abc123",
+        "iloveyou",
+        "dragon",
+        "2222",
+        "3333",
+        "4444",
+        "5555",
+        "6666",
+        "777",
+        "888",
+        "999",
+        "lol",
+      ];
       if (password.length > 8) {
         this.advicesPassword.minSize = true;
       }
@@ -221,8 +245,10 @@ export default {
       if (/[!@#$%^&*()_+=\-"№;%:?\\/[\]{}|'~` ><,.]/.test(password)) {
         this.advicesPassword.specialSymbol = true;
       }
-      if (!blackList.includes(password)) {
-        this.advicesPassword.blackList = true;
+      this.advicesPassword.blackList = true;
+      for (let item of blackList) {
+        let reg = new RegExp(item);
+        if (reg.test(password)) this.advicesPassword.blackList = false;
       }
     },
   },
@@ -315,9 +341,9 @@ export default {
   display: none;
 }
 .inputIconContainer__tooltipAdvice {
-  position: absolute;
+  position: fixed;
   display: inline-block;
-  left: 100%;
+  left: calc(50% + 172.5px);
   top: 50%;
   background: rgba(0, 0, 0, 0.7);
   color: white;
@@ -329,17 +355,6 @@ export default {
   z-index: 99;
   margin-left: 8px;
   transform: translateX(0%) translateY(-50%);
-}
-.inputIconContainer__tooltipAdvice::before {
-  content: "";
-  position: absolute;
-  border-width: 4px 6px 0 6px;
-  border-style: solid;
-  border-color: rgba(0, 0, 0, 0.7) transparent transparent transparent;
-  z-index: 99;
-  left: 8;
-  top: 50%;
-  transform: translatey(-50%) rotate(90deg);
 }
 
 .inputIconContainer__advice._active {
