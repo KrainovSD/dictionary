@@ -95,7 +95,8 @@ export default {
       let size = file.size;
       let maxSize = 5 * 1024 * 1024;
       if ((type[0] != "image" && type[1] != "png") || size > maxSize) {
-        this.error = "Неверный формат файла или размер превышает 5Mb!";
+        this.error =
+          "Неверный формат файла (только png) или размер превышает 5Mb!";
         return;
       }
       if (!FileReader) return;

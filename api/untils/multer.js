@@ -1,5 +1,6 @@
 import multer from 'multer';
 import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
@@ -20,10 +21,10 @@ const storageConfig = multer.diskStorage({
       let user = await User.findOne({ _id: req.userId });
       let nickName = user.nickName;
       // Путь куда сохраняется файл полностью прописывается
-      let dir = __dirname + `/../dist/uploads/${nickName}`;
+      let dir = path.join(__dirname, `/../dist/uploads/${nickName}`);
       if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
 
-      fs.mkdirSync(__dirname + `/../dist/uploads/${nickName}`);
+      fs.mkdirSync(path.join(__dirname, `/../dist/uploads/${nickName}`));
       cb(null, dir);
     } catch (error) {
       console.error(error);

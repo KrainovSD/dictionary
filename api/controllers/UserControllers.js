@@ -32,6 +32,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
@@ -674,8 +676,8 @@ const changeInfoNickName = async (req, res) => {
     if (!user) return sendResponseError(req, res);
 
     let oldNickName = user.nickName;
-    let dir = `${__dirname}/../uploads/${nickName}`;
-    let oldDir = `${__dirname}/../uploads/${oldNickName}`;
+    let dir = path.join(__dirname, `/../dist/uploads/${nickName}`);
+    let oldDir = path.join(__dirname, `/../dist/uploads/${oldNickName}`);
 
     if (fs.existsSync(oldDir)) fs.renameSync(oldDir, dir);
 

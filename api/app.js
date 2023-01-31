@@ -59,7 +59,7 @@ import untils from './untils/index.js';
 import routes from './routes/index.js';
 import logger from './logger.js';
 app.use(untils.reqLogger);
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, './dist/index.html'));
 });
 app.use('/auth', routes.auth);

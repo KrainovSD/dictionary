@@ -562,9 +562,7 @@ export default {
         );
         return { newWords, newAnswers };
       } catch (error) {
-        console.log(error);
         localStorage.removeItem(this.learnType);
-        console.log(newWords);
         return { newWords, newAnswers };
       }
     },
@@ -580,14 +578,12 @@ export default {
         this.progress = 1;
         this.visible = true;
         let answers = { categoryID, words: [], wordsToLearn: words };
-        console.log(answers, words);
 
         if (localStorage.getItem(this.learnType) !== null) {
           let newSession = await this.getOldSession(answers, words);
           answers = newSession.newAnswers;
           words = newSession.newWords;
         }
-        console.log(answers, words);
 
         for (let word of words) {
           this.isVisibleAnswer = false;

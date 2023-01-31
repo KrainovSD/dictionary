@@ -109,6 +109,7 @@ export default {
       fieldChangin: false,
     };
   },
+
   computed: {
     fieldChange() {
       return `${this.field}Change`;
@@ -127,7 +128,7 @@ export default {
         return;
       }
     },
-    checkNumber(input) {
+    eventForInputNumber(input) {
       if (this.inputType == "Number")
         input.addEventListener("keydown", this.forbiddenLetter);
     },
@@ -135,7 +136,8 @@ export default {
       this.fieldChangin = true;
       await nextTick();
       let input = this.$refs.input;
-      this.checkNumber(input);
+      this.eventForInputNumber(input);
+      input.focus();
     },
     async saveData() {
       this.$emit("change", { field: this.field, fieldData: this.modelValue });
