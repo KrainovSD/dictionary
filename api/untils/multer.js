@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const maxLength = 1 * 1024 * 1024;
+const maxLength = 5 * 1024 * 1024;
 import User from '../models/Users.js';
 
 const fileFilter = (req, file, cb) => {
@@ -20,10 +20,10 @@ const storageConfig = multer.diskStorage({
       let user = await User.findOne({ _id: req.userId });
       let nickName = user.nickName;
       // Путь куда сохраняется файл полностью прописывается
-      let dir = `./dist/uploads/${nickName}`;
+      let dir = __dirname + `/../dist/uploads/${nickName}`;
       if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
 
-      fs.mkdirSync(__dirname + `./dist/uploads/${nickName}`);
+      fs.mkdirSync(__dirname + `/../dist/uploads/${nickName}`);
       cb(null, dir);
     } catch (error) {
       console.error(error);

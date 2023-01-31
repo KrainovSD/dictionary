@@ -5,7 +5,7 @@ module.exports = defineConfig({
     name: "Dictionary",
     appleMobileWebAppCapable: "yes",
     manifestOptions: {
-      display: "fullscreen",
+      display: "standalone",
       name: "Dictionary",
       short_name: "Dictionary",
     },

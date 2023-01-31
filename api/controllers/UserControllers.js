@@ -5,7 +5,7 @@ const secretRefreshToken = process.env.SECRET_REFRESH_TOKEN;
 const secretPassword = process.env.SECRET_PASSWORD_TO_HASH;
 const secretImportSignature = process.env.SECRET_IMPORT_SIGNATURE;
 const timeExistForCheckKeys = 5; // В минутах
-const maxSizeAvatar = 1 * 1024 * 1024;
+const maxSizeAvatar = 5 * 1024 * 1024;
 const PRODUCTION = process.env.PRODUCTION == 'true' ? true : false;
 const HOST = process.env.HOST;
 const secretSyncSignature = process.env.SECRET_SYNC_SIGNATURE;

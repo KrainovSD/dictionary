@@ -15,7 +15,7 @@
       placeholder="Answer"
       @answer="(payload) => (this.answer = payload)"
       @enterDown="throttleNormalConfirm"
-      v-if="isMobile"
+      v-if="isMobile && kindOfLearn == 'standart'"
     />
     <div
       class="learnCard"
@@ -75,7 +75,7 @@
                   placeholder="Answer"
                   @answer="(payload) => (this.answer = payload)"
                   @enterDown="throttleNormalConfirm"
-                  v-if="!isMobile"
+                  v-if="!isMobile && kindOfLearn == 'standart'"
                 />
               </div>
               <div class="learnCard__confirmContainer" v-if="!isMobile">
@@ -298,7 +298,7 @@ export default {
     "позволять",
     "тип",
   ],
-  timeToShowAnswer: 5000,
+  timeToShowAnswer: 15000,
   countTryToAnswer: 3,
   delayToEnterAnswer: 1200,
   enterAnswerController: null,

@@ -93,9 +93,9 @@ export default {
       let file = event.target.files[0];
       let type = file.type.split("/");
       let size = file.size;
-      let maxSize = 1 * 1024 * 1024;
+      let maxSize = 5 * 1024 * 1024;
       if ((type[0] != "image" && type[1] != "png") || size > maxSize) {
-        this.error = "Неверный формат файла!";
+        this.error = "Неверный формат файла или размер превышает 5Mb!";
         return;
       }
       if (!FileReader) return;

@@ -176,7 +176,7 @@
       <div class="setting__userDataContainer">
         <h1 class="setting__userDataHeader">Проверка на актуальность</h1>
         <setting-field
-          title="Количество ошибок необходимых для добавления слова:"
+          title="Количество встреч за выбранный промежуток времени:"
           :data="userInfo.options?.[0]?.maxCountCheckRelevance"
           field="maxCountCheckRelevance"
           inputType="Number"

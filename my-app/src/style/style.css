@@ -2992,10 +2992,10 @@ body {
 }
 .learnCard__input {
   width: 55%;
-  margin: 0.5714285714rem auto;
+  margin: 0.5714285714rem auto 20px auto;
 }
 .learnCard__confirmContainer {
-  margin: 0.9285714286rem auto 13px;
+  margin: 0px auto 5px;
   width: 35%;
 }
 @media (max-width: 479px) {
@@ -3004,7 +3004,7 @@ body {
   }
 }
 .learnCard__optionContainer {
-  padding-bottom: 0.7142857143rem;
+  padding-bottom: 2.1428571429rem;
   max-width: 410px;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3078,7 +3078,7 @@ body {
   word-wrap: break-word;
 }
 .learnCard__examples {
-  padding: 0.7142857143rem 0 0;
+  padding: 0.7142857143rem 0 20px 0px;
 }
 .learnCard__example {
   text-align: justify;
@@ -3093,7 +3093,7 @@ body {
   display: flex;
   flex-direction: column;
   width: 40.7142857143rem;
-  padding: 0 0 1.4285714286rem 1.4285714286rem;
+  padding: 0 1.4285714286rem 1.4285714286rem 1.4285714286rem;
 }
 @media (max-width: 767px) {
   .setting {
