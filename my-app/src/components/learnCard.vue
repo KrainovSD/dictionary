@@ -14,7 +14,11 @@
       :interactive="interactiveInput"
       placeholder="Answer"
       @answer="(payload) => (this.answer = payload)"
-      @enterDown="throttleNormalConfirm"
+      @enterDown="
+        this.isVisibleAnswer == false
+          ? this.throttleNormalConfirm()
+          : this.nextWord()
+      "
       v-if="isMobile && kindOfLearn == 'standart'"
     />
     <div
@@ -25,7 +29,10 @@
         @close="closePopup('event')"
         class="sign__closeButton"
       />
-      <div class="learnCard__container" :class="isMobile ? '_mobile' : ''">
+      <div
+        class="learnCard__container"
+        :class="isMobile && kindOfLearn == 'standart' ? '_mobile' : ''"
+      >
         <div class="learnCard__progressContainer">
           <p class="learnCard__countWord">{{ progress }}/{{ countWords }}</p>
           <div class="learnCard__progressBar">
@@ -501,18 +508,70 @@ export default {
       }
       delete this.errors.answer;
     },
-    throttleNormalConfirm() {
-      if (this.isMayEnterAnswer == false) return;
-      this.normalConfirm();
-      this.isMayEnterAnswer = false;
-      this.$options.enterAnswerController = setTimeout(() => {
-        this.isMayEnterAnswer = true;
-      }, this.$options.delayToEnterAnswer);
+    async getOldSession(newAnswers, newWords) {
+      try {
+        let oldAnswers = JSON.parse(localStorage.getItem(this.learnType));
+        let anotherCategories = false;
+
+        let oldCategory = oldAnswers.categoryID;
+        let newCategory = newAnswers.categoryID;
+        if (oldCategory.length != newCategory.length) {
+          anotherCategories = true;
+        }
+        let notSameCategory = newCategory.filter(
+          (item) => !oldCategory.includes(item)
+        );
+        if (notSameCategory.length > 0) {
+          anotherCategories = true;
+        }
+
+        let oldWords = oldAnswers.wordsToLearn.map((item) => item.word);
+        if (oldWords.length != newWords.length && anotherCategories == false) {
+          localStorage.removeItem(this.learnType);
+          return { newWords, newAnswers };
+        }
+        let notSameWords = newWords.filter(
+          (item) => !oldWords.includes(item.word)
+        );
+        if (notSameWords.length > 0 && anotherCategories == false) {
+          localStorage.removeItem(this.learnType);
+          return { newWords, newAnswers };
+        }
+
+        let message;
+        if (anotherCategories)
+          message =
+            "Вы уже начинали прохождение другой категории. Хотите ли вы продолжить проходить предыдущую сессию?";
+        else
+          message =
+            "У вас сохранена не завершенная до конца прошлая сессия. Хотите ли вы продолжить ее прохождение?";
+
+        let res = await this.showConfirm("Продолжить обучение", message);
+        if (!res) {
+          localStorage.removeItem(this.learnType);
+          return { newWords, newAnswers };
+        }
+
+        newAnswers = oldAnswers;
+        this.progress = newAnswers.words?.length + 1;
+        this.countWords = newAnswers.wordsToLearn.length;
+        if (this.progress > this.countWords) this.progress = this.countWords;
+        let alreadyStudiedWords = newAnswers.words.map((item) => item.word);
+        newWords = oldAnswers.wordsToLearn.filter(
+          (item) => !alreadyStudiedWords.includes(item._id)
+        );
+        return { newWords, newAnswers };
+      } catch (error) {
+        console.log(error);
+        localStorage.removeItem(this.learnType);
+        console.log(newWords);
+        return { newWords, newAnswers };
+      }
     },
     async start(
       learnType,
       words,
-      categoryID = "undefined",
+      categoryID = ["undefined"],
       isPlannedLearn = true
     ) {
       try {
@@ -520,23 +579,15 @@ export default {
         this.countWords = words.length;
         this.progress = 1;
         this.visible = true;
-        let answers = [];
+        let answers = { categoryID, words: [], wordsToLearn: words };
+        console.log(answers, words);
+
         if (localStorage.getItem(this.learnType) !== null) {
-          let res = await this.showConfirm(
-            "Продолжить обучение",
-            "У вас сохранена не завершенная до конца прошлая сессия. Хотите ли вы продолжить ее?"
-          );
-          if (res) {
-            answers = JSON.parse(localStorage.getItem(this.learnType));
-            this.progress = answers.length + 1;
-            if (this.progress > this.countWords)
-              this.progress = this.countWords;
-            let alreadyStudiedWords = answers.map((item) => item.word);
-            words = words.filter(
-              (item) => !alreadyStudiedWords.includes(item._id)
-            );
-          } else localStorage.removeItem(this.learnType);
+          let newSession = await this.getOldSession(answers, words);
+          answers = newSession.newAnswers;
+          words = newSession.newWords;
         }
+        console.log(answers, words);
 
         for (let word of words) {
           this.isVisibleAnswer = false;
@@ -553,7 +604,7 @@ export default {
           if (res?.resetStudy) return this.closePopup();
           if (!res) answer.wrong = true;
           answer.word = word._id;
-          answers.push(answer);
+          answers.words.push(answer);
           if (this.progress != this.countWords) this.progress++;
 
           if (isPlannedLearn)
@@ -562,10 +613,10 @@ export default {
         if (this.isLoading == true) return;
         this.isLoading = true;
 
-        let data = { words: [...answers], categoryID: categoryID };
+        delete answers.wordsToLearn;
         let res = this.$store.getters.getAuth
-          ? await this.$api.words[this.apiFunction](data)
-          : this.$api.offline[this.apiFunction](data);
+          ? await this.$api.words[this.apiFunction](answers)
+          : this.$api.offline[this.apiFunction](answers);
 
         this.isLoading = false;
         if (this.$store.getters.getAuth) {
@@ -608,6 +659,14 @@ export default {
       this.$options.setTimeoutController = setTimeout(() => {
         this.$options.promiseController.resolve(correct);
       }, this.$options.timeToShowAnswer);
+    },
+    throttleNormalConfirm() {
+      if (this.isMayEnterAnswer == false) return;
+      this.normalConfirm();
+      this.isMayEnterAnswer = false;
+      this.$options.enterAnswerController = setTimeout(() => {
+        this.isMayEnterAnswer = true;
+      }, this.$options.delayToEnterAnswer);
     },
     async normalConfirm() {
       if (this.isVisibleAnswer == true) return;

@@ -69,9 +69,9 @@ export default function (instance, instanceToken) {
           for (let item of def) {
             if (item.text == word) {
               adviceTranscription =
-                adviceTranscription.length > 0
-                  ? adviceTranscription
-                  : `[${item.ts}]`;
+                item.ts?.length > 0 && item.ts != "undefined"
+                  ? `[${item.ts}]`
+                  : adviceTranscription;
               let tr = item.tr.map((item) => item.text);
               adviceTranslate.push(...tr);
             }

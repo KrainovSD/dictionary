@@ -143,7 +143,7 @@ export default {
   gap: 5px;
   flex-wrap: wrap;
   background-color: rgba(49, 49, 49, 0.726);
-  padding: 10px 20px;
+  padding: 10px 10px;
   left: 50%;
   transform: translateX(-50%);
   bottom: 0;
@@ -170,14 +170,18 @@ export default {
   grid-template-columns: repeat(10, minmax(24px, 1fr));
 }
 .interactiveInput__secondRow {
+  width: 90%;
   display: grid;
+  justify-self: center;
   gap: 5px;
   grid-template-columns: repeat(9, minmax(24px, 1fr));
 }
 .interactiveInput__thirdRow {
+  width: 90%;
   display: grid;
+  justify-self: right;
   gap: 5px;
-  grid-template-columns: repeat(8, minmax(24px, 1fr));
+  grid-template-columns: repeat(9, minmax(24px, 1fr));
 }
 .interactiveInput__fouthRow {
   display: grid;
@@ -199,6 +203,7 @@ export default {
 }
 .interactiveInput__key.backspace {
   background-color: rgb(189, 189, 189);
+  grid-column: 8/10;
 }
 .interactiveInput__key.space {
 }
