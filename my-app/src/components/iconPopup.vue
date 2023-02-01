@@ -94,7 +94,7 @@ export default {
       let type = file.type.split("/");
       let size = file.size;
       let maxSize = 5 * 1024 * 1024;
-      if ((type[0] != "image" && type[1] != "png") || size > maxSize) {
+      if (type[0] != "image" || type[1] != "png" || size > maxSize) {
         this.error =
           "Неверный формат файла (только png) или размер превышает 5Mb!";
         return;
@@ -124,13 +124,17 @@ export default {
         await this.showInfo("Смена аватара", message);
         this.closePopup();
       } catch (err) {
+        console.log(err);
         let status = err?.response?.status;
+        let message =
+          err?.response?.data?.message ||
+          "Неверный формат файла (только png) или размер превышает 5Mb!";
         this.isLoading = false;
-        if (status == 500) return (this.error = "Сервер не отвечает!");
         if (status == 400)
-          return (this.error = "Переданный файл не прошел проверку!");
+          return (this.error =
+            "Неверный формат файла (только png) или размер превышает 5Mb!");
         if (status == 401) return this.$emit("auth");
-        return (this.error = "Сервер не отвечает!");
+        this.error = message;
       }
     },
   },

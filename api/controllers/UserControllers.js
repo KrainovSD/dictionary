@@ -507,9 +507,19 @@ export const changeAvatar = async (req, res) => {
 
     let nickName = user.nickName;
     if (file.size > maxSizeAvatar) {
-      let dir = `${__dirname}/../uploads/${nickName}`;
-      if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
-      return sendResponseError(req, res);
+      let dir = path.join(
+        __dirname,
+        `/../dist/uploads/${nickName}/${file.filename}`
+      );
+      if (fs.existsSync(dir)) fs.unlinkSync(dir);
+      return sendResponseError(req, res, 'Размер аватара превышает 5Mb!');
+    }
+    if (user.avatar != '') {
+      let dir = path.join(
+        __dirname,
+        `/../dist/uploads/${nickName}/${user.avatar}`
+      );
+      if (fs.existsSync(dir)) fs.unlinkSync(dir);
     }
 
     user = await User.findOneAndUpdate(
