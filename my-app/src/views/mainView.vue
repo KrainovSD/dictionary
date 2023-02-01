@@ -186,6 +186,8 @@ export default {
       this.showInfo("Авторизация", "Требуется авторизация!");
     },
     toggleSubMenu(e) {
+      if (this.userMenuVisible == true) this.userMenuVisible = false;
+
       let subMenu = this.$refs.subMenu;
       let styleOfSubMenu = window.getComputedStyle(subMenu);
       if (styleOfSubMenu.display == "none") return;

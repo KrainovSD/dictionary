@@ -49,6 +49,23 @@ if (!PRODUCTION) {
       'Access-Control-Allow-Methods': 'DELETE,GET,POST,PUT',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',
       'Access-Control-Allow-Credentials': 'true',
+      'Content-Security-Policy':
+        "default-src 'self'; style-src 'self'; script-src 'self'",
+      'X-Content-Security-Policy':
+        "default-src 'self'; style-src 'self'; script-src 'self'",
+      'X-WebKit-CSP': "default-src 'self'; style-src 'self'; script-src 'self'",
+    });
+    next();
+  });
+} else {
+  app.use((req, res, next) => {
+    res.set({
+      'Content-Security-Policy':
+        'default-src https://krainovdictionary.ru; style-src https://krainovdictionary.ru; script-src https://krainovdictionary.ru *.google-analytics.com https://www.googletagmanager.com; report-uri: https://krainovdictionary.ru/csp/report;',
+      'X-Content-Security-Policy':
+        'default-src https://krainovdictionary.ru; style-src https://krainovdictionary.ru; script-src https://krainovdictionary.ru *.google-analytics.com https://www.googletagmanager.com; report-uri: https://krainovdictionary.ru/csp/report;',
+      'X-WebKit-CSP':
+        'default-src https://krainovdictionary.ru; style-src https://krainovdictionary.ru; script-src https://krainovdictionary.ru *.google-analytics.com https://www.googletagmanager.com; report-uri: https://krainovdictionary.ru/csp/report;',
     });
     next();
   });
@@ -65,6 +82,10 @@ app.get('/*', (req, res) => {
 app.use('/auth', routes.auth);
 app.use('/user', routes.user);
 app.use('/words', routes.words);
+app.post('/csp/report', (req, res) => {
+  console.log(req.body);
+  res.json({});
+});
 
 process.on('uncaughtException', (err) => {
   console.log(err);
