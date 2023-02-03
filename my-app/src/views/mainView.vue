@@ -1,4 +1,5 @@
 <template>
+  <sweet-prompt />
   <sign-form
     v-if="signVisible == true"
     :signType="signType"
@@ -30,12 +31,16 @@
       </div>
 
       <img
-        src="@/assets/KrainovLogo.png"
+        src="@/assets/KrainovLogoBlack.png"
         alt=""
         class="header__logo"
         @click="openTestPanel"
       />
-      <img src="@/assets/logoBlack.png" alt="" class="header__logoMobile" />
+      <img
+        src="@/assets/logoMobileBlack.png"
+        alt=""
+        class="header__logoMobile"
+      />
 
       <div class="header__titles" ref="titles">
         <router-link
@@ -117,6 +122,7 @@ import infoPopup from "../components/infoPopup";
 import settingPopup from "../components/settingPopup.vue";
 import loadingPopup from "../components/loadingPopup.vue";
 import testPanel from "../components/testPanel.vue";
+import sweetPrompt from "../components/sweetPrompt.vue";
 
 export default {
   components: {
@@ -125,6 +131,7 @@ export default {
     settingPopup,
     loadingPopup,
     testPanel,
+    sweetPrompt,
   },
   data() {
     return {

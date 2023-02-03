@@ -85,7 +85,7 @@
             </button>
           </div>
 
-          <img src="@/assets/KrainovLogo.png" alt="" class="docs__logo" />
+          <img src="@/assets/KrainovLogoBlack.png" alt="" class="docs__logo" />
         </div>
       </template>
     </div>

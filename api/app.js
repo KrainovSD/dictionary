@@ -50,7 +50,7 @@ if (!PRODUCTION) {
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',
       'Access-Control-Allow-Credentials': 'true',
       'Content-Security-Policy':
-        "default-src 'self'; style-src 'self'; script-src 'self'",
+        "default-src 'self' https://krainovdictionary.ru; style-src 'self'; script-src 'self'",
       'X-Content-Security-Policy':
         "default-src 'self'; style-src 'self'; script-src 'self'",
       'X-WebKit-CSP': "default-src 'self'; style-src 'self'; script-src 'self'",

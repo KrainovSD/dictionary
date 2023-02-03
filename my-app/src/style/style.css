@@ -502,16 +502,16 @@ body {
 }
 .header__logo {
   margin: auto auto;
-  width: 175px;
+  width: 250px;
 }
 @media (min-width: 1024px) and (max-width: 1199px) {
   .header__logo {
-    width: 160px;
+    width: 200px;
   }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
   .header__logo {
-    width: 160px;
+    width: 230px;
   }
 }
 @media (max-width: 767px) {
@@ -521,7 +521,7 @@ body {
 }
 .header__logoMobile {
   margin: auto auto;
-  width: 28px;
+  width: 44px;
   display: none;
 }
 @media (max-width: 767px) {
