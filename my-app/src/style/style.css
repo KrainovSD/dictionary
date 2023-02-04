@@ -361,6 +361,9 @@ body {
 .modal__backDrop.z15 {
   z-index: 15;
 }
+.modal__backDrop.z17 {
+  z-index: 17;
+}
 .modal__backDrop.close {
   animation: dissappearBackDrop 0.4s ease;
 }
@@ -389,6 +392,9 @@ body {
 }
 .modal__container.z16 {
   z-index: 16;
+}
+.modal__container.z18 {
+  z-index: 18;
 }
 .modal__container.info {
   position: fixed;
@@ -502,7 +508,7 @@ body {
 }
 .header__logo {
   margin: auto auto;
-  width: 250px;
+  width: 240px;
 }
 @media (min-width: 1024px) and (max-width: 1199px) {
   .header__logo {

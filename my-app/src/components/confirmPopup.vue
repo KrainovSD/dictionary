@@ -112,6 +112,12 @@ export default {
     width: auto;
   }
 }
+@media (max-width: 767px) {
+  .confirmPopup {
+    max-width: none;
+    width: 100vw;
+  }
+}
 .confirmPopup__header {
   font-weight: 700;
   font-size: 24px;
@@ -143,6 +149,7 @@ export default {
 }
 .confirmPopup__confirmContainer {
   width: 30%;
+  min-width: 60px;
 }
 .confirmPopup__confirmContainer.left {
   margin: 0 auto 0 0;

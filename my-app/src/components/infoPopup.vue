@@ -95,6 +95,12 @@ export default {
     width: auto;
   }
 }
+@media (max-width: 479px) {
+  .infoPopup {
+    max-width: none;
+    width: 100vw;
+  }
+}
 .infoPopup__header {
   font-weight: 700;
   font-size: 24px;
@@ -122,6 +128,7 @@ export default {
 }
 .infoPopup__confirmContainer {
   width: 30%;
+  min-width: 60px;
   margin: 0.35714rem auto;
 }
 </style>

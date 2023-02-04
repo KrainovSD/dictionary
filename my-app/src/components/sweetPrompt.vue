@@ -1,20 +1,23 @@
 <template>
-  <div class="prompt" ref="prompt" v-if="isVisible">
-    <h1 class="prompt__header">{{ header }}</h1>
-    <div class="prompt__line"></div>
-    <div class="prompt__titleContainer">
-      <p class="prompt__title">
-        {{ title }}
-      </p>
-    </div>
-
-    <div class="prompt__line"></div>
-    <div class="prompt__buttonContainer">
-      <div class="prompt__confirmContainer left">
-        <confirm-button text="Yes" @click="_confirm" fontSize="16px" />
+  <div class="modal__backDrop z17" ref="backDrop" v-if="isVisible"></div>
+  <div class="modal__container info z18" v-if="isVisible">
+    <div class="prompt" ref="prompt">
+      <h1 class="prompt__header">{{ header }}</h1>
+      <div class="prompt__line"></div>
+      <div class="prompt__titleContainer">
+        <p class="prompt__title">
+          {{ title }}
+        </p>
       </div>
-      <div class="prompt__confirmContainer right">
-        <confirm-button text="No" @click="_cancel" fontSize="16px" />
+
+      <div class="prompt__line"></div>
+      <div class="prompt__buttonContainer">
+        <div class="prompt__confirmContainer left">
+          <confirm-button text="Yes" @click="_confirm" fontSize="16px" />
+        </div>
+        <div class="prompt__confirmContainer right">
+          <confirm-button text="No" @click="_cancel" fontSize="16px" />
+        </div>
       </div>
     </div>
   </div>
@@ -69,11 +72,7 @@ export default {
 
 <style>
 .prompt {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 30;
+  margin: auto;
   background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
   display: flex;
   flex-direction: column;
@@ -88,6 +87,12 @@ export default {
     min-width: none;
     max-width: 100vw;
     width: auto;
+  }
+}
+@media (max-width: 767px) {
+  .prompt {
+    max-width: none;
+    width: 100vw;
   }
 }
 .prompt__header {
@@ -121,6 +126,7 @@ export default {
 }
 .prompt__confirmContainer {
   width: 30%;
+  min-width: 60px;
 }
 .prompt__confirmContainer.left {
   margin: 0 auto 0 0;

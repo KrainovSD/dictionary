@@ -14,7 +14,7 @@ module.exports = defineConfig({
       short_name: "KR Dictionary",
       background_color: "#000000", // цвет рабочей области
       theme_color: "#e7fcf5", // цвет статус бара
-      start_url: "/index.html",
+      start_url: ".",
       icons: [
         {
           src: "./img/icons/android-chrome-192x192.png",
@@ -50,6 +50,7 @@ module.exports = defineConfig({
     workboxOptions: {
       skipWaiting: true,
       clientsClaim: true,
+      navigateFallback: "/index.html",
     },
   },
 });

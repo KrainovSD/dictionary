@@ -38,6 +38,10 @@ body {
             z-index: 15;
         }
 
+        &.z17 {
+            z-index: 17;
+        }
+
         &.close {
             animation: dissappearBackDrop 0.4s ease;
 
@@ -72,6 +76,10 @@ body {
 
         &.z16 {
             z-index: 16;
+        }
+
+        &.z18 {
+            z-index: 18;
         }
 
         &.info {
@@ -196,7 +204,7 @@ body {
 
     &__logo {
         margin: auto auto;
-        width: 250px;
+        width: 240px;
 
         @media (min-width: 1024px) and (max-width: 1199px) {
             width: 200px;

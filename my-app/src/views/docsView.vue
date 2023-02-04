@@ -379,9 +379,9 @@ export default {
   },
 
   methods: {
-    getImgUlr(img) {
+    /*getImgUlr(img) {
       return require(`@/assets/docs/${img}`);
-    },
+    },*/
     async selectHeader(event) {
       this.chapters = [];
       this.currentHeader = event.target.textContent;
