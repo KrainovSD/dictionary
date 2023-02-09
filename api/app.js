@@ -45,7 +45,7 @@ if (!PRODUCTION) {
   app.use((request, response, next) => {
     //res.set('Access-Control-Allow-Credentials', 'true') - разрешение на куки
     response.header({
-      'Access-Control-Allow-Origin': 'http://192.168.0.103:8080',
+      'Access-Control-Allow-Origin': 'http://192.168.0.102:8080',
       'Access-Control-Allow-Methods': 'DELETE,GET,POST,PUT',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',
       'Access-Control-Allow-Credentials': 'true',
@@ -70,7 +70,7 @@ if (!PRODUCTION) {
     next();
   });
 }
-console.log(process.env);
+if (PRODUCTION) console.log(process.env);
 
 import untils from './untils/index.js';
 import routes from './routes/index.js';
@@ -82,6 +82,7 @@ app.get('/*', (req, res) => {
 app.use('/auth', routes.auth);
 app.use('/user', routes.user);
 app.use('/words', routes.words);
+app.use('/admin', routes.admin);
 app.post('/csp/report', (req, res) => {
   console.log(req.body);
   res.json({});

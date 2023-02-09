@@ -16,7 +16,6 @@
     "
     @noAuth="noAuth"
   />
-  <test-panel v-if="isTestVisible" @close="isTestVisible = false" />
 
   <div class="header">
     <div class="headerContainer">
@@ -30,12 +29,7 @@
         <div class="bar3 menuMobile"></div>
       </div>
 
-      <img
-        src="@/assets/KrainovLogoBlack.png"
-        alt=""
-        class="header__logo"
-        @click="openTestPanel"
-      />
+      <img src="@/assets/KrainovLogoBlack.png" alt="" class="header__logo" />
       <img
         src="@/assets/logoMobileBlack.png"
         alt=""
@@ -121,7 +115,6 @@ import signForm from "../components/signForm.vue";
 import infoPopup from "../components/infoPopup";
 import settingPopup from "../components/settingPopup.vue";
 import loadingPopup from "../components/loadingPopup.vue";
-import testPanel from "../components/testPanel.vue";
 import sweetPrompt from "../components/sweetPrompt.vue";
 
 export default {
@@ -130,7 +123,6 @@ export default {
     signForm,
     settingPopup,
     loadingPopup,
-    testPanel,
     sweetPrompt,
   },
   data() {
@@ -140,8 +132,6 @@ export default {
       userMenuVisible: false,
       settingPopupVisible: false,
       isLoading: false,
-      testCombination: [],
-      isTestVisible: false,
     };
   },
   async mounted() {
@@ -213,23 +203,7 @@ export default {
       subMenu.classList.toggle("change");
       titles.classList.toggle("_visible");
     },
-    openTestPanel() {
-      /* alt x2, ctrl x3, click, alt*/
-      //this.isTestVisible = true;
-      /*let pattern = this.testCombination.length;
-      if (pattern == 0 || pattern == 1 || pattern == 6) {
-        if (e.altKey && !e.ctrlKey) this.testCombination.push(true);
-        else this.testCombination = [];
-      } else if (pattern == 2 || pattern == 3 || pattern == 4) {
-        if (!e.altKey && e.ctrlKey) this.testCombination.push(true);
-        else this.testCombination = [];
-      } else if (pattern == 5) {
-        if (!e.altKey && !e.ctrlKey) this.testCombination.push(true);
-        else this.testCombination = [];
-      }
 
-      if (this.testCombination.length == 7) this.isTestVisible = true;*/
-    },
     openLogin() {
       let login = this.$refs.login;
       if (!login.classList.contains("header__signIn_active")) {

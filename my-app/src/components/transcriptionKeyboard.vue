@@ -110,6 +110,7 @@ export default {
       }
       let input = this.$refs.transcription;
       if (target.classList.contains("insert")) {
+        console.log(navigator.clipboard);
         let text = await navigator.clipboard.readText();
         if (typeof text == "string") input.value += text;
       } else if (target.classList.contains("clear")) {

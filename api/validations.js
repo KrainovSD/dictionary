@@ -387,7 +387,7 @@ function checkKnownWords(words) {
         case 'transcription': {
           if (fieldData === '' || typeof fieldData != 'string') return false;
           if (
-            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/.test(
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/.test(
               fieldData
             )
           )
@@ -397,7 +397,10 @@ function checkKnownWords(words) {
         }
         case 'description': {
           if (fieldData !== '' && typeof fieldData != 'string') return false;
-          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) && fieldData !== '')
+          if (
+            !/^[а-яА-Яa-zA-Z0-9 \-.,!?']+$/.test(fieldData) &&
+            fieldData !== ''
+          )
             return false;
           if (fieldData.length > 164) return false;
           break;
@@ -408,7 +411,7 @@ function checkKnownWords(words) {
           let error = false;
           fieldData.forEach((item) => {
             if (typeof item != 'string') error = true;
-            if (!/^[a-zA-Z  \-.,!?]+$/.test(item) && item != '') error = true;
+            if (!/^[a-zA-Z  \-.,!?']+$/.test(item) && item != '') error = true;
             if (item.length > 100) error = true;
           });
           if (error) return false;
@@ -607,7 +610,7 @@ function checkWordsToStudy(words) {
         case 'transcription': {
           if (fieldData === '' || typeof fieldData != 'string') return false;
           if (
-            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/.test(
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/.test(
               fieldData
             )
           )
@@ -617,7 +620,10 @@ function checkWordsToStudy(words) {
         }
         case 'description': {
           if (fieldData !== '' && typeof fieldData != 'string') return false;
-          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) && fieldData !== '')
+          if (
+            !/^[а-яА-Яa-zA-Z0-9 \-.,!?']+$/.test(fieldData) &&
+            fieldData !== ''
+          )
             return false;
           if (fieldData.length > 164) return false;
           break;
@@ -628,7 +634,7 @@ function checkWordsToStudy(words) {
           let error = false;
           fieldData.forEach((item) => {
             if (typeof item != 'string') error = true;
-            if (!/^[a-zA-Z  \-.,!?]+$/.test(item) && item != '') error = true;
+            if (!/^[a-zA-Z  \-.,!?']+$/.test(item) && item != '') error = true;
             if (item.length > 100) error = true;
           });
           if (error) return false;
@@ -709,7 +715,7 @@ function checkWordsToRepeat(words) {
         case 'transcription': {
           if (fieldData === '' || typeof fieldData != 'string') return false;
           if (
-            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/.test(
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/.test(
               fieldData
             )
           )
@@ -719,7 +725,10 @@ function checkWordsToRepeat(words) {
         }
         case 'description': {
           if (fieldData !== '' && typeof fieldData != 'string') return false;
-          if (!/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) && fieldData !== '')
+          if (
+            !/^[а-яА-Яa-zA-Z0-9 \-.,!?']+$/.test(fieldData) &&
+            fieldData !== ''
+          )
             return false;
           if (fieldData.length > 164) return false;
           break;
@@ -730,7 +739,7 @@ function checkWordsToRepeat(words) {
           let error = false;
           fieldData.forEach((item) => {
             if (typeof item != 'string') error = true;
-            if (!/^[a-zA-Z  \-.,!?]+$/.test(item) && item != '') error = true;
+            if (!/^[a-zA-Z  \-.,!?']+$/.test(item) && item != '') error = true;
             if (item.length > 100) error = true;
           });
           if (error) return false;
@@ -1131,7 +1140,7 @@ const wordValidation = [
     .withMessage('У транскрипции неверный тип данных!')
     .isLength({ max: 50 })
     .withMessage('Длина транскрипции не должна превышать более 50 символов!')
-    .matches(/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/)
+    .matches(/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/)
     .withMessage(
       'Транскрипция может содержать только специальные символы представленные доп. клавиатурой!'
     ),
@@ -1145,9 +1154,9 @@ const wordValidation = [
     )
     .custom((value) => {
       if (value.length == 0) return true;
-      if (/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(value)) return true;
+      if (/^[а-яА-Яa-zA-Z0-9 \-.,!?']+$/.test(value)) return true;
       throw new Error(
-        'Описание слова или словочетания может состоять только из букв русского и английского алфавита, пробела, дефиса и знаков препинания!'
+        'Описание слова или словочетания может состоять только из букв русского и английского алфавита, цифр, пробела, дефиса и знаков препинания!'
       );
     }),
   body('example.*')
@@ -1160,7 +1169,7 @@ const wordValidation = [
     )
     .custom((value) => {
       if (value.length == 0) return true;
-      if (/^[a-zA-Z  \-.,!?]+$/.test(value)) return true;
+      if (/^[a-zA-Z  \-.,!?']+$/.test(value)) return true;
       throw new Error(
         'Пример использования слова или словочетания может состоять только из букв английского алфавита, пробела, дефиса и знаков препинания!'
       );
@@ -1224,4 +1233,140 @@ export const wordsValidation = {
   relevance: relevanceValidation,
   answer: answerValidation,
   id: idValidation,
+};
+
+/* ADMIN */
+const newKnownWordsValidation = [
+  body(
+    'user',
+    'NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания, а так же длина NickName не должна превышать 25 символов или быть меньше, чем 3 символа!'
+  )
+    .trim()
+    .not()
+    .isEmpty({ ignore_whitespace: true })
+    .withMessage('Поле nickName не должно быть пустым!')
+    .isString()
+    .withMessage('У поля nickName неверный тип данных!')
+    .isLength({ min: 3, max: 16 })
+    .withMessage(
+      'Длина NickName не должна превышать 16 символов или быть меньше, чем 3 символа!'
+    )
+    .matches(/^([A-Za-z0-9_]+)$/)
+    .withMessage(
+      'NickName должнен состоять только из латинских букв, цифр или символа нижнего подчеркивания!'
+    ),
+
+  body('words')
+    .custom((value) => {
+      if (!Array.isArray(value)) throw new Error('');
+
+      if (value.length == 0) throw new Error('');
+
+      const knownFields = [
+        'word',
+        'translate',
+        'transcription',
+        'description',
+        'example',
+      ];
+
+      for (let word of value) {
+        if (typeof word != 'object') throw new Error('');
+
+        if (Array.isArray(word)) throw new Error('');
+
+        if (Object.keys(word).length != 5) throw new Error('');
+
+        for (let field in word) {
+          if (!knownFields.includes(field)) throw new Error('');
+        }
+      }
+      return true;
+    })
+    .withMessage('Файл не прошел валидацию!')
+    .customSanitizer((value) => {
+      for (let index in value) {
+        for (let field in value[index]) {
+          if (field == 'example') {
+            value[index][field] = value[index][field].map((item) =>
+              item.trim()
+            );
+
+            continue;
+          }
+          value[index][field] = value[index][field].trim();
+          if (field == 'word' || field == 'translate')
+            value[index][field] = value[index][field].toLowerCase();
+        }
+      }
+      return value;
+    })
+    .custom((value) => {
+      for (let word of value) {
+        console.log(word);
+        for (let field in word) {
+          console.log(field);
+          let fieldData = word[field];
+
+          switch (field) {
+            case 'word': {
+              if (fieldData === '' || typeof fieldData != 'string')
+                throw new Error('');
+              if (!/^[a-zA-Z -]+$/.test(fieldData)) throw new Error('');
+              if (fieldData.length > 50) throw new Error('');
+              break;
+            }
+            case 'translate': {
+              if (fieldData === '' || typeof fieldData != 'string')
+                throw new Error('');
+              if (!/^[а-яА-Я \-,]+$/.test(fieldData)) throw new Error('');
+              if (fieldData.length > 50) throw new Error('');
+              break;
+            }
+            case 'transcription': {
+              if (fieldData === '' || typeof fieldData != 'string')
+                throw new Error('');
+              if (
+                !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\]ɡ ˌˈ:ː.]+$/.test(
+                  fieldData
+                )
+              )
+                throw new Error('');
+              if (fieldData.length > 50) throw new Error('');
+              break;
+            }
+            case 'description': {
+              if (fieldData !== '' && typeof fieldData != 'string')
+                throw new Error('');
+              if (
+                !/^[а-яА-Яa-zA-Z0-9 \-.,!?']+$/.test(fieldData) &&
+                fieldData !== ''
+              )
+                throw new Error('');
+              if (fieldData.length > 164) throw new Error('');
+              break;
+            }
+            case 'example': {
+              if (!Array.isArray(fieldData)) throw new Error('');
+              if (fieldData.length != 3) throw new Error('');
+              let error = false;
+              fieldData.forEach((item) => {
+                if (typeof item != 'string') error = true;
+                if (!/^[a-zA-Z  \-.,!?']+$/.test(item) && item != '')
+                  error = true;
+                if (item.length > 100) error = true;
+              });
+              if (error) throw new Error('');
+              break;
+            }
+          }
+        }
+      }
+      return true;
+    })
+    .withMessage('Слова не прошли валидацию!'),
+];
+
+export const adminValidation = {
+  newKnownWords: newKnownWordsValidation,
 };

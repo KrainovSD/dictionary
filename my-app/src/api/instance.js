@@ -8,7 +8,7 @@ if (PRODUCTION) {
 } else {
   axios.defaults.withCredentials = true; // DEV MOD
   instance = axios.create({
-    baseURL: "http://192.168.0.103:3000/",
+    baseURL: "http://192.168.0.102:3000/",
     timeout: 5000,
   });
 }

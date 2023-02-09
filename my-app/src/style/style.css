@@ -303,31 +303,31 @@ body {
   }
 }
 @media (min-width: 1200px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .testPanel, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 2000px;
     width: 100%;
   }
 }
 @media (min-width: 1024px) and (max-width: 1199px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .testPanel, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 1199px;
     width: 100%;
   }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .testPanel, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 1023px;
     width: 100%;
   }
 }
 @media (min-width: 480px) and (max-width: 767px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .testPanel, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 767px;
     width: 100%;
   }
 }
 @media (max-width: 479px) {
-  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
+  .chart__bottomLabelContainer, .chart__base, .chart__leftLabelItem::before, .testPanel, .statistic, .relevance, .contact, .docs, .newWords__workPlace, .learnPlace__container, .learnType__container, .learnType, .homeStart__container, .homeStart, .homeFeature__container, .homeFeature, .homeImg__headerContainer, .homeImg__container, .homeImg, .headerContainer, .workplaceContainer {
     max-width: 479px;
     width: 100%;
   }
@@ -2475,6 +2475,99 @@ body {
   width: 100%;
 }
 
+.testPanel {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px;
+}
+.testPanel__button {
+  display: inline-block;
+  font-size: 16px;
+  padding: 10px;
+  background-color: #e7fcf5;
+  border: 1px solid #7dfad0;
+  font-family: Antique;
+  cursor: pointer;
+}
+.testPanel__button._disabled {
+  background-color: #828386;
+  box-shadow: 0px 3px 13px 0px #999b9e;
+  border-color: #828386;
+  cursor: default;
+}
+.testPanel__header {
+  font-size: 30px;
+  margin: 30px auto 0 auto;
+}
+.testPanel__container {
+  margin: 20px 0;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+}
+.testPanel__addKnownWordsContainer {
+  display: flex;
+  align-items: center;
+}
+.testPanel__userList {
+  width: 20%;
+  border: 1px solid;
+  margin-left: 5px;
+  padding: 5px;
+  font-size: 16px;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.testPanel__subMenu {
+  position: absolute;
+  top: 150%;
+  border: 1px solid black;
+  background-color: white;
+  display: none;
+}
+.testPanel__subMenu._show {
+  display: block;
+}
+.testPanel__subMenu p {
+  font-size: 16px;
+  padding: 10px 5px;
+  cursor: pointer;
+}
+.testPanel__subMenu p:hover {
+  background-color: wheat;
+}
+.testPanel__subMenu p._selected {
+  background-color: #7dfad0;
+}
+.testPanel__createImportFileContainer {
+  margin-top: 20px;
+}
+.testPanel__createImportFileContainer p {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+.testPanel__exportField {
+  height: 300px;
+  width: 600px;
+  resize: none;
+  font-size: 16px;
+}
+.testPanel__nameTest {
+  font-size: 18px;
+  margin: 10px 0px 10px 10px;
+}
+.testPanel__buttonTest {
+  font-size: 16px;
+  width: 200px;
+  margin: 0 0 10px 0;
+  padding: 10px;
+}
+
 .sign {
   margin: auto;
   background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
@@ -2674,7 +2767,7 @@ body {
 }
 .wordPopup__addCategory {
   display: flex;
-  padding-bottom: 1.4285714286rem;
+  margin-bottom: 10px;
 }
 .wordPopup__addCategory p {
   line-height: 1.2;
@@ -3803,40 +3896,6 @@ body {
 }
 .word__categoryName {
   padding-top: 0.7142857143rem;
-}
-
-.testPanel {
-  margin: auto;
-  z-index: 2;
-  background: linear-gradient(-42deg, #fce5f9 50%, #e7fcf5 50%);
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  width: 700px;
-}
-.testPanel__closeButton {
-  margin: 0px 0px 0px auto;
-}
-.testPanel__header {
-  font-size: 30px;
-  margin: 30px auto 0 auto;
-}
-.testPanel__containerTest {
-  margin-top: 20px;
-  border-top: 1px solid black;
-  border-bottom: 1px solid black;
-  display: flex;
-  flex-direction: column;
-}
-.testPanel__nameTest {
-  font-size: 18px;
-  margin: 10px 0px 10px 10px;
-}
-.testPanel__buttonTest {
-  font-size: 16px;
-  width: 200px;
-  margin: 0 0 10px 0;
-  padding: 10px;
 }
 
 a {

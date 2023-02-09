@@ -446,7 +446,7 @@ export default {
           }
           case "transcription": {
             let transcriptionRegExp =
-              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/;
+              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/;
             if (!transcriptionRegExp.test(form[key])) {
               this.errors[key] =
                 "Транскрипция может содержать только специальные символы представленные доп. клавиатурой!";
@@ -461,11 +461,11 @@ export default {
           }
           case "description": {
             if (
-              !/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(form[key]) &&
+              !/^[а-яА-Яa-zA-Z0-9 \-.,!?']+$/.test(form[key]) &&
               form[key] != ""
             ) {
               this.errors[key] =
-                "Описание слова или словочетания может состоять только из букв русского и английского алфавита, пробела, дефиса и знаков препинания!";
+                "Описание слова или словочетания может состоять только из букв русского и английского алфавита, цифр, пробела, дефиса и знаков препинания!";
               break;
             }
             if (form[key].length > 164) {
@@ -484,7 +484,7 @@ export default {
                 return;
               }
               if (
-                !/^[a-zA-Z  \-.,!?]+$/.test(form[key][keyExample]) &&
+                !/^[a-zA-Z  \-.,!?']+$/.test(form[key][keyExample]) &&
                 form[key][keyExample] != ""
               ) {
                 this.errors[key][keyExample] =
@@ -558,7 +558,7 @@ export default {
           }
           case "transcription": {
             let transcriptionRegExp =
-              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː]+$/;
+              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/;
             if (!transcriptionRegExp.test(fieldData)) {
               this.errors[field] =
                 "Транскрипция может содержать только специальные символы представленные доп. клавиатурой!";
@@ -573,11 +573,11 @@ export default {
           }
           case "description": {
             if (
-              !/^[а-яА-Яa-zA-Z \-.,!?]+$/.test(fieldData) &&
+              !/^[а-яА-Яa-zA-Z0-9 \-.,!?']+$/.test(fieldData) &&
               fieldData != ""
             ) {
               this.errors[field] =
-                "Описание слова или словочетания может состоять только из букв русского и английского алфавита, пробела, дефиса и знаков препинания!";
+                "Описание слова или словочетания может состоять только из букв русского и английского алфавита, цифр, пробела, дефиса и знаков препинания!";
               return;
             }
             if (fieldData.length > 164) {
@@ -595,7 +595,7 @@ export default {
                 return;
               }
               if (
-                !/^[a-zA-Z  \-.,!?]+$/.test(fieldData[keyExample]) &&
+                !/^[a-zA-Z  \-.,!?']+$/.test(fieldData[keyExample]) &&
                 fieldData[keyExample] != ""
               ) {
                 this.errors[field][keyExample] =

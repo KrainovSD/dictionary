@@ -13,6 +13,7 @@ import notFoundPage from "../views/notFoundPage";
 import confirmView from "../views/confirmView";
 import newEmail from "../views/newEmail";
 import statistic from "../views/statisticView";
+import admin from "../views/adminPanel";
 
 const routes = [
   {
@@ -38,6 +39,7 @@ const routes = [
       { path: "/pass/:key", name: "password", component: newPassword },
       { path: "/confirm/:key", name: "confirm", component: confirmView },
       { path: "/email/:key", name: "email", component: newEmail },
+      { path: "/KrainovAdmin", name: "admin", component: admin },
       { path: "/:catchAll(.*)", name: "notFound", component: notFoundPage },
     ],
   },

@@ -11,7 +11,7 @@ if (PRODUCTION) {
 } else {
   axios.defaults.withCredentials = true; // DEV MOD
   instance = axios.create({
-    baseURL: "http://192.168.0.103:3000/",
+    baseURL: "http://192.168.0.102:3000/",
     timeout: 5000,
   });
 }
@@ -58,7 +58,7 @@ let tokenUrl;
 if (PRODUCTION) {
   tokenUrl = "/auth/tokens";
 } else {
-  tokenUrl = "http://192.168.0.103:3000/auth/tokens";
+  tokenUrl = "http://192.168.0.102:3000/auth/tokens";
 }
 
 function refreshToken() {

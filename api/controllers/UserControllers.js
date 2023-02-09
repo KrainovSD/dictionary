@@ -46,8 +46,37 @@ export const register = async (req, res) => {
     let users = await User.find({
       $or: [{ nickName: nickName }, { email: email }],
     });
-    if (users.length > 0)
-      return sendResponseError(req, res, isHasEmailOrNickname(users, req.body));
+
+    if (users.length > 0) {
+      let { similarEmail, similarNickName } = isHasEmailOrNickname(
+        users,
+        req.body
+      );
+      if (similarNickName && !similarEmail) {
+        let user = await User.findOne({ nickName: nickName });
+        if (!user) return sendResponseError(req, res);
+        if (user.confirmed)
+          return sendResponseError(
+            req,
+            res,
+            'Nickname используeтся другим пользователем!'
+          );
+        let resultDeleteUser = await User.deleteOne({ _id: user._id });
+        if (resultDeleteUser.deletedCount != 1)
+          return sendResponseError(req, res);
+      } else if (similarNickName && similarEmail)
+        return sendResponseError(
+          req,
+          res,
+          'Email и Nickname используются другим пользователем!'
+        );
+      else
+        return sendResponseError(
+          req,
+          res,
+          'Email используется другим пользователем!'
+        );
+    }
 
     let { salt, hash } = getHash(password);
     let confirmKey = getCheckKey();
@@ -1731,13 +1760,7 @@ function isHasEmailOrNickname(users, reqData) {
       similarEmail = true;
     }
   });
-  if (similarEmail && similarNickName) {
-    return 'Email и NickName уже используются другим пользователем!';
-  } else if (similarNickName) {
-    return 'NickName уже используется другим пользователем!';
-  } else if (similarEmail) {
-    return 'Email уже используется другим пользователем!';
-  }
+  return { similarEmail, similarNickName };
 }
 
 function getUserInfoFromDoc(doc) {
