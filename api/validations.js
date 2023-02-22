@@ -387,7 +387,7 @@ function checkKnownWords(words) {
         case 'transcription': {
           if (fieldData === '' || typeof fieldData != 'string') return false;
           if (
-            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/.test(
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.()ɡ]+$/.test(
               fieldData
             )
           )
@@ -610,7 +610,7 @@ function checkWordsToStudy(words) {
         case 'transcription': {
           if (fieldData === '' || typeof fieldData != 'string') return false;
           if (
-            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/.test(
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.()ɡ]+$/.test(
               fieldData
             )
           )
@@ -715,7 +715,7 @@ function checkWordsToRepeat(words) {
         case 'transcription': {
           if (fieldData === '' || typeof fieldData != 'string') return false;
           if (
-            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/.test(
+            !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.()ɡ]+$/.test(
               fieldData
             )
           )
@@ -1140,7 +1140,7 @@ const wordValidation = [
     .withMessage('У транскрипции неверный тип данных!')
     .isLength({ max: 50 })
     .withMessage('Длина транскрипции не должна превышать более 50 символов!')
-    .matches(/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/)
+    .matches(/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.()ɡ]+$/)
     .withMessage(
       'Транскрипция может содержать только специальные символы представленные доп. клавиатурой!'
     ),
@@ -1327,7 +1327,7 @@ const newKnownWordsValidation = [
               if (fieldData === '' || typeof fieldData != 'string')
                 throw new Error('');
               if (
-                !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\]ɡ ˌˈ:ː.]+$/.test(
+                !/^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\]ɡ ˌˈ:ː.()ɡ]+$/.test(
                   fieldData
                 )
               )

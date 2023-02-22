@@ -35,7 +35,7 @@
             <div class="wordPopup__subCategory _close" ref="subCategory">
               <div
                 class="wordPopup__addCategory wordPopup__categoryItem"
-                @click="categoryPopupVisible = true"
+                @click="cЗуategoryPopupVisible = true"
               >
                 <p>Добавить категорию</p>
                 <img
@@ -157,13 +157,13 @@
         </div>
 
         <!-- TRANSCTIPTION -->
-        <div style="position: relative">
-          <transcription-keyboard
-            :error="errors?.transcription"
-            :transcription="transcription"
-            @changeTranscription="(payload) => (this.transcription = payload)"
-          />
-        </div>
+
+        <transcription-keyboard
+          :error="errors?.transcription"
+          :transcription="transcription"
+          @changeTranscription="(payload) => (this.transcription = payload)"
+        />
+
         <div
           class="wordPopup__adviceTranscription"
           v-if="
@@ -446,7 +446,7 @@ export default {
           }
           case "transcription": {
             let transcriptionRegExp =
-              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/;
+              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.()ɡ]+$/;
             if (!transcriptionRegExp.test(form[key])) {
               this.errors[key] =
                 "Транскрипция может содержать только специальные символы представленные доп. клавиатурой!";
@@ -558,7 +558,7 @@ export default {
           }
           case "transcription": {
             let transcriptionRegExp =
-              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.]+$/;
+              /^[ɑaʌəεæɜʒıɪŋɔɒʃðθʤʊbdefghijklmnprʧstuvwz[\] ˌˈ:ː.()ɡ]+$/;
             if (!transcriptionRegExp.test(fieldData)) {
               this.errors[field] =
                 "Транскрипция может содержать только специальные символы представленные доп. клавиатурой!";

@@ -58,29 +58,32 @@
       <img src="@/assets/clear.png" alt="" class="keyboard__img" />
     </div>
   </div>
-  <input
-    readonly
-    type="text"
-    class="wordPopup__input"
-    :class="[error ? '_error' : '', isFocus ? '_focus' : '']"
-    placeholder="*Transcription"
-    name="transcription"
-    @focus="isFocus = true"
-    @focusout="isFocus = false"
-    @keypress.prevent=""
-    @input="
-      (e) => {
-        $emit('changeTranscription', e.target.value);
-      }
-    "
-    autocomplete="off"
-    ref="transcription"
-  />
-  <div
-    class="inputTooltip__tooltip"
-    v-if="error && isFocus"
-    :tooltip="error"
-  ></div>
+
+  <div style="position: relative">
+    <input
+      readonly
+      type="text"
+      class="wordPopup__input"
+      :class="[error ? '_error' : '', isFocus ? '_focus' : '']"
+      placeholder="*Transcription"
+      name="transcription"
+      @focus="isFocus = true"
+      @focusout="isFocus = false"
+      @keypress.prevent=""
+      @input="
+        (e) => {
+          $emit('changeTranscription', e.target.value);
+        }
+      "
+      autocomplete="off"
+      ref="transcription"
+    />
+    <div
+      class="inputTooltip__tooltip"
+      v-if="error && isFocus"
+      :tooltip="error"
+    ></div>
+  </div>
 </template>
 
 <script>
